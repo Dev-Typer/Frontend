@@ -2,20 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { GithubMark } from '@/components/icons/Icons';
 
-interface PermRowProps {
-  label: string;
-  granted?: boolean;
-}
-
-const PermRow = ({ label, granted = true }: PermRowProps) => (
-  <div className={`flex items-center gap-2 text-[12.5px] ${granted ? 'text-[var(--dt-text-2)]' : 'text-[var(--dt-text-3)]'}`}>
-    <span className={`dt-perm-badge ${granted ? 'dt-perm-badge--grant' : 'dt-perm-badge--deny'}`}>
-      {granted ? '✓' : '×'}
-    </span>
-    <span>{label}</span>
-  </div>
-);
-
 const Login = () => {
   const t = useT();
   const navigate = useNavigate();
@@ -50,17 +36,6 @@ const Login = () => {
             <GithubMark size={18} fill="#fff" />
             <span>{t('Continue with GitHub')}</span>
           </button>
-
-          <div className="dt-perm-list">
-            <p className="text-[10.5px] tracking-widest uppercase text-[var(--dt-text-3)] mb-2.5 mt-0">
-              {t('Requested permissions')}
-            </p>
-            <div className="flex flex-col gap-2">
-              <PermRow label={t('Read your public profile')} granted />
-              <PermRow label={t('Read your email address')} granted />
-              <PermRow label={t('No write access to your repos')} granted={false} />
-            </div>
-          </div>
 
           <div className="flex justify-between items-center mt-[22px]">
             <button className="dt-btn-back" onClick={() => navigate(-1)}>

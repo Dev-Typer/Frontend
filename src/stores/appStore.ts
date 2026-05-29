@@ -16,7 +16,7 @@ export const useAppStore = create<AppState>((set) => ({
   design: 'editor',
   theme: 'dark',
   lang: 'ko',
-  loggedIn: true,
+  loggedIn: false,
   raceViz: 'avatars',
   caret: 'line',
   density: 'comfortable',

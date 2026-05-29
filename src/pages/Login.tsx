@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '@/stores/appStore';
 import { useT } from '@/i18n';
 import { GithubMark } from '@/components/icons/Icons';
 
@@ -120,17 +119,10 @@ const LoginAuthorizing = () => {
 
 const Login = () => {
   const [phase, setPhase] = useState<LoginPhase>('idle');
-  const navigate = useNavigate();
-  const setLoggedIn = useAppStore((s) => s.setLoggedIn);
 
   const handleSignIn = () => {
     setPhase('redirecting');
-    setTimeout(() => setPhase('authorizing'), 800);
-    // TODO: 실제 GitHub OAuth 콜백 연동 시 이 setTimeout을 제거하고 OAuth 리디렉션으로 교체
-    setTimeout(() => {
-      setLoggedIn(true);
-      navigate('/');
-    }, 2000);
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/auth/github`;
   };
 
   return (

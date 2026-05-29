@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
+import { useUserStore } from '@/stores/userStore';
+import { getMe } from '@/apis/authApi';
 import { LangContext } from '@/i18n';
-import { ME } from '@/data';
 import TopNav from '@/components/TopNav';
 import EditorShell from '@/pages/EditorShell';
 import HomeEditor from '@/pages/Home/HomeEditor';
@@ -13,7 +15,7 @@ import MyPage from '@/pages/MyPage';
 import Login from '@/pages/Login';
 
 const AuthGuard = ({ children }: { children: React.ReactNode }) => {
-  const isLoggedIn = useAppStore((s) => s.loggedIn);
+  const isLoggedIn = useUserStore((s) => s.isLoggedIn);
   const navigate = useNavigate();
   if (!isLoggedIn) {
     return (
@@ -21,7 +23,7 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
         <img src="/assets/logo.png" alt="" style={{ width: 64, height: 64, display: 'inline-block', margin: '-16px 0 0' }} />
         <h2 style={{ margin: '20px 0 10px', fontFamily: 'var(--dt-font-mono)', fontSize: 24, fontWeight: 500 }}>Sign in to view your profile</h2>
         <p style={{ color: 'var(--dt-text-2)', fontSize: 14, marginBottom: 24 }}>Your records, streak, and rating live behind GitHub auth.</p>
-        <button onClick={() => navigate('/login')} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#24292F', color: '#fff', padding: '12px 20px', border: 0, borderRadius: 6, cursor: 'default', fontFamily: 'var(--dt-font-mono)', fontSize: 14, fontWeight: 500 }}>
+        <button onClick={() => navigate('/login')} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#24292F', color: '#fff', padding: '12px 20px', border: 0, borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--dt-font-mono)', fontSize: 14, fontWeight: 500 }}>
           Continue with GitHub
         </button>
       </div>
@@ -33,10 +35,28 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => {
   const design = useAppStore((s) => s.design);
   const theme = useAppStore((s) => s.theme);
-  const isLoggedIn = useAppStore((s) => s.loggedIn);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
-  const me = ME;
+  const { isLoggedIn, setUser, username } = useUserStore();
+
+  useEffect(() => {
+    getMe()
+      .then((data) => setUser(data.userId, data.username))
+      .catch(() => {});
+  }, [setUser]);
+
+  const me = {
+    handle: username ?? 'guest',
+    joined: '',
+    tier: 'bronze' as const,
+    rating: 0,
+    avatarHue: 160,
+    totalPlays: 0,
+    avgWpm: 0,
+    maxWpm: 0,
+    avgAcc: 0,
+    byLang: [],
+  };
 
   const routes = (
     <Routes>

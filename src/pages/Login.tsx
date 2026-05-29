@@ -23,34 +23,21 @@ const Login = () => {
         </div>
 
         <div className="dt-login-card">
-          <div className="text-center mb-7">
-            <h1 className="dt-mono text-2xl font-medium tracking-tight text-[var(--dt-text)] m-0">
-              {t('Sign in to devtyper')}
-            </h1>
-            <p className="text-[13.5px] leading-relaxed text-[var(--dt-text-2)] mt-2.5 mb-0">
-              {t('Sign in with GitHub to save records and enter rated battles.')}
-            </p>
-          </div>
+          <h1 className="dt-mono text-2xl font-medium tracking-tight text-[var(--dt-text)] text-center m-0 mb-7">
+            {t('Sign in to devtyper')}
+          </h1>
 
           <button className="dt-btn-github" onClick={handleSignIn}>
             <GithubMark size={18} fill="#fff" />
             <span>{t('Continue with GitHub')}</span>
           </button>
 
-          <div className="flex justify-between items-center mt-[22px]">
+          <div className="mt-[22px]">
             <button className="dt-btn-back" onClick={() => navigate(-1)}>
               ← {t('Back')}
             </button>
-            <span className="text-xs text-[var(--dt-text-3)]">
-              {t('No password. No email signup.')}
-            </span>
           </div>
         </div>
-
-        <p className="mt-6 text-center text-[11.5px] text-[var(--dt-text-3)]">
-          devtyper v0.1 ·{' '}
-          <span className="text-[var(--dt-text-2)]">OAuth via github.com</span>
-        </p>
       </div>
     </div>
   );

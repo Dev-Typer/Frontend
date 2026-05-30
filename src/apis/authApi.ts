@@ -1,5 +1,11 @@
 import axios from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import { useUserStore } from '@/stores/userStore';
+
+interface AxiosRequestConfigWithRetry extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+  _skipAuthRetry?: boolean;
+}
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -20,7 +26,6 @@ export interface MeResponse {
   username: string;
 }
 
-// 동시에 여러 요청이 401 날 때 refresh를 한 번만 호출하기 위한 큐
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: () => void; reject: (err: unknown) => void }> = [];
 
@@ -32,45 +37,67 @@ const processQueue = (error: unknown) => {
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const original = error.config;
+    const original = error.config as AxiosRequestConfigWithRetry;
 
-    // refresh 엔드포인트 자체가 실패하면 로그인 페이지로
-    if (error.response?.status === 401 && original.url?.includes('/api/auth/refresh')) {
-      useUserStore.getState().clearUser();
-      window.location.href = '/login';
+    if (error.response?.status !== 401) {
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve: () => resolve(api(original)), reject });
-        });
-      }
-
-      original._retry = true;
-      isRefreshing = true;
-
-      try {
-        await api.post('/api/auth/refresh');
-        processQueue(null);
-        return api(original);
-      } catch (err) {
-        processQueue(err);
-        useUserStore.getState().clearUser();
-        window.location.href = '/login';
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
-      }
+    // A: skipAuthRetry 플래그가 있으면 retry 없이 바로 reject
+    if (original._skipAuthRetry) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    // B: 로그인 상태가 아니면 retry 하지 않음
+    if (!useUserStore.getState().isLoggedIn) {
+      return Promise.reject(error);
+    }
+
+    // refresh 엔드포인트 자체가 401이면 세션 종료
+    if (original.url?.includes('/api/auth/refresh')) {
+      useUserStore.getState().clearUser();
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return Promise.reject(error);
+    }
+
+    if (original._retry) {
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve: () => resolve(api(original)), reject });
+      });
+    }
+
+    original._retry = true;
+    isRefreshing = true;
+
+    try {
+      await api.post('/api/auth/refresh');
+      processQueue(null);
+      return api(original);
+    } catch (err) {
+      processQueue(err);
+      useUserStore.getState().clearUser();
+      // C: 이미 /login이면 리다이렉트 안 함
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return Promise.reject(err);
+    } finally {
+      isRefreshing = false;
+    }
   },
 );
 
 export const getMe = async (): Promise<MeResponse> => {
-  const { data } = await api.get<ApiResponse<MeResponse>>('/api/auth/me');
+  // A: 로그인 여부 확인용 요청 — 실패해도 retry 불필요
+  const { data } = await api.get<ApiResponse<MeResponse>>('/api/auth/me', {
+    _skipAuthRetry: true,
+  } as AxiosRequestConfigWithRetry);
   return data.data!;
 };
 

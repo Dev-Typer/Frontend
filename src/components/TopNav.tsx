@@ -10,10 +10,11 @@ interface Props {
   onTheme: () => void;
   isLoggedIn: boolean;
   onLogin: () => void;
+  onLogout: () => void;
   me: User;
 }
 
-const TopNav = ({ theme, onTheme, isLoggedIn, onLogin, me }: Props) => {
+const TopNav = ({ theme, onTheme, isLoggedIn, onLogin, onLogout, me }: Props) => {
   const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,14 +53,22 @@ const TopNav = ({ theme, onTheme, isLoggedIn, onLogin, me }: Props) => {
         {theme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
       </button>
       {isLoggedIn ? (
-        <button
-          className="dt-nav-link"
-          onClick={() => navigate('/mypage')}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 10px' }}
-        >
-          <span className="dt-mono" style={{ fontSize: 13 }}>{me.handle}</span>
-          <Avatar handle={me.handle} hue={me.avatarHue} size={28} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            className="dt-nav-link"
+            onClick={() => navigate('/mypage')}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 10px' }}
+          >
+            <span className="dt-mono" style={{ fontSize: 13 }}>{me.handle}</span>
+            <Avatar handle={me.handle} hue={me.avatarHue} size={28} />
+          </button>
+          <button
+            className="dt-nav-link"
+            onClick={onLogout}
+            title={t('Sign out')}
+            style={{ fontSize: 13, padding: '4px 8px' }}
+          >↩</button>
+        </div>
       ) : (
         <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={onLogin}>{t('Sign in')}</button>
       )}

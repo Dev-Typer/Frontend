@@ -87,7 +87,7 @@ const AppRoutes = () => {
 
   return (
     <>
-      <TopNav theme={theme} onTheme={toggleTheme} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} me={me} />
+      <TopNav theme={theme} onTheme={toggleTheme} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} onLogout={handleLogout} me={me} />
       {routes}
     </>
   );

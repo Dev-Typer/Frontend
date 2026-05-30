@@ -5,19 +5,18 @@ import { CODE_SNIPPETS } from '@/data';
 import SectionHead from '@/components/SectionHead';
 import TypingEngine from '@/components/TypingEngine';
 import CodePreview from '@/components/CodePreview';
-import Pill from '@/components/Pill';
 import { IconCode, IconRefresh, IconPlay, IconSettings, IconArrowRight, IconArrowUp, IconArrowDown, IconKeyboard } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
 
 type Phase = 'setup' | 'typing' | 'result';
 
 const LANGS = [
-  { id: 'javascript', label: 'JavaScript' },
-  { id: 'typescript', label: 'TypeScript' },
-  { id: 'python',     label: 'Python'     },
-  { id: 'go',         label: 'Go'         },
-  { id: 'java',       label: 'Java'       },
-  { id: 'sql',        label: 'SQL'        },
+  { id: 'javascript', label: 'JavaScript', logo: '/lang/js.png'         },
+  { id: 'typescript', label: 'TypeScript', logo: '/lang/typescript.png' },
+  { id: 'python',     label: 'Python',     logo: '/lang/python.png'     },
+  { id: 'go',         label: 'Go',         logo: '/lang/go.png'         },
+  { id: 'java',       label: 'Java',       logo: '/lang/java.png'       },
+  { id: 'sql',        label: 'SQL',        logo: null                   },
 ];
 
 const DIFFS = [
@@ -67,8 +66,29 @@ const SoloSetup = ({ lang, setLang, diff, setDiff, onStart, snippet }: SoloSetup
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div className="dt-card">
           <div className="dt-label" style={{ marginBottom: 10 }}>{t('Language')}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {LANGS.map((l) => <Pill key={l.id} active={lang === l.id} onClick={() => setLang(l.id)}>{l.label}</Pill>)}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            {LANGS.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => setLang(l.id)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  padding: '10px 6px', border: 0, borderRadius: 8, cursor: 'default',
+                  background: lang === l.id ? 'color-mix(in oklab, var(--dt-primary) 12%, transparent)' : 'var(--dt-hover)',
+                  boxShadow: lang === l.id ? 'inset 0 0 0 1px var(--dt-primary)' : 'none',
+                  fontFamily: 'inherit', transition: 'background 100ms',
+                }}
+              >
+                {l.logo ? (
+                  <img src={l.logo} alt={l.label} style={{ width: 26, height: 26, objectFit: 'contain', filter: lang === l.id ? 'none' : 'grayscale(30%)' }} />
+                ) : (
+                  <span style={{ fontSize: 22, lineHeight: 1 }}>🗄</span>
+                )}
+                <span style={{ fontSize: 11, fontWeight: lang === l.id ? 600 : 400, color: lang === l.id ? 'var(--dt-primary)' : 'var(--dt-text-2)' }}>
+                  {l.label}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
         <div className="dt-card">

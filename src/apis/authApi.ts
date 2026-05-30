@@ -5,14 +5,31 @@ const api = axios.create({
   withCredentials: true,
 });
 
+interface ApiResponse<T> {
+  success: boolean;
+  statusCode: number;
+  data?: T;
+  message?: string;
+  code?: string;
+  timestamp: string;
+}
+
 export interface MeResponse {
   userId: number;
   username: string;
 }
 
 export const getMe = async (): Promise<MeResponse> => {
-  const { data } = await api.get<MeResponse>('/api/auth/me');
-  return data;
+  const { data } = await api.get<ApiResponse<MeResponse>>('/api/auth/me');
+  return data.data!;
+};
+
+export const logout = async (): Promise<void> => {
+  await api.post('/api/auth/logout');
+};
+
+export const refreshToken = async (): Promise<void> => {
+  await api.post('/api/auth/refresh');
 };
 
 export default api;

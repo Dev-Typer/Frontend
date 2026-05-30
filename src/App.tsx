@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
-import { getMe } from '@/apis/authApi';
+import { getMe, logout } from '@/apis/authApi';
 import { LangContext } from '@/i18n';
 import TopNav from '@/components/TopNav';
 import EditorShell from '@/pages/EditorShell';
@@ -37,13 +37,19 @@ const AppRoutes = () => {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
-  const { isLoggedIn, setUser, username } = useUserStore();
+  const { isLoggedIn, setUser, clearUser, username } = useUserStore();
 
   useEffect(() => {
     getMe()
       .then((data) => setUser(data.userId, data.username))
       .catch(() => {});
   }, [setUser]);
+
+  const handleLogout = async () => {
+    await logout().catch(() => {});
+    clearUser();
+    navigate('/login');
+  };
 
   const me = {
     handle: username ?? 'guest',
@@ -73,7 +79,7 @@ const AppRoutes = () => {
 
   if (design === 'editor') {
     return (
-      <EditorShell me={me} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} theme={theme} onTheme={toggleTheme}>
+      <EditorShell me={me} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
         {routes}
       </EditorShell>
     );
@@ -81,7 +87,7 @@ const AppRoutes = () => {
 
   return (
     <>
-      <TopNav theme={theme} onTheme={toggleTheme} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} me={me} />
+      <TopNav theme={theme} onTheme={toggleTheme} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} onLogout={handleLogout} me={me} />
       {routes}
     </>
   );

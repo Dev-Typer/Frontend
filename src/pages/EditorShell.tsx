@@ -112,11 +112,12 @@ interface ShellSidebarProps {
   me: User;
   isLoggedIn: boolean;
   onLogin: () => void;
+  onLogout: () => void;
   theme: string;
   onTheme: () => void;
 }
 
-const ShellSidebar = ({ activeFile, me, isLoggedIn, onLogin, theme, onTheme }: ShellSidebarProps) => {
+const ShellSidebar = ({ activeFile, me, isLoggedIn, onLogin, onLogout, theme, onTheme }: ShellSidebarProps) => {
   const t = useT();
   const navigate = useNavigate();
   return (
@@ -147,19 +148,27 @@ const ShellSidebar = ({ activeFile, me, isLoggedIn, onLogin, theme, onTheme }: S
       {/* User / login strip */}
       <div style={{ boxShadow: 'inset 0 1px 0 var(--dt-border)', padding: '10px 8px', flexShrink: 0 }}>
         {isLoggedIn ? (
-          <button
-            onClick={() => navigate('/mypage')}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 10px', background: 'transparent', border: 0, borderRadius: 6, cursor: 'default', textAlign: 'left', color: 'inherit', fontFamily: 'inherit', transition: 'background 100ms' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--dt-hover)'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-          >
-            <Avatar handle={me.handle} hue={me.avatarHue} size={28} ring="var(--dt-primary)" />
-            <div className="dt-stack" style={{ gap: 0, minWidth: 0, flex: 1 }}>
-              <span style={{ fontSize: 12.5, color: 'var(--dt-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{me.handle}</span>
-              <span style={{ fontSize: 10.5, color: 'var(--dt-text-3)' }}>★ {me.rating} · {t(me.tier)}</span>
-            </div>
-            <span style={{ color: 'var(--dt-text-3)', fontSize: 11 }}>›</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => navigate('/mypage')}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, padding: '8px 10px', background: 'transparent', border: 0, borderRadius: 6, cursor: 'default', textAlign: 'left', color: 'inherit', fontFamily: 'inherit', transition: 'background 100ms' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--dt-hover)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            >
+              <Avatar handle={me.handle} hue={me.avatarHue} size={28} ring="var(--dt-primary)" />
+              <div className="dt-stack" style={{ gap: 0, minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: 12.5, color: 'var(--dt-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{me.handle}</span>
+                <span style={{ fontSize: 10.5, color: 'var(--dt-text-3)' }}>★ {me.rating} · {t(me.tier)}</span>
+              </div>
+            </button>
+            <button
+              onClick={onLogout}
+              title="로그아웃"
+              style={{ flexShrink: 0, padding: '6px 8px', background: 'transparent', border: 0, borderRadius: 6, cursor: 'default', color: 'var(--dt-text-3)', fontSize: 13, transition: 'background 100ms' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--dt-hover)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            >↩</button>
+          </div>
         ) : (
           <button
             onClick={onLogin}
@@ -250,12 +259,13 @@ interface Props {
   me: User;
   isLoggedIn: boolean;
   onLogin: () => void;
+  onLogout: () => void;
   theme: string;
   onTheme: () => void;
   children: ReactNode;
 }
 
-const EditorShell = ({ me, isLoggedIn, onLogin, theme, onTheme, children }: Props) => {
+const EditorShell = ({ me, isLoggedIn, onLogin, onLogout, theme, onTheme, children }: Props) => {
   const location = useLocation();
   const route = location.pathname.slice(1);
   const activeFile = ROUTE_TO_FILE[route] || 'README.md';
@@ -287,6 +297,7 @@ const EditorShell = ({ me, isLoggedIn, onLogin, theme, onTheme, children }: Prop
           me={me}
           isLoggedIn={isLoggedIn}
           onLogin={onLogin}
+          onLogout={onLogout}
           theme={theme}
           onTheme={onTheme}
         />

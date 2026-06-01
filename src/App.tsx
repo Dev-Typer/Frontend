@@ -13,6 +13,7 @@ import Daily from '@/pages/Daily';
 import Ranking from '@/pages/Ranking';
 import MyPage from '@/pages/MyPage';
 import Login from '@/pages/Login';
+import AdminSnippets from '@/pages/admin/AdminSnippets';
 
 const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const isLoggedIn = useUserStore((s) => s.isLoggedIn);
@@ -26,6 +27,22 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
         <button onClick={() => navigate('/login')} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#24292F', color: '#fff', padding: '12px 20px', border: 0, borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--dt-font-mono)', fontSize: 14, fontWeight: 500 }}>
           Continue with GitHub
         </button>
+      </div>
+    );
+  }
+  return <>{children}</>;
+};
+
+const AdminGuard = ({ children }: { children: React.ReactNode }) => {
+  const { isLoggedIn, role } = useUserStore();
+  const navigate = useNavigate();
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  if (role !== 'ADMIN') {
+    return (
+      <div style={{ padding: '80px 28px', textAlign: 'center', maxWidth: 520, margin: '0 auto' }}>
+        <h2 style={{ margin: '0 0 10px', fontFamily: 'var(--dt-font-mono)', fontSize: 20, fontWeight: 500, color: 'var(--dt-text)' }}>접근 권한 없음</h2>
+        <p style={{ color: 'var(--dt-text-2)', fontSize: 14, marginBottom: 24 }}>관리자 계정으로 로그인해주세요.</p>
+        <button onClick={() => navigate('/')} style={{ background: 'transparent', border: '1px solid var(--dt-border)', color: 'var(--dt-text-2)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>홈으로</button>
       </div>
     );
   }
@@ -73,6 +90,7 @@ const AppRoutes = () => {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/mypage" element={<AuthGuard><MyPage /></AuthGuard>} />
       <Route path="/login" element={<Login />} />
+      <Route path="/admin/snippets" element={<AdminGuard><AdminSnippets /></AdminGuard>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

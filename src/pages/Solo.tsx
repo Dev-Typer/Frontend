@@ -7,7 +7,8 @@ import CodePreview from '@/components/CodePreview';
 import { IconCode, IconRefresh, IconPlay, IconSettings, IconArrowRight, IconArrowUp, IconArrowDown, IconKeyboard } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
 import { getRandomSnippet, type Snippet, type SnippetLanguage, type SnippetDifficulty } from '@/apis/snippetApi';
-import { saveSnippetResult, type SnippetResultResponse } from '@/apis/snippetResultApi';
+import { saveSnippetResult, getSnippetResultStats, type SnippetResultResponse, type SnippetResultStats } from '@/apis/snippetResultApi';
+import WpmGraph from '@/components/WpmGraph';
 
 type Phase = 'setup' | 'typing' | 'result';
 
@@ -172,6 +173,15 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
   const avgWpm = Math.round(snippet.avgWpm) || 0;
   const delta = result.wpm - avgWpm;
   const barMax = Math.max(result.wpm * 1.5, 160);
+  const [stats, setStats] = useState<SnippetResultStats | null>(null);
+
+  useEffect(() => {
+    if (!savedResult) return;
+    getSnippetResultStats(savedResult.id)
+      .then(setStats)
+      .catch(() => {});
+  }, [savedResult]);
+
   return (
     <div>
       <SectionHead kicker="Result" title="Run complete." action={
@@ -181,8 +191,9 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         </div>
       } />
       {savedResult && (
-        <div style={{ marginBottom: 16, padding: '8px 16px', background: 'color-mix(in oklab, var(--dt-primary) 8%, transparent)', borderRadius: 'var(--dt-radius)', border: '0.5px solid color-mix(in oklab, var(--dt-primary) 30%, transparent)' }}>
-          <span className="dt-caption" style={{ color: 'var(--dt-primary)' }}>checkmark 결과가 저장됐습니다</span>
+        <div style={{ marginBottom: 16, padding: '8px 16px', background: 'color-mix(in oklab, var(--dt-primary) 8%, transparent)', borderRadius: 'var(--dt-radius)', border: '0.5px solid color-mix(in oklab, var(--dt-primary) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span className="dt-caption" style={{ color: 'var(--dt-primary)' }}>✓ 결과가 저장됐습니다</span>
+          {stats && <span className="dt-mono" style={{ fontSize: 13, color: 'var(--dt-primary)' }}>#{stats.rank} 위</span>}
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
@@ -219,6 +230,44 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           </div>
         </div>
       )}
+      {/* WPM 그래프 */}
+      {stats && stats.wpmGraph.length > 0 && (
+        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 24 }}>
+          <div style={{ padding: '16px 24px', borderBottom: '0.5px solid var(--dt-border)' }}>
+            <span className="dt-h3" style={{ margin: 0 }}>WPM Graph</span>
+          </div>
+          <div style={{ padding: '20px 24px' }}>
+            <WpmGraph data={stats.wpmGraph} height={80} />
+          </div>
+        </div>
+      )}
+
+      {/* Best / Worst Words */}
+      {stats && (stats.wordStats.bestWords.length > 0 || stats.wordStats.worstWords.length > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+          {stats.wordStats.bestWords.length > 0 && (
+            <div className="dt-card" style={{ padding: 20 }}>
+              <div className="dt-label" style={{ marginBottom: 10, color: 'var(--dt-success)' }}>Best Words</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {stats.wordStats.bestWords.map((w) => (
+                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '3px 8px', background: 'color-mix(in oklab, var(--dt-success) 12%, transparent)', borderRadius: 4, color: 'var(--dt-success)' }}>{w}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {stats.wordStats.worstWords.length > 0 && (
+            <div className="dt-card" style={{ padding: 20 }}>
+              <div className="dt-label" style={{ marginBottom: 10, color: 'var(--dt-error)' }}>Worst Words</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {stats.wordStats.worstWords.map((w) => (
+                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '3px 8px', background: 'color-mix(in oklab, var(--dt-error) 12%, transparent)', borderRadius: 4, color: 'var(--dt-error)' }}>{w}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, gap: 12 }}>
         <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change language / difficulty')}</button>
         <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>

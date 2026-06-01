@@ -34,6 +34,8 @@ const TypingEngine = ({
   const typosRef = useRef<TypoData[]>([]);
   const replayDataRef = useRef<ReplayEvent[]>([]);
   const startedAtRef = useRef<number | null>(null);
+  const currentComboRef = useRef(0);
+  const longestComboRef = useRef(0);
 
   useEffect(() => {
     setTyped(''); setErrors(0); setStartedAt(null); setFinishedFlag(false);
@@ -41,6 +43,8 @@ const TypingEngine = ({
     typosRef.current = [];
     replayDataRef.current = [];
     startedAtRef.current = null;
+    currentComboRef.current = 0;
+    longestComboRef.current = 0;
   }, [resetKey, code]);
 
   useEffect(() => {
@@ -86,7 +90,13 @@ const TypingEngine = ({
 
       replayDataRef.current.push({ index: t.length, char: inChar, timestamp, correct: isCorrect });
 
-      if (!isCorrect) {
+      if (isCorrect) {
+        currentComboRef.current += 1;
+        if (currentComboRef.current > longestComboRef.current) {
+          longestComboRef.current = currentComboRef.current;
+        }
+      } else {
+        currentComboRef.current = 0;
         queueMicrotask(() => setErrors((x) => x + 1));
         typosRef.current.push({ index: t.length, expected, typed: inChar });
       }
@@ -130,6 +140,7 @@ const TypingEngine = ({
         acc: finalAcc,
         elapsed: finalElapsed,
         errors,
+        longestCombo: longestComboRef.current,
         typos: [...typosRef.current],
         replayData: [...replayDataRef.current],
       });

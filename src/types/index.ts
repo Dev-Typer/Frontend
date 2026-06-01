@@ -136,6 +136,7 @@ export interface TypingResult {
   acc: number;
   elapsed: number;
   errors: number;
+  longestCombo: number;
   typos: TypoData[];
   replayData: ReplayEvent[];
 }

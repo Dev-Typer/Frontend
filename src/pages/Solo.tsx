@@ -4,11 +4,12 @@ import { useAppStore } from '@/stores/appStore';
 import SectionHead from '@/components/SectionHead';
 import TypingEngine from '@/components/TypingEngine';
 import CodePreview from '@/components/CodePreview';
-import { IconCode, IconRefresh, IconPlay, IconSettings, IconArrowRight, IconArrowUp, IconArrowDown, IconKeyboard } from '@/components/icons/Icons';
+import { IconCode, IconRefresh, IconPlay, IconSettings, IconArrowRight, IconKeyboard } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
 import { getRandomSnippet, type Snippet, type SnippetLanguage, type SnippetDifficulty } from '@/apis/snippetApi';
 import { saveSnippetResult, getSnippetResultStats, type SnippetResultResponse, type SnippetResultStats } from '@/apis/snippetResultApi';
 import WpmGraph from '@/components/WpmGraph';
+import TypoHeatmap from '@/components/TypoHeatmap';
 
 type Phase = 'setup' | 'typing' | 'result';
 
@@ -40,17 +41,6 @@ const LiveStat = ({ label, value, unit, accent }: { label: string; value: string
   );
 };
 
-const ComparisonBar = ({ label, value, max, color }: { label: string; value: number; max: number; color: string }) => (
-  <div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-      <span className="dt-body-sm">{label}</span>
-      <span className="dt-mono dt-tabular" style={{ fontSize: 14, color }}>{value} wpm</span>
-    </div>
-    <div style={{ height: 8, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden' }}>
-      <div style={{ height: '100%', width: `${(value / max) * 100}%`, background: color, borderRadius: 999, transition: 'width 600ms ease-out' }} />
-    </div>
-  </div>
-);
 
 interface SoloSetupProps {
   lang: SnippetLanguage; setLang: (l: SnippetLanguage) => void;
@@ -168,11 +158,17 @@ interface SoloResultProps {
   onNext: () => void; onChangeSettings: () => void;
 }
 
+const StatCard = ({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: boolean }) => (
+  <div className="dt-card" style={{ padding: '16px 20px' }}>
+    <div className="dt-label" style={{ marginBottom: 6, fontSize: 10 }}>{label}</div>
+    <div className="dt-mono dt-tabular" style={{ fontSize: 28, fontWeight: 600, color: accent ? 'var(--dt-primary)' : 'var(--dt-text)', lineHeight: 1 }}>{value}</div>
+    {sub && <div className="dt-caption" style={{ marginTop: 6, color: 'var(--dt-text-3)' }}>{sub}</div>}
+  </div>
+);
+
 const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: SoloResultProps) => {
   const t = useT();
   const avgWpm = Math.round(snippet.avgWpm) || 0;
-  const delta = result.wpm - avgWpm;
-  const barMax = Math.max(result.wpm * 1.5, 160);
   const [stats, setStats] = useState<SnippetResultStats | null>(null);
 
   useEffect(() => {
@@ -182,85 +178,111 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       .catch(() => {});
   }, [savedResult]);
 
+  // typo markers: 각 오타의 타임스탬프를 초로 변환
+  const typoMarkers = result.typos.map((typo) => {
+    const event = result.replayData.find((e) => e.index === typo.index);
+    return event ? { second: Math.ceil(event.timestamp / 1000) } : null;
+  }).filter(Boolean) as { second: number }[];
+
   return (
     <div>
-      <SectionHead kicker="Result" title="Run complete." action={
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change settings')}</button>
-          <button className="dt-btn dt-btn-primary" onClick={onNext}><IconRefresh size={16} /> {t('New snippet')}</button>
-        </div>
-      } />
-      {savedResult && (
-        <div style={{ marginBottom: 16, padding: '8px 16px', background: 'color-mix(in oklab, var(--dt-primary) 8%, transparent)', borderRadius: 'var(--dt-radius)', border: '0.5px solid color-mix(in oklab, var(--dt-primary) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span className="dt-caption" style={{ color: 'var(--dt-primary)' }}>✓ 결과가 저장됐습니다</span>
-          {stats && <span className="dt-mono" style={{ fontSize: 13, color: 'var(--dt-primary)' }}>#{stats.rank} 위</span>}
-        </div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <div className="dt-card" style={{ padding: 24 }}>
-          <div className="dt-label" style={{ marginBottom: 6 }}>{t('WPM')}</div>
-          <div className="dt-display dt-mono dt-tabular" style={{ color: 'var(--dt-primary)' }}>{result.wpm}</div>
-          {avgWpm > 0 && (
-            <div className="dt-caption" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              {delta >= 0 ? <IconArrowUp size={14} style={{ color: 'var(--dt-success)' }} /> : <IconArrowDown size={14} style={{ color: 'var(--dt-error)' }} />}
-              <span style={{ color: delta >= 0 ? 'var(--dt-success)' : 'var(--dt-error)' }}>{delta >= 0 ? '+' : ''}{delta}</span>
-              <span>{t('vs snippet average')} ({avgWpm})</span>
-            </div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h2 className="dt-h2" style={{ margin: 0, color: 'var(--dt-primary)' }}>Run complete.</h2>
+          {savedResult && stats && (
+            <span className="dt-caption" style={{ color: 'var(--dt-text-3)' }}>
+              ✓ 저장됨 · 스니펫 #{stats.rank}위
+            </span>
           )}
         </div>
-        <div className="dt-card" style={{ padding: 24 }}>
-          <div className="dt-label" style={{ marginBottom: 6 }}>{t('Accuracy')}</div>
-          <div className="dt-display dt-mono dt-tabular">{result.acc.toFixed(1)}<span style={{ fontSize: 22, color: 'var(--dt-text-2)' }}>%</span></div>
-          <div className="dt-caption" style={{ marginTop: 8 }}>{result.errors} {t('mistakes corrected')}</div>
-        </div>
-        <div className="dt-card" style={{ padding: 24 }}>
-          <div className="dt-label" style={{ marginBottom: 6 }}>{t('Time')}</div>
-          <div className="dt-display dt-mono dt-tabular">{(result.elapsed / 1000).toFixed(1)}<span style={{ fontSize: 22, color: 'var(--dt-text-2)' }}>s</span></div>
-          <div className="dt-caption" style={{ marginTop: 8 }}>{snippet.content.length} {t('chars typed')}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}>{t('Change settings')}</button>
+          <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={onNext}><IconRefresh size={14} /> {t('New snippet')}</button>
         </div>
       </div>
-      {avgWpm > 0 && (
-        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 24 }}>
-          <div style={{ padding: '16px 24px', borderBottom: '0.5px solid var(--dt-border)' }}>
-            <span className="dt-h3" style={{ margin: 0 }}>{t('How you compare')}</span>
+
+      {/* Stats — 5개 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 20 }}>
+        <StatCard label="WPM" value={result.wpm} sub={avgWpm > 0 ? `avg ${avgWpm}` : undefined} accent />
+        <StatCard label="Raw WPM" value={result.rawWpm} />
+        <StatCard label="Accuracy" value={`${result.acc.toFixed(1)}%`} sub={`${result.errors} errors`} />
+        <StatCard label="Longest Combo" value={result.longestCombo} sub="chars" />
+        <StatCard label="Time" value={`${(result.elapsed / 1000).toFixed(1)}s`} sub={`${snippet.content.length} chars`} />
+      </div>
+
+      {/* WPM Graph */}
+      {(stats?.wpmGraph.length ?? 0) > 0 && (
+        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span className="dt-h3" style={{ margin: 0 }}>WPM Graph</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dt-text-3)' }}>
+                <span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--dt-primary)', borderRadius: 1 }} /> WPM
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dt-text-3)' }}>
+                <span style={{ color: 'var(--dt-error)', fontWeight: 700, fontSize: 12 }}>✕</span> Typo
+              </span>
+            </div>
           </div>
-          <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-            <ComparisonBar label={t('You')} value={result.wpm} max={barMax} color="var(--dt-primary)" />
-            <ComparisonBar label={t('Snippet average')} value={avgWpm} max={barMax} color="var(--dt-text-3)" />
+          <div style={{ padding: '16px 20px' }}>
+            <WpmGraph data={stats!.wpmGraph} typoMarkers={typoMarkers} height={100} />
           </div>
         </div>
       )}
-      {/* WPM 그래프 */}
-      {stats && stats.wpmGraph.length > 0 && (
-        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 24 }}>
-          <div style={{ padding: '16px 24px', borderBottom: '0.5px solid var(--dt-border)' }}>
-            <span className="dt-h3" style={{ margin: 0 }}>WPM Graph</span>
+
+      {/* Typo Heatmap + Inline Replay */}
+      <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+        <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="dt-h3" style={{ margin: 0 }}>Typo Analysis</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+            <span style={{ display: 'inline-block', width: 10, height: 10, background: 'rgba(220,38,38,0.3)', borderRadius: 2, border: '1px solid rgba(220,38,38,0.5)' }} />
+            <span style={{ color: 'var(--dt-text-3)' }}>오타 위치</span>
+          </span>
+        </div>
+        <div style={{ padding: '16px 20px' }}>
+          <TypoHeatmap content={snippet.content} typos={result.typos} replayData={result.replayData} />
+        </div>
+      </div>
+
+      {/* Typo List */}
+      {result.typos.length > 0 && (
+        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
+            <span className="dt-h3" style={{ margin: 0 }}>Typos ({result.typos.length})</span>
           </div>
-          <div style={{ padding: '20px 24px' }}>
-            <WpmGraph data={stats.wpmGraph} height={80} />
+          <div style={{ padding: '8px 20px', display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 140, overflowY: 'auto' }}>
+            {result.typos.map((typo, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: 'var(--dt-hover)', borderRadius: 4, fontFamily: 'var(--dt-font-mono)', fontSize: 12 }}>
+                <span style={{ color: 'var(--dt-text-3)', fontSize: 10 }}>#{typo.index}</span>
+                <span style={{ color: 'var(--dt-error)', textDecoration: 'line-through' }}>{typo.expected === ' ' ? '·' : typo.expected}</span>
+                <span style={{ color: 'var(--dt-text-3)' }}>→</span>
+                <span style={{ color: 'var(--dt-text-2)' }}>{typo.typed === ' ' ? '·' : typo.typed}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* Best / Worst Words */}
       {stats && (stats.wordStats.bestWords.length > 0 || stats.wordStats.worstWords.length > 0) && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           {stats.wordStats.bestWords.length > 0 && (
-            <div className="dt-card" style={{ padding: 20 }}>
-              <div className="dt-label" style={{ marginBottom: 10, color: 'var(--dt-success)' }}>Best Words</div>
+            <div className="dt-card" style={{ padding: 16 }}>
+              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-success)', fontSize: 10 }}>Best Words</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.wordStats.bestWords.map((w) => (
-                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '3px 8px', background: 'color-mix(in oklab, var(--dt-success) 12%, transparent)', borderRadius: 4, color: 'var(--dt-success)' }}>{w}</span>
+                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-success) 12%, transparent)', borderRadius: 4, color: 'var(--dt-success)' }}>{w}</span>
                 ))}
               </div>
             </div>
           )}
           {stats.wordStats.worstWords.length > 0 && (
-            <div className="dt-card" style={{ padding: 20 }}>
-              <div className="dt-label" style={{ marginBottom: 10, color: 'var(--dt-error)' }}>Worst Words</div>
+            <div className="dt-card" style={{ padding: 16 }}>
+              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-error)', fontSize: 10 }}>Worst Words</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.wordStats.worstWords.map((w) => (
-                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '3px 8px', background: 'color-mix(in oklab, var(--dt-error) 12%, transparent)', borderRadius: 4, color: 'var(--dt-error)' }}>{w}</span>
+                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-error) 12%, transparent)', borderRadius: 4, color: 'var(--dt-error)' }}>{w}</span>
                 ))}
               </div>
             </div>
@@ -268,7 +290,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24 }}>
         <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change language / difficulty')}</button>
         <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
       </div>

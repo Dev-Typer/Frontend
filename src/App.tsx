@@ -14,6 +14,7 @@ import Ranking from '@/pages/Ranking';
 import MyPage from '@/pages/MyPage';
 import Login from '@/pages/Login';
 import SnippetRankingPage from '@/pages/ranking/SnippetRankingPage';
+import AdminSnippets from '@/pages/admin/AdminSnippets';
 
 const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const isLoggedIn = useUserStore((s) => s.isLoggedIn);
@@ -38,11 +39,11 @@ const AppRoutes = () => {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
-  const { isLoggedIn, setUser, clearUser, username } = useUserStore();
+  const { isLoggedIn, setUser, clearUser, username, role } = useUserStore();
 
   useEffect(() => {
     getMe()
-      .then((data) => setUser(data.userId, data.username))
+      .then((data) => setUser(data.userId, data.username, data.role))
       .catch(() => {});
   }, [setUser]);
 
@@ -74,6 +75,9 @@ const AppRoutes = () => {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/mypage" element={<AuthGuard><MyPage /></AuthGuard>} />
       <Route path="/login" element={<Login />} />
+      <Route path="/admin/snippets" element={
+        role === 'ADMIN' ? <AdminSnippets /> : <Navigate to="/" replace />
+      } />
       <Route path="/snippets/:id/ranking" element={<SnippetRankingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -81,7 +85,7 @@ const AppRoutes = () => {
 
   if (design === 'editor') {
     return (
-      <EditorShell me={me} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
+      <EditorShell me={me} isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
         {routes}
       </EditorShell>
     );

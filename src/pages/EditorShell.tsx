@@ -7,13 +7,20 @@ import { IconSun, IconMoon, GithubMark } from '@/components/icons/Icons';
 import type { User } from '@/types';
 
 const ROUTE_TO_FILE: Record<string, string> = {
-  '':        'README.md',
-  'solo':    'solo.ts',
-  'battle':  'battle.ts',
-  'daily':   'daily.ts',
-  'ranking': 'ranking.sql',
-  'mypage':  'profile.tsx',
+  '':               'README.md',
+  'solo':           'solo.ts',
+  'battle':         'battle.ts',
+  'daily':          'daily.ts',
+  'ranking':        'ranking.sql',
+  'mypage':         'profile.tsx',
+  'admin/snippets': 'snippets.ts',
 };
+
+const ADMIN_TREE = [
+  { type: 'folder' as const, name: 'admin', children: [
+    { type: 'file' as const, name: 'snippets.ts', route: 'admin/snippets' },
+  ]},
+];
 
 const EDITOR_TREE = [
   { type: 'file' as const,   name: 'README.md',   route: '' },
@@ -111,13 +118,14 @@ interface ShellSidebarProps {
   activeFile: string;
   me: User;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   onLogin: () => void;
   onLogout: () => void;
   theme: string;
   onTheme: () => void;
 }
 
-const ShellSidebar = ({ activeFile, me, isLoggedIn, onLogin, onLogout, theme, onTheme }: ShellSidebarProps) => {
+const ShellSidebar = ({ activeFile, me, isLoggedIn, isAdmin, onLogin, onLogout, theme, onTheme }: ShellSidebarProps) => {
   const t = useT();
   const navigate = useNavigate();
   return (
@@ -143,6 +151,14 @@ const ShellSidebar = ({ activeFile, me, isLoggedIn, onLogin, onLogout, theme, on
         {EDITOR_TREE.map((n, i) => (
           <ShellNode key={i} node={n} depth={0} activeFile={activeFile} />
         ))}
+        {isAdmin && (
+          <>
+            <div style={{ height: '0.5px', background: 'var(--dt-border)', margin: '6px 8px' }} />
+            {ADMIN_TREE.map((n, i) => (
+              <ShellNode key={`admin-${i}`} node={n} depth={0} activeFile={activeFile} />
+            ))}
+          </>
+        )}
       </div>
 
       {/* User / login strip */}
@@ -258,6 +274,7 @@ const ShellStatusBar = ({ activeFile, me, isLoggedIn }: { activeFile: string; me
 interface Props {
   me: User;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   onLogin: () => void;
   onLogout: () => void;
   theme: string;
@@ -265,7 +282,7 @@ interface Props {
   children: ReactNode;
 }
 
-const EditorShell = ({ me, isLoggedIn, onLogin, onLogout, theme, onTheme, children }: Props) => {
+const EditorShell = ({ me, isLoggedIn, isAdmin, onLogin, onLogout, theme, onTheme, children }: Props) => {
   const location = useLocation();
   const route = location.pathname.slice(1);
   const activeFile = ROUTE_TO_FILE[route] || 'README.md';
@@ -296,6 +313,7 @@ const EditorShell = ({ me, isLoggedIn, onLogin, onLogout, theme, onTheme, childr
           activeFile={activeFile}
           me={me}
           isLoggedIn={isLoggedIn}
+          isAdmin={isAdmin}
           onLogin={onLogin}
           onLogout={onLogout}
           theme={theme}

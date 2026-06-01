@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 import { useUserStore } from '@/stores/userStore';
 
@@ -24,6 +24,7 @@ interface ApiResponse<T> {
 export interface MeResponse {
   userId: number;
   username: string;
+  role: 'USER' | 'ADMIN';
 }
 
 let isRefreshing = false;
@@ -43,17 +44,17 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // A: skipAuthRetry 플래그가 있으면 retry 없이 바로 reject
+    // A: skipAuthRetry ?뚮옒洹멸? ?덉쑝硫?retry ?놁씠 諛붾줈 reject
     if (original._skipAuthRetry) {
       return Promise.reject(error);
     }
 
-    // B: 로그인 상태가 아니면 retry 하지 않음
+    // B: 濡쒓렇???곹깭媛 ?꾨땲硫?retry ?섏? ?딆쓬
     if (!useUserStore.getState().isLoggedIn) {
       return Promise.reject(error);
     }
 
-    // refresh 엔드포인트 자체가 401이면 세션 종료
+    // refresh ?붾뱶?ъ씤???먯껜媛 401?대㈃ ?몄뀡 醫낅즺
     if (original.url?.includes('/api/auth/refresh')) {
       useUserStore.getState().clearUser();
       if (window.location.pathname !== '/login') {
@@ -82,7 +83,7 @@ api.interceptors.response.use(
     } catch (err) {
       processQueue(err);
       useUserStore.getState().clearUser();
-      // C: 이미 /login이면 리다이렉트 안 함
+      // C: ?대? /login?대㈃ 由щ떎?대젆??????
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
@@ -94,7 +95,7 @@ api.interceptors.response.use(
 );
 
 export const getMe = async (): Promise<MeResponse> => {
-  // A: 로그인 여부 확인용 요청 — 실패해도 retry 불필요
+  // A: 濡쒓렇???щ? ?뺤씤???붿껌 ???ㅽ뙣?대룄 retry 遺덊븘??
   const { data } = await api.get<ApiResponse<MeResponse>>('/api/auth/me', {
     _skipAuthRetry: true,
   } as AxiosRequestConfigWithRetry);

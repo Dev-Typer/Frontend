@@ -54,7 +54,7 @@ const AppRoutes = () => {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
-  const { isLoggedIn, setUser, clearUser, username } = useUserStore();
+  const { isLoggedIn, setUser, clearUser, username, role } = useUserStore();
 
   useEffect(() => {
     getMe()
@@ -97,7 +97,7 @@ const AppRoutes = () => {
 
   if (design === 'editor') {
     return (
-      <EditorShell me={me} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
+      <EditorShell me={me} isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
         {routes}
       </EditorShell>
     );

@@ -13,6 +13,7 @@ import Daily from '@/pages/Daily';
 import Ranking from '@/pages/Ranking';
 import MyPage from '@/pages/MyPage';
 import Login from '@/pages/Login';
+import SnippetRankingPage from '@/pages/ranking/SnippetRankingPage';
 
 const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const isLoggedIn = useUserStore((s) => s.isLoggedIn);
@@ -73,6 +74,7 @@ const AppRoutes = () => {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/mypage" element={<AuthGuard><MyPage /></AuthGuard>} />
       <Route path="/login" element={<Login />} />
+      <Route path="/snippets/:id/ranking" element={<SnippetRankingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

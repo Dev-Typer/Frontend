@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import type { TypingProgress, TypingResult } from '@/types';
+import type { TypingProgress, TypingResult, TypoData, ReplayEvent } from '@/types';
 
 interface Props {
   code: string;
@@ -31,10 +31,16 @@ const TypingEngine = ({
   const [finishedFlag, setFinishedFlag] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const finishedRef = useRef(false);
+  const typosRef = useRef<TypoData[]>([]);
+  const replayDataRef = useRef<ReplayEvent[]>([]);
+  const startedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     setTyped(''); setErrors(0); setStartedAt(null); setFinishedFlag(false);
     finishedRef.current = false;
+    typosRef.current = [];
+    replayDataRef.current = [];
+    startedAtRef.current = null;
   }, [resetKey, code]);
 
   useEffect(() => {
@@ -59,18 +65,35 @@ const TypingEngine = ({
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key.length > 1 && e.key !== 'Backspace' && e.key !== 'Enter' && e.key !== 'Tab') return;
     e.preventDefault();
-    if (!startedAt) setStartedAt(Date.now());
+
+    const now = Date.now();
+    if (!startedAtRef.current) {
+      startedAtRef.current = now;
+      setStartedAt(now);
+    }
+
     if (e.key === 'Backspace') { setTyped((t) => t.slice(0, -1)); return; }
+
     let inChar = e.key;
     if (e.key === 'Enter') inChar = '\n';
     if (e.key === 'Tab') inChar = '\t';
+
     setTyped((t) => {
       if (t.length >= code.length) return t;
       const expected = code[t.length];
-      if (inChar !== expected) queueMicrotask(() => setErrors((x) => x + 1));
+      const isCorrect = inChar === expected;
+      const timestamp = startedAtRef.current ? now - startedAtRef.current : 0;
+
+      replayDataRef.current.push({ index: t.length, char: inChar, timestamp, correct: isCorrect });
+
+      if (!isCorrect) {
+        queueMicrotask(() => setErrors((x) => x + 1));
+        typosRef.current.push({ index: t.length, expected, typed: inChar });
+      }
+
       return t + inChar;
     });
-  }, [active, startedAt, code]);
+  }, [active, code]);
 
   useEffect(() => {
     if (!active) return;
@@ -96,9 +119,20 @@ const TypingEngine = ({
       const finalElapsed = finalNow - startedAt;
       let finalCorrect = 0;
       for (let i = 0; i < typed.length; i++) if (typed[i] === code[i]) finalCorrect++;
-      const finalAcc = (finalCorrect / (finalCorrect + errors)) * 100;
+      const finalTotalKeys = finalCorrect + errors;
+      const finalAcc = finalTotalKeys > 0 ? (finalCorrect / finalTotalKeys) * 100 : 100;
       const finalWpm = Math.round((finalCorrect / 5) / (finalElapsed / 60000));
-      onFinish?.({ wpm: finalWpm, acc: finalAcc, elapsed: finalElapsed, errors });
+      const rawWpm = Math.round((replayDataRef.current.length / 5) / (finalElapsed / 60000));
+
+      onFinish?.({
+        wpm: finalWpm,
+        rawWpm,
+        acc: finalAcc,
+        elapsed: finalElapsed,
+        errors,
+        typos: [...typosRef.current],
+        replayData: [...replayDataRef.current],
+      });
     }
   }, [typed, code, startedAt, errors]);
 
@@ -131,7 +165,7 @@ const TypingEngine = ({
           if (isNewline) {
             return (
               <span key={i}>
-                <span className={cls}>{state === 'error' ? '↵' : ' '}</span>
+                <span className={cls}>{state === 'error' ? '↵' : ' '}</span>
                 {'\n'}
               </span>
             );

@@ -24,6 +24,7 @@ interface ApiResponse<T> {
 export interface MeResponse {
   userId: number;
   username: string;
+  role: 'USER' | 'ADMIN';
 }
 
 let isRefreshing = false;

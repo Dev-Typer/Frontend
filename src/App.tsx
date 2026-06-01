@@ -41,7 +41,7 @@ const AppRoutes = () => {
 
   useEffect(() => {
     getMe()
-      .then((data) => setUser(data.userId, data.username))
+      .then((data) => setUser(data.userId, data.username, data.role))
       .catch(() => {});
   }, [setUser]);
 

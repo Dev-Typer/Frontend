@@ -117,11 +117,27 @@ export interface TypingProgress {
   finished: boolean;
 }
 
+export interface TypoData {
+  index: number;
+  expected: string;
+  typed: string;
+}
+
+export interface ReplayEvent {
+  index: number;
+  char: string;
+  timestamp: number;
+  correct: boolean;
+}
+
 export interface TypingResult {
   wpm: number;
+  rawWpm: number;
   acc: number;
   elapsed: number;
   errors: number;
+  typos: TypoData[];
+  replayData: ReplayEvent[];
 }
 
 export interface Racer {

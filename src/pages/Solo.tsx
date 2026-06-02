@@ -10,7 +10,6 @@ import { getRandomSnippet, type Snippet, type SnippetLanguage, type SnippetDiffi
 import { saveSnippetResult, getSnippetResultStats, type SnippetResultResponse, type SnippetResultStats } from '@/apis/snippetResultApi';
 import WpmGraph from '@/components/WpmGraph';
 import TypoHeatmap from '@/components/TypoHeatmap';
-import DualLineChart from '@/components/charts/DualLineChart';
 
 type Phase = 'setup' | 'typing' | 'result';
 
@@ -202,17 +201,6 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
   }, [result]);
 
   // 2. 시간대별 정확도 (초당 누적 정확도)
-  const accuracyLine = useMemo(() => {
-    const totalSec = Math.ceil(result.elapsed / 1000);
-    return Array.from({ length: totalSec }, (_, i) => {
-      const sec = i + 1;
-      const events = result.replayData.filter((e) => e.timestamp <= sec * 1000);
-      if (!events.length) return 100;
-      const correct = events.filter((e) => e.correct).length;
-      return Math.round((correct / events.length) * 100);
-    });
-  }, [result]);
-
   // 3. 자주 틀린 글자 (expected 기준 top 10)
   const typoFreqBars = useMemo(() => {
     const freq = new Map<string, number>();
@@ -226,23 +214,6 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       .map(([label, value]) => ({ label, value, color: 'var(--dt-error)' }));
   }, [result]);
 
-  // 4. 타이핑 리듬 히스토그램 (IKI)
-  const ikiBars = useMemo(() => {
-    const intervals: number[] = [];
-    for (let i = 1; i < result.replayData.length; i++) {
-      const iki = result.replayData[i].timestamp - result.replayData[i - 1].timestamp;
-      if (iki >= 0 && iki < 2000) intervals.push(iki);
-    }
-    if (!intervals.length) return [];
-    // 0~50, 50~100, ..., 450~500, 500+ ms 구간
-    const buckets = Array.from({ length: 11 }, (_, i) => ({ label: i < 10 ? `${i * 50}` : '500+', value: 0 }));
-    intervals.forEach((iki) => {
-      const idx = Math.min(Math.floor(iki / 50), 10);
-      buckets[idx].value++;
-    });
-    const avgIki = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
-    return { buckets, avgIki, medianIki: intervals.sort((a, b) => a - b)[Math.floor(intervals.length / 2)] };
-  }, [result]);
 
   return (
     <div>
@@ -271,119 +242,44 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         <StatCard label="소요 시간" value={`${(result.elapsed / 1000).toFixed(1)}s`} sub={`${snippet.content.length}자`} />
       </div>
 
-      {/* WPM Graph */}
-      {(stats?.wpmGraph.length ?? 0) > 0 && (
+      {/* 메인 타수 그래프 — WPM + 총타수 + 오타 마커 통합 */}
+      {(stats?.wpmGraph.length ?? 0) > 1 && (
         <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
             <span className="dt-h3" style={{ margin: 0 }}>타수 그래프</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dt-text-3)' }}>
-                <span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--dt-primary)', borderRadius: 1 }} /> WPM
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dt-text-3)' }}>
-                <span style={{ color: 'var(--dt-error)', fontWeight: 700, fontSize: 12 }}>✕</span> Typo
-              </span>
-            </div>
           </div>
-          <div style={{ padding: '16px 20px' }}>
-            <WpmGraph data={stats!.wpmGraph} typoMarkers={typoMarkers} height={100} />
+          <div style={{ padding: '16px 20px 12px' }}>
+            <WpmGraph
+              wpmData={stats!.wpmGraph}
+              rawWpmData={dualWpmData.rawLine}
+              typoMarkers={typoMarkers}
+              height={140}
+            />
           </div>
         </div>
       )}
 
-      {/* Raw WPM vs WPM + Accuracy 비교 */}
-      {dualWpmData.wpmLine.length > 1 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-              <span className="dt-h3" style={{ margin: 0 }}>순타수 vs 총타수</span>
-            </div>
-            <div style={{ padding: '14px 20px' }}>
-              <DualLineChart
-                height={90}
-                unit=" wpm"
-                series={[
-                  { label: '순타수', data: dualWpmData.wpmLine, color: 'var(--dt-primary)' },
-                  { label: 'Raw', data: dualWpmData.rawLine, color: 'var(--dt-text-3)' },
-                ]}
-              />
-            </div>
+      {/* 자주 틀린 글자 */}
+      {typoFreqBars.length > 0 && (
+        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
+            <span className="dt-h3" style={{ margin: 0 }}>자주 틀린 글자</span>
           </div>
-          <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-              <span className="dt-h3" style={{ margin: 0 }}>시간대별 정확도</span>
-            </div>
-            <div style={{ padding: '14px 20px' }}>
-              <DualLineChart
-                height={90}
-                unit="%"
-                series={[
-                  { label: '정확도', data: accuracyLine, color: 'var(--dt-warning)' },
-                ]}
-              />
-            </div>
+          <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {typoFreqBars.slice(0, 8).map((bar, i) => {
+              const pct = (bar.value / typoFreqBars[0].value) * 100;
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="dt-mono" style={{ width: 28, fontSize: 11, color: 'var(--dt-text-3)', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                  <span className="dt-mono" style={{ width: 32, fontSize: 14, color: 'var(--dt-error)', fontWeight: 700, flexShrink: 0 }}>{bar.label}</span>
+                  <div style={{ flex: 1, height: 6, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: 'var(--dt-error)', borderRadius: 999, opacity: 0.65 }} />
+                  </div>
+                  <span className="dt-mono" style={{ width: 32, fontSize: 12, textAlign: 'right', color: 'var(--dt-text-3)', flexShrink: 0 }}>{bar.value}회</span>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      )}
-
-      {/* 자주 틀린 글자 + IKI */}
-      {(typoFreqBars.length > 0 || (!Array.isArray(ikiBars) && ikiBars.avgIki > 0)) && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-
-          {/* 오타 문자 — 순위 리스트 */}
-          {typoFreqBars.length > 0 && (
-            <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-                <span className="dt-h3" style={{ margin: 0 }}>자주 틀린 글자</span>
-              </div>
-              <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {typoFreqBars.slice(0, 8).map((bar, i) => {
-                  const pct = (bar.value / typoFreqBars[0].value) * 100;
-                  return (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span className="dt-mono" style={{ width: 28, fontSize: 12, color: 'var(--dt-text-3)', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
-                      <span className="dt-mono" style={{ width: 36, fontSize: 13, color: 'var(--dt-error)', fontWeight: 600, flexShrink: 0 }}>{bar.label}</span>
-                      <div style={{ flex: 1, height: 6, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--dt-error)', borderRadius: 999, opacity: 0.7 }} />
-                      </div>
-                      <span className="dt-mono dt-caption" style={{ width: 28, textAlign: 'right', flexShrink: 0 }}>{bar.value}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* IKI — 수치 + 라인 분포 */}
-          {!Array.isArray(ikiBars) && ikiBars.avgIki > 0 && (
-            <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-                <span className="dt-h3" style={{ margin: 0 }}>타이핑 리듬</span>
-              </div>
-              <div style={{ padding: '14px 20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>평균</div>
-                    <div className="dt-mono" style={{ fontSize: 24, fontWeight: 600, color: 'var(--dt-info)' }}>{ikiBars.avgIki}<span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 2 }}>ms</span></div>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>중간값</div>
-                    <div className="dt-mono" style={{ fontSize: 24, fontWeight: 600, color: 'var(--dt-text-2)' }}>{ikiBars.medianIki}<span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 2 }}>ms</span></div>
-                  </div>
-                </div>
-                <DualLineChart
-                  height={60}
-                  unit="회"
-                  series={[{ label: '타이핑 분포', data: ikiBars.buckets.map((b) => b.value), color: 'var(--dt-info)' }]}
-                  labels={ikiBars.buckets.map((b) => b.label)}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                  <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)' }}>0ms</span>
-                  <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)' }}>500ms+</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

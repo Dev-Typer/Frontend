@@ -248,12 +248,11 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
             <span className="dt-h3" style={{ margin: 0 }}>타수 그래프</span>
           </div>
-          <div style={{ padding: '12px 24px 20px' }}>
+          <div style={{ padding: '8px 20px 16px' }}>
             <WpmGraph
               wpmData={stats!.wpmGraph}
               rawWpmData={dualWpmData.rawLine}
               typoMarkers={typoMarkers}
-              height={220}
             />
           </div>
         </div>

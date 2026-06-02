@@ -3,135 +3,166 @@ interface TypoMarker { second: number }
 
 interface Props {
   wpmData: WpmPoint[];
-  rawWpmData?: number[];       // 초당 총타수 배열 (wpmData와 같은 길이)
+  rawWpmData?: number[];
   typoMarkers?: TypoMarker[];
-  height?: number;
 }
 
-const WpmGraph = ({ wpmData, rawWpmData = [], typoMarkers = [], height = 140 }: Props) => {
+const W = 900;
+const H = 260;
+const PAD = { t: 20, b: 36, l: 48, r: 20 };
+const IW = W - PAD.l - PAD.r;
+const IH = H - PAD.t - PAD.b;
+
+const WpmGraph = ({ wpmData, rawWpmData = [], typoMarkers = [] }: Props) => {
   if (!wpmData.length) return null;
 
   const n = wpmData.length;
-  const allVals = [
-    ...wpmData.map((d) => d.wpm),
-    ...rawWpmData,
+  const allVals = [...wpmData.map((d) => d.wpm), ...rawWpmData, 0];
+  const maxVal = Math.max(...allVals) * 1.12;
+
+  const cx = (i: number) => PAD.l + ((i + 0.5) / n) * IW;
+  const cy = (v: number) => PAD.t + IH - (v / maxVal) * IH;
+
+  // y 눈금 4개
+  const yTicks = [0, 1, 2, 3].map((i) => Math.round((maxVal / 3) * i));
+
+  // 경로 생성 (smooth curve)
+  const smoothPath = (pts: [number, number][]) => {
+    if (pts.length < 2) return '';
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const cp1x = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * 0.4;
+      const cp2x = pts[i][0] - (pts[i][0] - pts[i - 1][0]) * 0.4;
+      d += ` C ${cp1x} ${pts[i - 1][1]}, ${cp2x} ${pts[i][1]}, ${pts[i][0]} ${pts[i][1]}`;
+    }
+    return d;
+  };
+
+  const wpmPts = wpmData.map((d, i): [number, number] => [cx(i), cy(d.wpm)]);
+  const rawPts = rawWpmData.map((v, i): [number, number] => [cx(i), cy(v)]);
+  const wpmPath = smoothPath(wpmPts);
+  const rawPath = smoothPath(rawPts);
+
+  const fillPts = [
+    [PAD.l, H - PAD.b] as [number, number],
+    ...wpmPts,
+    [cx(n - 1), H - PAD.b] as [number, number],
   ];
-  const maxVal = Math.max(...allVals, 1);
-  const pad = { t: 8, b: 24, l: 36, r: 8 };
-  const W = 100;
-  const H = height;
-  const innerW = W - pad.l - pad.r;
-  const innerH = H - pad.t - pad.b;
+  const fillPath = `M ${fillPts.map(([x, y]) => `${x},${y}`).join(' L ')} Z`;
 
-  const toX = (i: number) => pad.l + ((i + 0.5) / n) * innerW;
-  const toY = (v: number) => pad.t + innerH - (v / maxVal) * innerH;
-
-  const wpmPts  = wpmData.map((d, i) => `${toX(i)},${toY(d.wpm)}`).join(' ');
-  const rawPts  = rawWpmData.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
-  const fillPts = `${pad.l},${H - pad.b} ${wpmPts} ${toX(n - 1)},${H - pad.b}`;
-
-  // y축 눈금
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((r) => Math.round(maxVal * r));
+  // x축 레이블 — 최대 8개
+  const xStep = Math.max(1, Math.floor(n / 8));
+  const xLabels = wpmData.filter((_, i) => i === 0 || (i + 1) % xStep === 0 || i === n - 1);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height }}>
+    <div style={{ width: '100%' }}>
       <svg
-        width="100%"
-        height={height}
         viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
-        style={{ overflow: 'visible' }}
+        width="100%"
+        height="auto"
+        style={{ display: 'block', overflow: 'visible' }}
       >
         <defs>
-          <linearGradient id="wg-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.18" />
+          <linearGradient id="wg-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.22" />
             <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* y축 그리드 + 레이블 */}
+        {/* Y축 그리드 + 레이블 */}
         {yTicks.map((val, i) => {
-          const y = toY(val);
+          const y = cy(val);
           return (
             <g key={i}>
-              <line x1={pad.l} x2={W - pad.r} y1={y} y2={y}
-                stroke="var(--dt-border)" strokeWidth="0.4" strokeDasharray={i === 0 ? '0' : '1.5,1.5'} />
-              <text x={pad.l - 2} y={y + 1} fontSize="3.5" fill="var(--dt-text-3)"
-                textAnchor="end" dominantBaseline="middle">{val}</text>
+              <line
+                x1={PAD.l} y1={y} x2={W - PAD.r} y2={y}
+                stroke="var(--dt-border)"
+                strokeWidth={i === 0 ? 1 : 0.6}
+                strokeDasharray={i === 0 ? undefined : '4,3'}
+              />
+              <text
+                x={PAD.l - 8} y={y}
+                fontSize="12" fill="var(--dt-text-3)"
+                textAnchor="end" dominantBaseline="middle"
+                fontFamily="var(--dt-font-mono)"
+              >
+                {val}
+              </text>
             </g>
           );
         })}
 
-        {/* x축 레이블 (초) */}
-        {wpmData.filter((_, i) => i % Math.max(1, Math.floor(n / 8)) === 0).map((d) => {
+        {/* X축 */}
+        <line x1={PAD.l} y1={H - PAD.b} x2={W - PAD.r} y2={H - PAD.b} stroke="var(--dt-border)" strokeWidth="1" />
+
+        {/* X축 레이블 */}
+        {xLabels.map((d) => {
           const i = wpmData.indexOf(d);
           return (
-            <text key={i} x={toX(i)} y={H - pad.b + 6} fontSize="3.5"
-              fill="var(--dt-text-3)" textAnchor="middle">{d.second}s</text>
+            <text
+              key={i}
+              x={cx(i)} y={H - PAD.b + 16}
+              fontSize="11" fill="var(--dt-text-3)"
+              textAnchor="middle"
+              fontFamily="var(--dt-font-mono)"
+            >
+              {d.second}s
+            </text>
           );
         })}
 
-        {/* Raw WPM 선 (흐릿하게) */}
-        {rawWpmData.length > 0 && (
-          <polyline
-            points={rawPts}
-            fill="none"
-            stroke="var(--dt-text-3)"
-            strokeWidth="0.8"
-            strokeLinejoin="round"
-            opacity="0.5"
-          />
+        {/* Raw WPM 영역 (흐리게) */}
+        {rawPts.length > 1 && (
+          <path d={rawPath} fill="none" stroke="var(--dt-text-3)" strokeWidth="1.5" opacity="0.4" strokeLinejoin="round" />
         )}
 
-        {/* WPM fill */}
-        <polygon points={fillPts} fill="url(#wg-fill)" />
+        {/* WPM 채우기 */}
+        <path d={fillPath} fill="url(#wg-area)" />
 
         {/* WPM 선 */}
-        <polyline
-          points={wpmPts}
-          fill="none"
-          stroke="var(--dt-primary)"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
+        <path d={wpmPath} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinejoin="round" />
+
+        {/* Raw WPM 점 */}
+        {rawPts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="3" fill="var(--dt-surface)" stroke="var(--dt-text-3)" strokeWidth="1.5" opacity="0.6" />
+        ))}
 
         {/* WPM 점 */}
-        {wpmData.map((d, i) => (
-          <circle key={i} cx={toX(i)} cy={toY(d.wpm)} r="1.2"
-            fill="var(--dt-primary)" />
+        {wpmPts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="4" fill="var(--dt-primary)" stroke="var(--dt-surface)" strokeWidth="2" />
         ))}
 
         {/* 오타 X 마커 */}
         {typoMarkers.map((m, i) => {
           const idx = Math.min(m.second - 1, n - 1);
           if (idx < 0) return null;
-          const cx = toX(idx);
-          const cy = toY(wpmData[idx]?.wpm ?? 0);
-          const s = 2;
+          const [x, y] = wpmPts[idx];
+          const s = 6;
           return (
             <g key={i}>
-              <line x1={cx - s} y1={cy - s} x2={cx + s} y2={cy + s}
-                stroke="var(--dt-error)" strokeWidth="1.4" strokeLinecap="round" />
-              <line x1={cx + s} y1={cy - s} x2={cx - s} y2={cy + s}
-                stroke="var(--dt-error)" strokeWidth="1.4" strokeLinecap="round" />
+              <circle cx={x} cy={y} r="9" fill="rgba(220,38,38,0.12)" />
+              <line x1={x - s} y1={y - s} x2={x + s} y2={y + s} stroke="var(--dt-error)" strokeWidth="2" strokeLinecap="round" />
+              <line x1={x + s} y1={y - s} x2={x - s} y2={y + s} stroke="var(--dt-error)" strokeWidth="2" strokeLinecap="round" />
             </g>
           );
         })}
       </svg>
 
       {/* 범례 */}
-      <div style={{ position: 'absolute', top: 4, right: 8, display: 'flex', gap: 10 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)' }}>
-          <span style={{ display: 'inline-block', width: 14, height: 2, background: 'var(--dt-primary)', borderRadius: 1 }} />WPM
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end', marginTop: 6 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)' }}>
+          <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--dt-primary)" strokeWidth="2.5" /><circle cx="12" cy="5" r="3.5" fill="var(--dt-primary)" /></svg>
+          WPM
         </span>
         {rawWpmData.length > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)' }}>
-            <span style={{ display: 'inline-block', width: 14, height: 2, background: 'var(--dt-text-3)', borderRadius: 1, opacity: 0.5 }} />총타수
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)' }}>
+            <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--dt-text-3)" strokeWidth="1.5" opacity="0.5" /></svg>
+            총타수
           </span>
         )}
         {typoMarkers.length > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--dt-error)', fontFamily: 'var(--dt-font-mono)' }}>
-            <span style={{ fontWeight: 700 }}>✕</span>오타
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--dt-error)', fontFamily: 'var(--dt-font-mono)' }}>
+            <span style={{ fontWeight: 700, fontSize: 13 }}>✕</span>오타
           </span>
         )}
       </div>

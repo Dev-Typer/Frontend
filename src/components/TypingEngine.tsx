@@ -30,8 +30,10 @@ const TypingEngine = ({
   const [now, setNow] = useState(Date.now());
   const [finishedFlag, setFinishedFlag] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const finishedRef = useRef(false);
-  const typosRef = useRef<TypoData[]>([]);
+  const finishedRef  = useRef(false);
+  const typedRef     = useRef('');          // side effect용 현재 typed 추적 (Strict Mode 이중 실행 방지)
+  const errorsRef    = useRef(0);
+  const typosRef     = useRef<TypoData[]>([]);
   const replayDataRef = useRef<ReplayEvent[]>([]);
   const startedAtRef = useRef<number | null>(null);
   const currentComboRef = useRef(0);
@@ -40,6 +42,8 @@ const TypingEngine = ({
   useEffect(() => {
     setTyped(''); setErrors(0); setStartedAt(null); setFinishedFlag(false);
     finishedRef.current = false;
+    typedRef.current = '';
+    errorsRef.current = 0;
     typosRef.current = [];
     replayDataRef.current = [];
     startedAtRef.current = null;
@@ -76,33 +80,41 @@ const TypingEngine = ({
       setStartedAt(now);
     }
 
-    if (e.key === 'Backspace') { setTyped((t) => t.slice(0, -1)); return; }
+    if (e.key === 'Backspace') {
+      typedRef.current = typedRef.current.slice(0, -1);
+      setTyped(typedRef.current);
+      return;
+    }
 
     let inChar = e.key;
     if (e.key === 'Enter') inChar = '\n';
-    if (e.key === 'Tab') inChar = '\t';
+    if (e.key === 'Tab')   inChar = '\t';
 
-    setTyped((t) => {
-      if (t.length >= code.length) return t;
-      const expected = code[t.length];
-      const isCorrect = inChar === expected;
-      const timestamp = startedAtRef.current ? now - startedAtRef.current : 0;
+    // 범위 초과 방지
+    if (typedRef.current.length >= code.length) return;
 
-      replayDataRef.current.push({ index: t.length, char: inChar, timestamp, correct: isCorrect });
+    const idx = typedRef.current.length;
+    const expected = code[idx];
+    const isCorrect = inChar === expected;
+    const timestamp = startedAtRef.current ? now - startedAtRef.current : 0;
 
-      if (isCorrect) {
-        currentComboRef.current += 1;
-        if (currentComboRef.current > longestComboRef.current) {
-          longestComboRef.current = currentComboRef.current;
-        }
-      } else {
-        currentComboRef.current = 0;
-        queueMicrotask(() => setErrors((x) => x + 1));
-        typosRef.current.push({ index: t.length, expected, typed: inChar });
+    // --- side effect: ref에만 기록 (setTyped 밖에서 실행 → Strict Mode 이중 호출 없음) ---
+    replayDataRef.current.push({ index: idx, char: inChar, timestamp, correct: isCorrect });
+
+    if (isCorrect) {
+      currentComboRef.current += 1;
+      if (currentComboRef.current > longestComboRef.current) {
+        longestComboRef.current = currentComboRef.current;
       }
+    } else {
+      currentComboRef.current = 0;
+      typosRef.current.push({ index: idx, expected, typed: inChar });
+      errorsRef.current += 1;
+      setErrors(errorsRef.current);
+    }
 
-      return t + inChar;
-    });
+    typedRef.current = typedRef.current + inChar;
+    setTyped(typedRef.current);
   }, [active, code]);
 
   useEffect(() => {
@@ -129,7 +141,7 @@ const TypingEngine = ({
       const finalElapsed = finalNow - startedAt;
       let finalCorrect = 0;
       for (let i = 0; i < typed.length; i++) if (typed[i] === code[i]) finalCorrect++;
-      const finalTotalKeys = finalCorrect + errors;
+      const finalTotalKeys = finalCorrect + errorsRef.current;
       const finalAcc = finalTotalKeys > 0 ? (finalCorrect / finalTotalKeys) * 100 : 100;
       const finalWpm = Math.round((finalCorrect / 5) / (finalElapsed / 60000));
       const rawWpm = Math.round((replayDataRef.current.length / 5) / (finalElapsed / 60000));
@@ -139,13 +151,13 @@ const TypingEngine = ({
         rawWpm,
         acc: finalAcc,
         elapsed: finalElapsed,
-        errors,
+        errors: errorsRef.current,
         longestCombo: longestComboRef.current,
         typos: [...typosRef.current],
         replayData: [...replayDataRef.current],
       });
     }
-  }, [typed, code, startedAt, errors]);
+  }, [typed, code, startedAt]);
 
   const cells = useMemo(() => {
     const out = [];

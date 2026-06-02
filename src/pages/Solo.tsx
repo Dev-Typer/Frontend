@@ -201,7 +201,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
     return { wpmLine, rawLine };
   }, [result]);
 
-  // 2. 정확도 추이 (초당 누적 정확도)
+  // 2. 시간대별 정확도 (초당 누적 정확도)
   const accuracyLine = useMemo(() => {
     const totalSec = Math.ceil(result.elapsed / 1000);
     return Array.from({ length: totalSec }, (_, i) => {
@@ -213,7 +213,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
     });
   }, [result]);
 
-  // 3. 오타 문자 빈도 (expected 기준 top 10)
+  // 3. 자주 틀린 글자 (expected 기준 top 10)
   const typoFreqBars = useMemo(() => {
     const freq = new Map<string, number>();
     result.typos.forEach((t) => {
@@ -226,7 +226,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       .map(([label, value]) => ({ label, value, color: 'var(--dt-error)' }));
   }, [result]);
 
-  // 4. 키 반응 시간 히스토그램 (IKI)
+  // 4. 타이핑 리듬 히스토그램 (IKI)
   const ikiBars = useMemo(() => {
     const intervals: number[] = [];
     for (let i = 1; i < result.replayData.length; i++) {
@@ -264,18 +264,18 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
 
       {/* Stats — 5개 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 20 }}>
-        <StatCard label="WPM" value={result.wpm} sub={avgWpm > 0 ? `avg ${avgWpm}` : undefined} accent />
-        <StatCard label="Raw WPM" value={result.rawWpm} />
-        <StatCard label="Accuracy" value={`${result.acc.toFixed(1)}%`} sub={`${result.errors} errors`} />
-        <StatCard label="Longest Combo" value={result.longestCombo} sub="chars" />
-        <StatCard label="Time" value={`${(result.elapsed / 1000).toFixed(1)}s`} sub={`${snippet.content.length} chars`} />
+        <StatCard label="WPM" value={result.wpm} sub={avgWpm > 0 ? `평균 ${avgWpm}` : undefined} accent />
+        <StatCard label="총 타수" value={result.rawWpm} />
+        <StatCard label="정확도" value={`${result.acc.toFixed(1)}%`} sub={`${result.errors}회 오타`} />
+        <StatCard label="최장 연속 정타" value={result.longestCombo} sub="글자" />
+        <StatCard label="소요 시간" value={`${(result.elapsed / 1000).toFixed(1)}s`} sub={`${snippet.content.length}자`} />
       </div>
 
       {/* WPM Graph */}
       {(stats?.wpmGraph.length ?? 0) > 0 && (
         <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
           <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span className="dt-h3" style={{ margin: 0 }}>WPM 그래프</span>
+            <span className="dt-h3" style={{ margin: 0 }}>타수 그래프</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dt-text-3)' }}>
                 <span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--dt-primary)', borderRadius: 1 }} /> WPM
@@ -296,14 +296,14 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-              <span className="dt-h3" style={{ margin: 0 }}>WPM vs 원시 WPM</span>
+              <span className="dt-h3" style={{ margin: 0 }}>순타수 vs 총타수</span>
             </div>
             <div style={{ padding: '14px 20px' }}>
               <DualLineChart
                 height={90}
                 unit=" wpm"
                 series={[
-                  { label: 'WPM', data: dualWpmData.wpmLine, color: 'var(--dt-primary)' },
+                  { label: '순타수', data: dualWpmData.wpmLine, color: 'var(--dt-primary)' },
                   { label: 'Raw', data: dualWpmData.rawLine, color: 'var(--dt-text-3)' },
                 ]}
               />
@@ -311,14 +311,14 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           </div>
           <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-              <span className="dt-h3" style={{ margin: 0 }}>정확도 추이</span>
+              <span className="dt-h3" style={{ margin: 0 }}>시간대별 정확도</span>
             </div>
             <div style={{ padding: '14px 20px' }}>
               <DualLineChart
                 height={90}
                 unit="%"
                 series={[
-                  { label: 'Accuracy', data: accuracyLine, color: 'var(--dt-warning)' },
+                  { label: '정확도', data: accuracyLine, color: 'var(--dt-warning)' },
                 ]}
               />
             </div>
@@ -326,7 +326,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         </div>
       )}
 
-      {/* 오타 문자 빈도 + IKI */}
+      {/* 자주 틀린 글자 + IKI */}
       {(typoFreqBars.length > 0 || (!Array.isArray(ikiBars) && ikiBars.avgIki > 0)) && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
 
@@ -334,7 +334,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           {typoFreqBars.length > 0 && (
             <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-                <span className="dt-h3" style={{ margin: 0 }}>오타 문자 빈도</span>
+                <span className="dt-h3" style={{ margin: 0 }}>자주 틀린 글자</span>
               </div>
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {typoFreqBars.slice(0, 8).map((bar, i) => {
@@ -358,16 +358,16 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           {!Array.isArray(ikiBars) && ikiBars.avgIki > 0 && (
             <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-                <span className="dt-h3" style={{ margin: 0 }}>키 반응 시간</span>
+                <span className="dt-h3" style={{ margin: 0 }}>타이핑 리듬</span>
               </div>
               <div style={{ padding: '14px 20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                   <div style={{ textAlign: 'center' }}>
-                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>avg</div>
+                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>평균</div>
                     <div className="dt-mono" style={{ fontSize: 24, fontWeight: 600, color: 'var(--dt-info)' }}>{ikiBars.avgIki}<span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 2 }}>ms</span></div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>median</div>
+                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>중간값</div>
                     <div className="dt-mono" style={{ fontSize: 24, fontWeight: 600, color: 'var(--dt-text-2)' }}>{ikiBars.medianIki}<span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 2 }}>ms</span></div>
                   </div>
                 </div>
@@ -390,7 +390,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       {/* Typo Heatmap + Inline Replay */}
       <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
         <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="dt-h3" style={{ margin: 0 }}>오타 분석 + 리플레이</span>
+          <span className="dt-h3" style={{ margin: 0 }}>오타 위치 분석</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
             <span style={{ display: 'inline-block', width: 10, height: 10, background: 'rgba(220,38,38,0.3)', borderRadius: 2, border: '1px solid rgba(220,38,38,0.5)' }} />
             <span style={{ color: 'var(--dt-text-3)' }}>오타 위치</span>
@@ -405,7 +405,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       {result.typos.length > 0 && (
         <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
           <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-            <span className="dt-h3" style={{ margin: 0 }}>Typos ({result.typos.length})</span>
+            <span className="dt-h3" style={{ margin: 0 }}>오타 목록 ({result.typos.length}개)</span>
           </div>
           <div style={{ padding: '8px 20px', display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 140, overflowY: 'auto' }}>
             {result.typos.map((typo, i) => (
@@ -425,7 +425,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           {stats.wordStats.bestWords.length > 0 && (
             <div className="dt-card" style={{ padding: 16 }}>
-              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-success)', fontSize: 10 }}>빠른 단어</div>
+              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-success)', fontSize: 10 }}>잘 치는 단어</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.wordStats.bestWords.map((w) => (
                   <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-success) 12%, transparent)', borderRadius: 4, color: 'var(--dt-success)' }}>{w}</span>
@@ -435,7 +435,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           )}
           {stats.wordStats.worstWords.length > 0 && (
             <div className="dt-card" style={{ padding: 16 }}>
-              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-error)', fontSize: 10 }}>느린 단어</div>
+              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-error)', fontSize: 10 }}>막히는 단어</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.wordStats.worstWords.map((w) => (
                   <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-error) 12%, transparent)', borderRadius: 4, color: 'var(--dt-error)' }}>{w}</span>

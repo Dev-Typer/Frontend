@@ -270,7 +270,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       {isLoggedIn && savedResult && userId && (
         <div className="dt-card" style={{ padding: 20, marginBottom: 16 }}>
           <div className="dt-label" style={{ marginBottom: 14, fontSize: 10 }}>스니펫 랭킹</div>
-          <RankSlideWidget snippetId={snippet.id} userId={userId} myWpm={result.wpm} />
+          <RankSlideWidget snippetId={snippet.id} userId={userId} myWpm={result.wpm} myUsername={useUserStore.getState().username ?? '나'} />
         </div>
       )}
 

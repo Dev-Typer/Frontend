@@ -7,7 +7,7 @@ interface Props {
   myWpm: number;
 }
 
-const SHOW_AROUND = 3; // 위아래 n개
+const SHOW_AROUND = 2;
 
 const RankSlideWidget = ({ snippetId, userId, myWpm }: Props) => {
   const [items, setItems] = useState<RankingItem[]>([]);
@@ -21,8 +21,7 @@ const RankSlideWidget = ({ snippetId, userId, myWpm }: Props) => {
         setItems(res.items);
         const rank = res.items.findIndex((r) => r.userId === userId) + 1 || res.items.length + 1;
         setMyRank(rank);
-        // 슬라이드 애니메이션 딜레이
-        setTimeout(() => setEntered(true), 300);
+        setTimeout(() => setEntered(true), 200);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -30,126 +29,89 @@ const RankSlideWidget = ({ snippetId, userId, myWpm }: Props) => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, opacity: 0.5 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} style={{ height: 36, background: 'var(--dt-hover)', borderRadius: 6, animation: 'dt-pulse 1.2s ease-in-out infinite' }} />
+          <div key={i} style={{ flex: 1, height: 48, background: 'var(--dt-hover)', borderRadius: 6 }} />
         ))}
       </div>
     );
   }
 
-  if (!myRank) return null;
+  if (!myRank || items.length === 0) return null;
 
-  // 내 순위 전후 rows 추출
   const myIdx = myRank - 1;
   const start = Math.max(0, myIdx - SHOW_AROUND);
   const end   = Math.min(items.length - 1, myIdx + SHOW_AROUND);
   const visible = items.slice(start, end + 1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {/* 순위 헤더 */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+    <div>
+      {/* 순위 요약 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
         <span
           className="dt-mono"
           style={{
-            fontSize: 32, fontWeight: 700, color: 'var(--dt-primary)',
+            fontSize: 40, fontWeight: 700, color: 'var(--dt-primary)', lineHeight: 1,
             transition: 'all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            transform: entered ? 'translateY(0)' : 'translateY(20px)',
-            opacity: entered ? 1 : 0,
-            display: 'inline-block',
+            transform: entered ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.7)',
+            opacity: entered ? 1 : 0, display: 'inline-block',
           }}
         >
           #{myRank}
         </span>
-        <div
-          style={{
-            transition: 'all 0.6s ease',
-            transitionDelay: '0.2s',
-            transform: entered ? 'translateY(0)' : 'translateY(10px)',
-            opacity: entered ? 1 : 0,
-          }}
-        >
-          <div style={{ fontSize: 11, color: 'var(--dt-text-3)', lineHeight: 1 }}>현재 순위</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-            <span style={{ color: 'var(--dt-success)', fontSize: 14 }}>↑</span>
-            <span style={{ fontSize: 12, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)' }}>{myWpm} wpm</span>
+        <div style={{ transition: 'opacity 0.5s ease 0.3s', opacity: entered ? 1 : 0 }}>
+          <div style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>이 스니펫 순위</div>
+          <div style={{ fontSize: 13, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)', marginTop: 2 }}>
+            <span style={{ color: 'var(--dt-success)', marginRight: 4 }}>↑</span>{myWpm} wpm
           </div>
         </div>
+        {start > 0 && (
+          <span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 4 }}>···  위 {start}명 더</span>
+        )}
       </div>
 
-      {/* 위 생략 표시 */}
-      {start > 0 && (
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--dt-text-3)', padding: '2px 0' }}>
-          ···
-        </div>
-      )}
-
-      {/* 랭킹 rows */}
-      {visible.map((item, i) => {
-        const isMe = item.userId === userId;
-        const absIdx = start + i; // 실제 인덱스 (0-based)
-        // 내 row: entered 전엔 아래에서 슬라이드 업
-        const delay = isMe ? 0.1 : 0.05 * i;
-
-        return (
-          <div
-            key={item.userId}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 10px',
-              borderRadius: 6,
-              background: isMe
-                ? 'color-mix(in oklab, var(--dt-primary) 12%, transparent)'
-                : 'var(--dt-hover)',
-              boxShadow: isMe ? 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 35%, transparent)' : 'none',
-              transition: `all 0.55s cubic-bezier(0.34, 1.2, 0.64, 1)`,
-              transitionDelay: `${delay}s`,
-              transform: entered ? 'translateY(0)' : `translateY(${isMe ? 28 : 8}px)`,
-              opacity: entered ? 1 : 0,
-            }}
-          >
-            {/* 순위 */}
-            <span
-              className="dt-mono"
+      {/* 가로 나열 랭킹 rows */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+        {start > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px', color: 'var(--dt-text-3)', fontSize: 12, flexShrink: 0 }}>···</div>
+        )}
+        {visible.map((item, i) => {
+          const isMe = item.userId === userId;
+          const delay = i * 0.05;
+          return (
+            <div
+              key={item.userId}
               style={{
-                width: 24, fontSize: 11, textAlign: 'right', flexShrink: 0,
-                color: absIdx === 0 ? 'var(--dt-warning)'
-                     : absIdx === 1 ? 'var(--dt-text-2)'
-                     : absIdx === 2 ? '#cd7f32'
-                     : 'var(--dt-text-3)',
-                fontWeight: absIdx < 3 ? 700 : 400,
+                flex: isMe ? '0 0 auto' : '1',
+                minWidth: isMe ? 100 : 80,
+                padding: '10px 12px',
+                borderRadius: 8,
+                background: isMe
+                  ? 'color-mix(in oklab, var(--dt-primary) 14%, transparent)'
+                  : 'var(--dt-hover)',
+                boxShadow: isMe ? 'inset 0 0 0 1.5px color-mix(in oklab, var(--dt-primary) 40%, transparent)' : 'none',
+                transition: `all 0.55s cubic-bezier(0.34, 1.2, 0.64, 1) ${delay}s`,
+                transform: entered ? 'translateY(0)' : `translateY(${isMe ? 20 : 10}px)`,
+                opacity: entered ? 1 : 0,
+                textAlign: 'center' as const,
               }}
             >
-              #{item.rank}
-            </span>
-
-            {/* 유저명 */}
-            <span
-              className="dt-mono"
-              style={{
-                flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                color: isMe ? 'var(--dt-primary)' : 'var(--dt-text-2)',
-                fontWeight: isMe ? 600 : 400,
-              }}
-            >
-              {isMe ? '▶ 나' : item.username}
-            </span>
-
-            {/* WPM */}
-            <span className="dt-mono" style={{ fontSize: 12, color: isMe ? 'var(--dt-primary)' : 'var(--dt-text-3)', flexShrink: 0 }}>
-              {item.wpm.toFixed(0)}
-            </span>
-          </div>
-        );
-      })}
-
-      {/* 아래 생략 표시 */}
-      {end < items.length - 1 && (
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--dt-text-3)', padding: '2px 0' }}>
-          ···
-        </div>
-      )}
+              <div className="dt-mono" style={{ fontSize: 10, color: isMe ? 'var(--dt-primary)' : 'var(--dt-text-3)', marginBottom: 4 }}>
+                #{item.rank}
+              </div>
+              <div className="dt-mono" style={{ fontSize: isMe ? 13 : 12, color: isMe ? 'var(--dt-primary)' : 'var(--dt-text-2)', fontWeight: isMe ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {isMe ? '▶ 나' : item.username}
+              </div>
+              <div className="dt-mono" style={{ fontSize: 11, color: isMe ? 'var(--dt-primary)' : 'var(--dt-text-3)', marginTop: 2 }}>
+                {item.wpm.toFixed(0)}
+              </div>
+            </div>
+          );
+        })}
+        {end < items.length - 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px', color: 'var(--dt-text-3)', fontSize: 12, flexShrink: 0 }}>···</div>
+        )}
+      </div>
     </div>
   );
 };

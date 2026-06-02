@@ -257,18 +257,22 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         </div>
       )}
 
-      {/* 2열 레이아웃: 왼쪽(통계+그래프) / 오른쪽(랭킹 위젯) */}
-      <div style={{ display: 'grid', gridTemplateColumns: isLoggedIn && savedResult ? '1fr 200px' : '1fr', gap: 20, alignItems: 'start' }}>
-      <div>
-
       {/* Stats — 5개 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 16 }}>
         <StatCard label="WPM" value={result.wpm} sub={avgWpm > 0 ? `평균 ${avgWpm}` : undefined} accent />
         <StatCard label="총 타수" value={result.rawWpm} />
         <StatCard label="정확도" value={`${result.acc.toFixed(1)}%`} sub={`${result.errors}회 오타`} />
         <StatCard label="최장 연속 정타" value={result.longestCombo} sub="글자" />
         <StatCard label="소요 시간" value={`${(result.elapsed / 1000).toFixed(1)}s`} sub={`${snippet.content.length}자`} />
       </div>
+
+      {/* 랭킹 슬라이드 위젯 — 그래프 위에 전체 폭 */}
+      {isLoggedIn && savedResult && userId && (
+        <div className="dt-card" style={{ padding: 20, marginBottom: 16 }}>
+          <div className="dt-label" style={{ marginBottom: 14, fontSize: 10 }}>스니펫 랭킹</div>
+          <RankSlideWidget snippetId={snippet.id} userId={userId} myWpm={result.wpm} />
+        </div>
+      )}
 
       {/* 메인 타수 그래프 — WPM + 총타수 + 오타 마커 통합 */}
       {(stats?.wpmGraph.length ?? 0) > 1 && (
@@ -373,20 +377,6 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change language / difficulty')}</button>
         <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
       </div>
-      </div>{/* 왼쪽 컬럼 끝 */}
-
-      {/* 오른쪽: 랭킹 슬라이드 위젯 */}
-      {isLoggedIn && savedResult && userId && (
-        <div className="dt-card" style={{ padding: 16, position: 'sticky', top: 24 }}>
-          <div className="dt-label" style={{ marginBottom: 12, fontSize: 10 }}>스니펫 랭킹</div>
-          <RankSlideWidget
-            snippetId={snippet.id}
-            userId={userId}
-            myWpm={result.wpm}
-          />
-        </div>
-      )}
-      </div>{/* 2열 끝 */}
     </div>
   );
 };

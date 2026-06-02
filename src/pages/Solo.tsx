@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
 import SectionHead from '@/components/SectionHead';
@@ -10,6 +10,8 @@ import { getRandomSnippet, type Snippet, type SnippetLanguage, type SnippetDiffi
 import { saveSnippetResult, getSnippetResultStats, type SnippetResultResponse, type SnippetResultStats } from '@/apis/snippetResultApi';
 import WpmGraph from '@/components/WpmGraph';
 import TypoHeatmap from '@/components/TypoHeatmap';
+import DualLineChart from '@/components/charts/DualLineChart';
+import BarChart from '@/components/charts/BarChart';
 
 type Phase = 'setup' | 'typing' | 'result';
 
@@ -179,10 +181,69 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
   }, [savedResult]);
 
   // typo markers: 각 오타의 타임스탬프를 초로 변환
-  const typoMarkers = result.typos.map((typo) => {
+  const typoMarkers = useMemo(() => result.typos.map((typo) => {
     const event = result.replayData.find((e) => e.index === typo.index);
     return event ? { second: Math.ceil(event.timestamp / 1000) } : null;
-  }).filter(Boolean) as { second: number }[];
+  }).filter(Boolean) as { second: number }[], [result]);
+
+  // 1. Raw WPM vs WPM 비교 데이터 (replayData 기반 초당 계산)
+  const dualWpmData = useMemo(() => {
+    const totalSec = Math.ceil(result.elapsed / 1000);
+    const wpmLine: number[] = [];
+    const rawLine: number[] = [];
+    for (let sec = 1; sec <= totalSec; sec++) {
+      const events = result.replayData.filter((e) => e.timestamp <= sec * 1000);
+      const correct = events.filter((e) => e.correct).length;
+      const raw = events.length;
+      const t = sec / 60;
+      wpmLine.push(Math.round((correct / 5) / t));
+      rawLine.push(Math.round((raw / 5) / t));
+    }
+    return { wpmLine, rawLine };
+  }, [result]);
+
+  // 2. 정확도 추이 (초당 누적 정확도)
+  const accuracyLine = useMemo(() => {
+    const totalSec = Math.ceil(result.elapsed / 1000);
+    return Array.from({ length: totalSec }, (_, i) => {
+      const sec = i + 1;
+      const events = result.replayData.filter((e) => e.timestamp <= sec * 1000);
+      if (!events.length) return 100;
+      const correct = events.filter((e) => e.correct).length;
+      return Math.round((correct / events.length) * 100);
+    });
+  }, [result]);
+
+  // 3. 오타 문자 빈도 (expected 기준 top 10)
+  const typoFreqBars = useMemo(() => {
+    const freq = new Map<string, number>();
+    result.typos.forEach((t) => {
+      const ch = t.expected === ' ' ? '·space·' : t.expected === '\n' ? '↵' : t.expected;
+      freq.set(ch, (freq.get(ch) ?? 0) + 1);
+    });
+    return Array.from(freq.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([label, value]) => ({ label, value, color: 'var(--dt-error)' }));
+  }, [result]);
+
+  // 4. 키 반응 시간 히스토그램 (IKI)
+  const ikiBars = useMemo(() => {
+    const intervals: number[] = [];
+    for (let i = 1; i < result.replayData.length; i++) {
+      const iki = result.replayData[i].timestamp - result.replayData[i - 1].timestamp;
+      if (iki >= 0 && iki < 2000) intervals.push(iki);
+    }
+    if (!intervals.length) return [];
+    // 0~50, 50~100, ..., 450~500, 500+ ms 구간
+    const buckets = Array.from({ length: 11 }, (_, i) => ({ label: i < 10 ? `${i * 50}` : '500+', value: 0 }));
+    intervals.forEach((iki) => {
+      const idx = Math.min(Math.floor(iki / 50), 10);
+      buckets[idx].value++;
+    });
+    const avgIki = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+    return { buckets, avgIki, medianIki: intervals.sort((a, b) => a - b)[Math.floor(intervals.length / 2)] };
+  }, [result]);
 
   return (
     <div>
@@ -228,6 +289,72 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           <div style={{ padding: '16px 20px' }}>
             <WpmGraph data={stats!.wpmGraph} typoMarkers={typoMarkers} height={100} />
           </div>
+        </div>
+      )}
+
+      {/* Raw WPM vs WPM + Accuracy 비교 */}
+      {dualWpmData.wpmLine.length > 1 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
+              <span className="dt-h3" style={{ margin: 0 }}>WPM vs Raw WPM</span>
+            </div>
+            <div style={{ padding: '14px 20px' }}>
+              <DualLineChart
+                height={90}
+                unit=" wpm"
+                series={[
+                  { label: 'WPM', data: dualWpmData.wpmLine, color: 'var(--dt-primary)' },
+                  { label: 'Raw', data: dualWpmData.rawLine, color: 'var(--dt-text-3)' },
+                ]}
+              />
+            </div>
+          </div>
+          <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
+              <span className="dt-h3" style={{ margin: 0 }}>Accuracy over Time</span>
+            </div>
+            <div style={{ padding: '14px 20px' }}>
+              <DualLineChart
+                height={90}
+                unit="%"
+                series={[
+                  { label: 'Accuracy', data: accuracyLine, color: 'var(--dt-warning)' },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 오타 문자 빈도 + IKI 히스토그램 */}
+      {(typoFreqBars.length > 0 || (Array.isArray(ikiBars) ? false : ikiBars.buckets.length > 0)) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          {typoFreqBars.length > 0 && (
+            <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
+                <span className="dt-h3" style={{ margin: 0 }}>Typo Characters</span>
+              </div>
+              <div style={{ padding: '14px 20px' }}>
+                <BarChart bars={typoFreqBars} height={100} unit="회" />
+              </div>
+            </div>
+          )}
+          {!Array.isArray(ikiBars) && ikiBars.buckets.some((b) => b.value > 0) && (
+            <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                <span className="dt-h3" style={{ margin: 0 }}>Key Reaction Time</span>
+                <span className="dt-caption">avg {ikiBars.avgIki}ms · med {ikiBars.medianIki}ms</span>
+              </div>
+              <div style={{ padding: '14px 20px' }}>
+                <BarChart
+                  bars={ikiBars.buckets.map((b) => ({ ...b, color: 'var(--dt-info)' }))}
+                  height={100}
+                  unit="회"
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 

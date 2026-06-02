@@ -11,7 +11,6 @@ import { saveSnippetResult, getSnippetResultStats, type SnippetResultResponse, t
 import WpmGraph from '@/components/WpmGraph';
 import TypoHeatmap from '@/components/TypoHeatmap';
 import DualLineChart from '@/components/charts/DualLineChart';
-import BarChart from '@/components/charts/BarChart';
 
 type Phase = 'setup' | 'typing' | 'result';
 
@@ -276,7 +275,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       {(stats?.wpmGraph.length ?? 0) > 0 && (
         <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
           <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span className="dt-h3" style={{ margin: 0 }}>WPM Graph</span>
+            <span className="dt-h3" style={{ margin: 0 }}>WPM 그래프</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dt-text-3)' }}>
                 <span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--dt-primary)', borderRadius: 1 }} /> WPM
@@ -297,7 +296,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-              <span className="dt-h3" style={{ margin: 0 }}>WPM vs Raw WPM</span>
+              <span className="dt-h3" style={{ margin: 0 }}>WPM vs 원시 WPM</span>
             </div>
             <div style={{ padding: '14px 20px' }}>
               <DualLineChart
@@ -312,7 +311,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           </div>
           <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-              <span className="dt-h3" style={{ margin: 0 }}>Accuracy over Time</span>
+              <span className="dt-h3" style={{ margin: 0 }}>정확도 추이</span>
             </div>
             <div style={{ padding: '14px 20px' }}>
               <DualLineChart
@@ -327,31 +326,61 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         </div>
       )}
 
-      {/* 오타 문자 빈도 + IKI 히스토그램 */}
-      {(typoFreqBars.length > 0 || (Array.isArray(ikiBars) ? false : ikiBars.buckets.length > 0)) && (
+      {/* 오타 문자 빈도 + IKI */}
+      {(typoFreqBars.length > 0 || (!Array.isArray(ikiBars) && ikiBars.avgIki > 0)) && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+
+          {/* 오타 문자 — 순위 리스트 */}
           {typoFreqBars.length > 0 && (
             <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-                <span className="dt-h3" style={{ margin: 0 }}>Typo Characters</span>
+                <span className="dt-h3" style={{ margin: 0 }}>오타 문자 빈도</span>
               </div>
-              <div style={{ padding: '14px 20px' }}>
-                <BarChart bars={typoFreqBars} height={100} unit="회" />
+              <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {typoFreqBars.slice(0, 8).map((bar, i) => {
+                  const pct = (bar.value / typoFreqBars[0].value) * 100;
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span className="dt-mono" style={{ width: 28, fontSize: 12, color: 'var(--dt-text-3)', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                      <span className="dt-mono" style={{ width: 36, fontSize: 13, color: 'var(--dt-error)', fontWeight: 600, flexShrink: 0 }}>{bar.label}</span>
+                      <div style={{ flex: 1, height: 6, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--dt-error)', borderRadius: 999, opacity: 0.7 }} />
+                      </div>
+                      <span className="dt-mono dt-caption" style={{ width: 28, textAlign: 'right', flexShrink: 0 }}>{bar.value}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
-          {!Array.isArray(ikiBars) && ikiBars.buckets.some((b) => b.value > 0) && (
+
+          {/* IKI — 수치 + 라인 분포 */}
+          {!Array.isArray(ikiBars) && ikiBars.avgIki > 0 && (
             <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'baseline', gap: 12 }}>
-                <span className="dt-h3" style={{ margin: 0 }}>Key Reaction Time</span>
-                <span className="dt-caption">avg {ikiBars.avgIki}ms · med {ikiBars.medianIki}ms</span>
+              <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
+                <span className="dt-h3" style={{ margin: 0 }}>키 반응 시간</span>
               </div>
               <div style={{ padding: '14px 20px' }}>
-                <BarChart
-                  bars={ikiBars.buckets.map((b) => ({ ...b, color: 'var(--dt-info)' }))}
-                  height={100}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>avg</div>
+                    <div className="dt-mono" style={{ fontSize: 24, fontWeight: 600, color: 'var(--dt-info)' }}>{ikiBars.avgIki}<span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 2 }}>ms</span></div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div className="dt-label" style={{ marginBottom: 4, fontSize: 10 }}>median</div>
+                    <div className="dt-mono" style={{ fontSize: 24, fontWeight: 600, color: 'var(--dt-text-2)' }}>{ikiBars.medianIki}<span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 2 }}>ms</span></div>
+                  </div>
+                </div>
+                <DualLineChart
+                  height={60}
                   unit="회"
+                  series={[{ label: '타이핑 분포', data: ikiBars.buckets.map((b) => b.value), color: 'var(--dt-info)' }]}
+                  labels={ikiBars.buckets.map((b) => b.label)}
                 />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)' }}>0ms</span>
+                  <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)' }}>500ms+</span>
+                </div>
               </div>
             </div>
           )}
@@ -361,7 +390,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       {/* Typo Heatmap + Inline Replay */}
       <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
         <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="dt-h3" style={{ margin: 0 }}>Typo Analysis</span>
+          <span className="dt-h3" style={{ margin: 0 }}>오타 분석 + 리플레이</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
             <span style={{ display: 'inline-block', width: 10, height: 10, background: 'rgba(220,38,38,0.3)', borderRadius: 2, border: '1px solid rgba(220,38,38,0.5)' }} />
             <span style={{ color: 'var(--dt-text-3)' }}>오타 위치</span>
@@ -396,7 +425,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           {stats.wordStats.bestWords.length > 0 && (
             <div className="dt-card" style={{ padding: 16 }}>
-              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-success)', fontSize: 10 }}>Best Words</div>
+              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-success)', fontSize: 10 }}>빠른 단어</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.wordStats.bestWords.map((w) => (
                   <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-success) 12%, transparent)', borderRadius: 4, color: 'var(--dt-success)' }}>{w}</span>
@@ -406,7 +435,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           )}
           {stats.wordStats.worstWords.length > 0 && (
             <div className="dt-card" style={{ padding: 16 }}>
-              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-error)', fontSize: 10 }}>Worst Words</div>
+              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-error)', fontSize: 10 }}>느린 단어</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.wordStats.worstWords.map((w) => (
                   <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-error) 12%, transparent)', borderRadius: 4, color: 'var(--dt-error)' }}>{w}</span>

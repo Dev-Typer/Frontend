@@ -1,6 +1,9 @@
 ﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
+import { useUserStore } from '@/stores/userStore';
+import { GithubMark } from '@/components/icons/Icons';
 import SectionHead from '@/components/SectionHead';
 import TypingEngine from '@/components/TypingEngine';
 import CodePreview from '@/components/CodePreview';
@@ -168,8 +171,18 @@ const StatCard = ({ label, value, sub, accent }: { label: string; value: string 
 
 const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: SoloResultProps) => {
   const t = useT();
+  const navigate = useNavigate();
+  const isLoggedIn = useUserStore((s) => s.isLoggedIn);
   const avgWpm = Math.round(snippet.avgWpm) || 0;
   const [stats, setStats] = useState<SnippetResultStats | null>(null);
+  const [rankVisible, setRankVisible] = useState(false);
+
+  useEffect(() => {
+    if (stats?.rank) {
+      const timer = setTimeout(() => setRankVisible(true), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [stats?.rank]);
 
   useEffect(() => {
     if (!savedResult) return;
@@ -218,12 +231,12 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 className="dt-h2" style={{ margin: 0, color: 'var(--dt-primary)' }}>Run complete.</h2>
+          <h2 className="dt-h2" style={{ margin: 0, color: 'var(--dt-primary)' }}>완료!</h2>
           {savedResult && stats && (
             <span className="dt-caption" style={{ color: 'var(--dt-text-3)' }}>
-              ✓ 저장됨 · 스니펫 #{stats.rank}위
+              ✓ 저장됨
             </span>
           )}
         </div>
@@ -232,6 +245,51 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
           <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={onNext}><IconRefresh size={14} /> {t('New snippet')}</button>
         </div>
       </div>
+
+      {/* 비로그인 유도 배너 */}
+      {!isLoggedIn && (
+        <div style={{ marginBottom: 16, padding: '14px 20px', background: 'color-mix(in oklab, var(--dt-primary) 6%, transparent)', borderRadius: 'var(--dt-radius-md)', border: '0.5px solid color-mix(in oklab, var(--dt-primary) 25%, transparent)', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--dt-text)', marginBottom: 2 }}>기록이 저장되지 않았습니다</div>
+            <div style={{ fontSize: 12, color: 'var(--dt-text-2)' }}>GitHub로 로그인하면 결과가 저장되고 랭킹에 올라갑니다.</div>
+          </div>
+          <button
+            className="dt-btn dt-btn-sm"
+            onClick={() => navigate('/login')}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#24292f', color: '#fff', border: 0, flexShrink: 0 }}
+          >
+            <GithubMark size={15} fill="#fff" /> 로그인하고 저장하기
+          </button>
+        </div>
+      )}
+
+      {/* 로그인 — 랭킹 뱃지 */}
+      {isLoggedIn && savedResult && stats && (
+        <div style={{ marginBottom: 16, padding: '14px 20px', background: 'color-mix(in oklab, var(--dt-primary) 6%, transparent)', borderRadius: 'var(--dt-radius-md)', border: '0.5px solid color-mix(in oklab, var(--dt-primary) 25%, transparent)', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: 'var(--dt-text-3)', marginBottom: 2 }}>이 스니펫에서의 내 순위</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span
+                className="dt-mono"
+                style={{
+                  fontSize: 28, fontWeight: 700, color: 'var(--dt-primary)',
+                  transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transform: rankVisible ? 'scale(1)' : 'scale(0.5)',
+                  opacity: rankVisible ? 1 : 0,
+                  display: 'inline-block',
+                }}
+              >
+                #{stats.rank}
+              </span>
+              <span style={{ fontSize: 13, color: 'var(--dt-text-3)' }}>위</span>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--dt-text-3)' }}>
+            <div>WPM {result.wpm}</div>
+            <div>정확도 {result.acc.toFixed(1)}%</div>
+          </div>
+        </div>
+      )}
 
       {/* Stats — 5개 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 20 }}>
@@ -382,14 +440,17 @@ const Solo = () => {
     if (!snippet) return;
     const durationSec = Math.round(r.elapsed / 1000);
     if (durationSec < 3) return;
+    // wpm/rawWpm 최솟값 보정 (0이면 유효성 검사 실패)
+    const safeWpm = Math.max(r.wpm, 0.1);
+    const safeRawWpm = Math.max(r.rawWpm, 0.1);
     try {
       const saved = await saveSnippetResult({
-        snippetId: snippet.id, wpm: r.wpm, rawWpm: r.rawWpm,
+        snippetId: snippet.id, wpm: safeWpm, rawWpm: safeRawWpm,
         accuracy: r.acc, durationSec, typos: r.typos, replayData: r.replayData,
       });
       setSavedResult(saved);
-    } catch {
-      // 비로그인 또는 저장 실패 무시
+    } catch (err) {
+      console.error('[결과 저장 실패]', err);
     }
   };
 

@@ -13,6 +13,7 @@ import { getRandomSnippet, type Snippet, type SnippetLanguage, type SnippetDiffi
 import { saveSnippetResult, getSnippetResultStats, type SnippetResultResponse, type SnippetResultStats } from '@/apis/snippetResultApi';
 import WpmGraph from '@/components/WpmGraph';
 import TypoHeatmap from '@/components/TypoHeatmap';
+import RankSlideWidget from '@/components/RankSlideWidget';
 
 type Phase = 'setup' | 'typing' | 'result';
 
@@ -173,16 +174,9 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
   const t = useT();
   const navigate = useNavigate();
   const isLoggedIn = useUserStore((s) => s.isLoggedIn);
+  const userId = useUserStore((s) => s.userId);
   const avgWpm = Math.round(snippet.avgWpm) || 0;
   const [stats, setStats] = useState<SnippetResultStats | null>(null);
-  const [rankVisible, setRankVisible] = useState(false);
-
-  useEffect(() => {
-    if (stats?.rank) {
-      const timer = setTimeout(() => setRankVisible(true), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [stats?.rank]);
 
   useEffect(() => {
     if (!savedResult) return;
@@ -263,33 +257,9 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         </div>
       )}
 
-      {/* 로그인 — 랭킹 뱃지 */}
-      {isLoggedIn && savedResult && stats && (
-        <div style={{ marginBottom: 16, padding: '14px 20px', background: 'color-mix(in oklab, var(--dt-primary) 6%, transparent)', borderRadius: 'var(--dt-radius-md)', border: '0.5px solid color-mix(in oklab, var(--dt-primary) 25%, transparent)', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: 'var(--dt-text-3)', marginBottom: 2 }}>이 스니펫에서의 내 순위</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span
-                className="dt-mono"
-                style={{
-                  fontSize: 28, fontWeight: 700, color: 'var(--dt-primary)',
-                  transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  transform: rankVisible ? 'scale(1)' : 'scale(0.5)',
-                  opacity: rankVisible ? 1 : 0,
-                  display: 'inline-block',
-                }}
-              >
-                #{stats.rank}
-              </span>
-              <span style={{ fontSize: 13, color: 'var(--dt-text-3)' }}>위</span>
-            </div>
-          </div>
-          <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--dt-text-3)' }}>
-            <div>WPM {result.wpm}</div>
-            <div>정확도 {result.acc.toFixed(1)}%</div>
-          </div>
-        </div>
-      )}
+      {/* 2열 레이아웃: 왼쪽(통계+그래프) / 오른쪽(랭킹 위젯) */}
+      <div style={{ display: 'grid', gridTemplateColumns: isLoggedIn && savedResult ? '1fr 200px' : '1fr', gap: 20, alignItems: 'start' }}>
+      <div>
 
       {/* Stats — 5개 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 20 }}>
@@ -403,6 +373,20 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change language / difficulty')}</button>
         <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
       </div>
+      </div>{/* 왼쪽 컬럼 끝 */}
+
+      {/* 오른쪽: 랭킹 슬라이드 위젯 */}
+      {isLoggedIn && savedResult && userId && (
+        <div className="dt-card" style={{ padding: 16, position: 'sticky', top: 24 }}>
+          <div className="dt-label" style={{ marginBottom: 12, fontSize: 10 }}>스니펫 랭킹</div>
+          <RankSlideWidget
+            snippetId={snippet.id}
+            userId={userId}
+            myWpm={result.wpm}
+          />
+        </div>
+      )}
+      </div>{/* 2열 끝 */}
     </div>
   );
 };

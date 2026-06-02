@@ -61,7 +61,7 @@ const SoloSetup = ({ lang, setLang, diff, setDiff, onStart, snippet, loading, on
             {LANGS.map((l) => (
               <button key={l.id} onClick={() => setLang(l.id)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: 0, borderRadius: 'var(--dt-radius)', cursor: 'pointer', fontFamily: 'inherit', background: lang === l.id ? 'color-mix(in oklab, var(--dt-primary) 12%, transparent)' : 'var(--dt-hover)', boxShadow: lang === l.id ? 'inset 0 0 0 1px var(--dt-primary)' : 'none' }}>
-                {l.logo ? <img src={l.logo} alt={l.label} style={{ width: 20, height: 20, objectFit: 'contain' }} /> : <span style={{ fontSize: 16 }}>@{''}</span>}
+                {l.logo ? <img src={l.logo} alt={l.label} style={{ width: 20, height: 20, objectFit: 'contain' }} /> : <span style={{ fontSize: 16 }}>⚙</span>}
                 <span style={{ fontSize: 13, fontWeight: lang === l.id ? 600 : 400, color: lang === l.id ? 'var(--dt-primary)' : 'var(--dt-text-2)' }}>{l.label}</span>
               </button>
             ))}
@@ -205,7 +205,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
   const typoFreqBars = useMemo(() => {
     const freq = new Map<string, number>();
     result.typos.forEach((t) => {
-      const ch = t.expected === ' ' ? '·space·' : t.expected === '\n' ? '↵' : t.expected;
+      const ch = t.expected === ' ' ? '⎵' : t.expected === '\n' ? '↵' : t.expected;
       freq.set(ch, (freq.get(ch) ?? 0) + 1);
     });
     return Array.from(freq.entries())

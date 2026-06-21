@@ -83,31 +83,27 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
   return (
     <div>
       {/* 순위 + 상승 표시 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+      <div className="flex items-center gap-3.5 mb-4">
         <span
-          className="dt-mono"
+          className="dt-mono text-[44px] font-bold leading-none text-dt-primary transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] inline-block"
           style={{
-            fontSize: 44, fontWeight: 700, lineHeight: 1,
-            color: 'var(--dt-primary)',
-            transition: 'all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
             transform: phase !== 'initial' ? 'scale(1) translateY(0)' : 'scale(0.6) translateY(12px)',
             opacity: phase !== 'initial' ? 1 : 0,
-            display: 'inline-block',
           }}
         >
           #{myFinalIdx + 1}
         </span>
-        <div style={{ transition: 'opacity 0.5s ease 0.4s', opacity: phase !== 'initial' ? 1 : 0 }}>
-          <div style={{ fontSize: 11, color: 'var(--dt-text-3)', marginBottom: 2 }}>이 스니펫 순위</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ color: 'var(--dt-success)', fontSize: 16, fontWeight: 700 }}>↑</span>
-            <span className="dt-mono" style={{ fontSize: 13, color: 'var(--dt-text-2)' }}>{myWpm} wpm</span>
+        <div className="transition-opacity duration-500 ease delay-[0.4s]" style={{ opacity: phase !== 'initial' ? 1 : 0 }}>
+          <div className="text-[11px] text-dt-text-3 mb-0.5">이 스니펫 순위</div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-dt-success text-base font-bold">↑</span>
+            <span className="dt-mono text-[13px] text-dt-text-2">{myWpm} wpm</span>
           </div>
         </div>
       </div>
 
       {/* 랭킹 카드 슬라이드 */}
-      <div style={{ position: 'relative', height: visible.length * ROW_H + 8, overflow: 'hidden' }}>
+      <div className="relative overflow-hidden" style={{ height: visible.length * ROW_H + 8 }}>
         {visible.map((item, i) => {
           const isMe = !!item.isMe;
 
@@ -118,14 +114,9 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
           return (
             <div
               key={item.userId}
+              className="absolute left-0 right-0 h-10 flex items-center gap-2.5 px-3 rounded-lg"
               style={{
-                position: 'absolute',
                 top: topPos,
-                left: 0, right: 0,
-                height: ROW_H - 4,
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '0 12px',
-                borderRadius: 8,
                 background: isMe
                   ? 'color-mix(in oklab, var(--dt-primary) 14%, transparent)'
                   : 'var(--dt-hover)',
@@ -141,9 +132,8 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
             >
               {/* 순위 */}
               <span
-                className="dt-mono"
+                className="dt-mono w-7 text-xs text-right shrink-0"
                 style={{
-                  width: 28, fontSize: 12, textAlign: 'right', flexShrink: 0,
                   color: item.rank === 1 ? 'var(--dt-warning)'
                        : item.rank === 2 ? '#c0c0c0'
                        : item.rank === 3 ? '#cd7f32'
@@ -156,10 +146,8 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
 
               {/* 유저명 */}
               <span
-                className="dt-mono"
+                className="dt-mono flex-1 text-[13px] overflow-hidden text-ellipsis whitespace-nowrap"
                 style={{
-                  flex: 1, fontSize: 13,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   color: isMe ? 'var(--dt-primary)' : 'var(--dt-text-2)',
                   fontWeight: isMe ? 700 : 400,
                 }}
@@ -169,9 +157,8 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
 
               {/* WPM */}
               <span
-                className="dt-mono"
+                className="dt-mono text-[13px] shrink-0"
                 style={{
-                  fontSize: 13, flexShrink: 0,
                   color: isMe ? 'var(--dt-primary)' : 'var(--dt-text-3)',
                   fontWeight: isMe ? 600 : 400,
                 }}
@@ -184,11 +171,11 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
       </div>
 
       {/* 상단/하단 생략 표시 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, transition: 'opacity 0.4s ease 0.6s', opacity: phase !== 'initial' ? 1 : 0 }}>
-        <span style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>
+      <div className="flex justify-between mt-1.5 transition-opacity duration-300 ease delay-[0.6s]" style={{ opacity: phase !== 'initial' ? 1 : 0 }}>
+        <span className="text-[11px] text-dt-text-3">
           {visStart > 0 ? `▲ 위 ${visStart}명` : ''}
         </span>
-        <span style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>
+        <span className="text-[11px] text-dt-text-3">
           {visEnd < finalList.length - 1 ? `▼ 아래 ${finalList.length - 1 - visEnd}명` : ''}
         </span>
       </div>

@@ -15,7 +15,7 @@ const Sparkline = ({ data, width = 120, height = 32, color }: Props) => {
     return `${x},${y}`;
   }).join(' ');
   return (
-    <svg width={width} height={height} style={{ display: 'block' }}>
+    <svg width={width} height={height} className="block">
       <polyline points={pts} fill="none" stroke={color || 'var(--dt-primary)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );

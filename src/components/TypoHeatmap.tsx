@@ -59,23 +59,22 @@ const TypoHeatmap = ({ content, typos, replayData }: Props) => {
   return (
     <div>
       {/* Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+      <div className="flex items-center gap-2.5 mb-3.5">
         <button
-          className="dt-btn dt-btn-secondary dt-btn-sm"
+          className="dt-btn dt-btn-secondary dt-btn-sm min-w-[88px]"
           onClick={playing ? stop : play}
           disabled={replayData.length === 0}
-          style={{ minWidth: 88 }}
         >
           {playing ? '■ 정지' : '▶ 리플레이'}
         </button>
 
         {isReplaying && (
-          <div style={{ flex: 1, height: 3, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress * 100}%`, background: 'var(--dt-primary)', borderRadius: 999, transition: 'width 60ms linear' }} />
+          <div className="flex-1 h-[3px] bg-dt-hover rounded-full overflow-hidden">
+            <div className="h-full bg-dt-primary rounded-full transition-[width] duration-[60ms] ease-linear" style={{ width: `${progress * 100}%` }} />
           </div>
         )}
 
-        <span className="dt-caption" style={{ color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)', fontSize: 11, whiteSpace: 'nowrap' }}>
+        <span className="dt-caption text-dt-text-3 font-dt-mono text-[11px] whitespace-nowrap">
           {isReplaying
             ? `${replayStep + 1} / ${replayData.length}`
             : `${typos.length}개 오타`}
@@ -83,7 +82,7 @@ const TypoHeatmap = ({ content, typos, replayData }: Props) => {
       </div>
 
       {/* Snippet with highlights */}
-      <div className="dt-code-area" style={{ fontSize: 15, lineHeight: 1.85 }}>
+      <div className="dt-code-area text-[15px] leading-[1.85]">
         {content.split('').map((ch, i) => {
           let color = 'inherit';
           let bg = 'transparent';

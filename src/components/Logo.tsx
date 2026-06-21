@@ -9,7 +9,8 @@ const Logo = ({ size = 16 }: Props) => (
       alt=""
       width={size * 2.2}
       height={size * 2.2}
-      style={{ display: 'block', flexShrink: 0, margin: `-${size * 0.5}px 0` }}
+      className="block shrink-0"
+      style={{ margin: `-${size * 0.5}px 0` }}
     />
     DevTyper
   </span>

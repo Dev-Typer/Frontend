@@ -10,10 +10,10 @@ interface Props {
 const SectionHead = ({ kicker, title, action }: Props) => {
   const t = useT();
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, gap: 16 }}>
+    <div className="flex items-end justify-between mb-5 gap-4">
       <div>
-        {kicker && <div className="dt-label" style={{ color: 'var(--dt-primary)', marginBottom: 6 }}>{t(kicker)}</div>}
-        <h2 className="dt-h1" style={{ margin: 0 }}>{t(title)}</h2>
+        {kicker && <div className="dt-label text-dt-primary mb-1.5">{t(kicker)}</div>}
+        <h2 className="dt-h1 m-0">{t(title)}</h2>
       </div>
       {action}
     </div>

@@ -8,14 +8,11 @@ interface Props {
 }
 
 const Stat = ({ label, value, unit, accent, hint, big }: Props) => (
-  <div className="dt-stack" style={{ gap: 4 }}>
+  <div className="dt-stack gap-1">
     <span className="dt-label">{label}</span>
-    <span
-      className={big ? 'dt-display' : 'dt-h1'}
-      style={{ fontFamily: 'var(--dt-font-mono)', color: accent ? 'var(--dt-primary)' : 'var(--dt-text)' }}
-    >
+    <span className={`${big ? 'dt-display' : 'dt-h1'} font-dt-mono ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>
       <span className="dt-tabular">{value}</span>
-      {unit && <span style={{ fontSize: '0.5em', color: 'var(--dt-text-2)', marginLeft: 4 }}>{unit}</span>}
+      {unit && <span className="text-[0.5em] text-dt-text-2 ml-1">{unit}</span>}
     </span>
     {hint && <span className="dt-caption">{hint}</span>}
   </div>

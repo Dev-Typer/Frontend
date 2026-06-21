@@ -31,15 +31,11 @@ const TierBadge = ({ tier, size = 'md', showRange }: Props) => {
   const def = TIER_DEF[tier as Tier];
   return (
     <span
-      className={`dt-tier dt-tier-${def.color}`}
-      style={{
-        fontSize: size === 'lg' ? 13 : 11,
-        padding: size === 'lg' ? '5px 14px' : '3px 10px',
-      }}
+      className={`dt-tier dt-tier-${def.color} ${size === 'lg' ? 'text-[13px] px-3.5 py-[5px]' : 'text-[11px] px-2.5 py-[3px]'}`}
     >
       <TierGlyph tier={tier as Tier} />
       {def.label}
-      {showRange && <span style={{ opacity: 0.6, marginLeft: 6 }}>· {def.range}</span>}
+      {showRange && <span className="opacity-60 ml-1.5">· {def.range}</span>}
     </span>
   );
 };

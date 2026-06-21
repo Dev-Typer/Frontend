@@ -4,7 +4,7 @@ interface Props {
 }
 
 const CodePreview = ({ code, fontSize = 16 }: Props) => (
-  <div className="dt-code-area" style={{ fontSize, padding: '16px 20px', color: 'var(--dt-type-pending)' }}>
+  <div className="dt-code-area px-5 py-4 text-dt-type-pending" style={{ fontSize }}>
     {code}
   </div>
 );

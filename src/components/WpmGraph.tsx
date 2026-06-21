@@ -57,12 +57,12 @@ const WpmGraph = ({ wpmData, rawWpmData = [], typoMarkers = [] }: Props) => {
   const xStep = Math.max(1, Math.floor(n / 8));
 
   return (
-    <div style={{ width: '100%', position: 'relative' }}>
+    <div className="w-full relative">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
         height="auto"
-        style={{ display: 'block', overflow: 'visible' }}
+        className="block overflow-visible"
         onMouseLeave={() => setTooltip(null)}
       >
         <defs>
@@ -109,7 +109,7 @@ const WpmGraph = ({ wpmData, rawWpmData = [], typoMarkers = [] }: Props) => {
             {/* 투명한 히트박스 — 호버 감지 영역 */}
             <circle
               cx={x} cy={y} r="16" fill="transparent"
-              style={{ cursor: 'crosshair' }}
+              className="cursor-crosshair"
               onMouseEnter={() => setTooltip({ x, y, second: wpmData[i].second, wpm: wpmData[i].wpm, raw: rawWpmData[i] })}
             />
           </g>
@@ -138,7 +138,7 @@ const WpmGraph = ({ wpmData, rawWpmData = [], typoMarkers = [] }: Props) => {
           const tx = tooltip.x + bw + 20 > W ? tooltip.x - bw - 8 : tooltip.x + 8;
           const ty = tooltip.y - bh / 2;
           return (
-            <g style={{ pointerEvents: 'none' }}>
+            <g className="pointer-events-none">
               <rect x={tx} y={ty} width={bw} height={bh} rx="4" fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="0.8" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.4))" />
               <text x={tx + 8} y={ty + 14} fontSize="10" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{tooltip.second}초</text>
               <text x={tx + 8} y={ty + 28} fontSize="13" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)" fontWeight="700">{tooltip.wpm} WPM</text>
@@ -151,18 +151,18 @@ const WpmGraph = ({ wpmData, rawWpmData = [], typoMarkers = [] }: Props) => {
       </svg>
 
       {/* 범례 */}
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end', marginTop: 6 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)' }}>
+      <div className="flex gap-4 justify-end mt-1.5">
+        <span className="flex items-center gap-1 text-xs text-dt-text-2 font-dt-mono">
           <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--dt-primary)" strokeWidth="2.5" /><circle cx="12" cy="5" r="3.5" fill="var(--dt-primary)" /></svg>WPM
         </span>
         {rawWpmData.length > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)' }}>
+          <span className="flex items-center gap-1 text-xs text-dt-text-2 font-dt-mono">
             <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--dt-text-3)" strokeWidth="1.5" opacity="0.5" /></svg>총타수
           </span>
         )}
         {typoMarkers.length > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--dt-error)', fontFamily: 'var(--dt-font-mono)' }}>
-            <span style={{ fontWeight: 700, fontSize: 13 }}>✕</span>오타
+          <span className="flex items-center gap-1 text-xs text-dt-error font-dt-mono">
+            <span className="font-bold text-[13px]">✕</span>오타
           </span>
         )}
       </div>

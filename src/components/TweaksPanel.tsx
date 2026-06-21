@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
-import type { Design, Theme, Lang, RaceViz, CaretStyle, Density } from '@/types';
+import type { Theme, Lang, RaceViz, CaretStyle, Density } from '@/types';
 
 const TweaksPanel = () => {
   const [open, setOpen] = useState(false);
@@ -10,13 +10,7 @@ const TweaksPanel = () => {
     return (
       <button
         onClick={() => setOpen(true)}
-        style={{
-          position: 'fixed', right: 16, bottom: 16, zIndex: 9999,
-          background: 'rgba(20,22,29,0.9)', color: 'var(--dt-text-2)',
-          border: '0.5px solid var(--dt-border)', borderRadius: 8,
-          padding: '8px 14px', fontSize: 12, fontFamily: 'var(--dt-font-mono)',
-          cursor: 'default', backdropFilter: 'blur(12px)',
-        }}
+        className="fixed right-4 bottom-4 z-[9999] bg-[rgba(20,22,29,0.9)] text-dt-text-2 border-[0.5px] border-dt-border rounded-lg px-3.5 py-2 text-xs font-dt-mono cursor-default backdrop-blur-md"
       >
         ⚙ Tweaks
       </button>
@@ -24,32 +18,13 @@ const TweaksPanel = () => {
   }
 
   return (
-    <div style={{
-      position: 'fixed', right: 16, bottom: 16, zIndex: 9999,
-      width: 280, maxHeight: 'calc(100vh - 32px)',
-      background: 'rgba(20,22,29,0.92)', color: 'var(--dt-text)',
-      border: '0.5px solid var(--dt-border)', borderRadius: 12,
-      backdropFilter: 'blur(24px)', overflow: 'hidden',
-      display: 'flex', flexDirection: 'column',
-      fontFamily: 'var(--dt-font-mono)', fontSize: 12,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '0.5px solid var(--dt-border)' }}>
-        <span style={{ fontWeight: 600, fontSize: 12 }}>Tweaks</span>
-        <button onClick={() => setOpen(false)} style={{ background: 'transparent', border: 0, color: 'var(--dt-text-2)', cursor: 'default', fontSize: 14, padding: '2px 6px', borderRadius: 4 }}>✕</button>
+    <div className="fixed right-4 bottom-4 z-[9999] w-[280px] max-h-[calc(100vh-32px)] bg-[rgba(20,22,29,0.92)] text-dt-text border-[0.5px] border-dt-border rounded-xl backdrop-blur-2xl overflow-hidden flex flex-col font-dt-mono text-xs">
+      <div className="flex items-center justify-between px-4 py-3 border-b-[0.5px] border-dt-border">
+        <span className="font-semibold text-xs">Tweaks</span>
+        <button onClick={() => setOpen(false)} className="bg-transparent border-0 text-dt-text-2 cursor-default text-sm py-0.5 px-1.5 rounded">✕</button>
       </div>
-      <div style={{ padding: '8px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
-        <TwkSection label="Design system" />
-        <TwkSelect
-          label="Style"
-          value={store.design}
-          options={[
-            { value: 'editor', label: 'Editor (custom)' },
-            { value: 'bold', label: 'Bold' },
-            { value: 'corporate', label: 'Corporate' },
-            { value: 'contemporary', label: 'Contemporary' },
-          ]}
-          onChange={(v) => store.setDesign(v as Design)}
-        />
+      <div className="px-4 pt-2 pb-4 flex flex-col gap-2.5 overflow-y-auto">
+        <TwkSection label="Theme" />
         <TwkRadio
           label="Theme"
           value={store.theme}
@@ -104,16 +79,16 @@ const TweaksPanel = () => {
 };
 
 const TwkSection = ({ label }: { label: string }) => (
-  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--dt-text-3)', paddingTop: 8 }}>{label}</div>
+  <div className="text-[10px] font-semibold tracking-[0.06em] uppercase text-dt-text-3 pt-2">{label}</div>
 );
 
 const TwkSelect = ({ label, value, options, onChange }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-    <span style={{ color: 'var(--dt-text-2)', fontSize: 11 }}>{label}</span>
+  <div className="flex flex-col gap-1">
+    <span className="text-dt-text-2 text-[11px]">{label}</span>
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      style={{ background: 'var(--dt-card)', color: 'var(--dt-text)', border: '0.5px solid var(--dt-border)', borderRadius: 6, padding: '5px 8px', fontSize: 11, fontFamily: 'inherit', outline: 'none' }}
+      className="bg-dt-card text-dt-text border-[0.5px] border-dt-border rounded-md py-1 px-2 text-[11px] font-[inherit] outline-none"
     >
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
@@ -121,19 +96,14 @@ const TwkSelect = ({ label, value, options, onChange }: { label: string; value: 
 );
 
 const TwkRadio = ({ label, value, options, onChange }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-    <span style={{ color: 'var(--dt-text-2)', fontSize: 11 }}>{label}</span>
-    <div style={{ display: 'flex', gap: 4 }}>
+  <div className="flex flex-col gap-1">
+    <span className="text-dt-text-2 text-[11px]">{label}</span>
+    <div className="flex gap-1">
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
-          style={{
-            flex: 1, padding: '5px 0', fontSize: 11,
-            background: value === o.value ? 'var(--dt-primary)' : 'var(--dt-hover)',
-            color: value === o.value ? '#0D0E12' : 'var(--dt-text-2)',
-            border: 0, borderRadius: 5, cursor: 'default', fontFamily: 'inherit',
-          }}
+          className={`flex-1 py-1.5 text-[11px] border-0 rounded font-[inherit] cursor-default ${value === o.value ? 'bg-dt-primary text-[#0D0E12]' : 'bg-dt-hover text-dt-text-2'}`}
         >
           {o.label}
         </button>

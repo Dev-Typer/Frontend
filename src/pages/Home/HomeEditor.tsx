@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 
 const SectionRule = ({ label }: { label: string }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '36px 28px 4px', color: 'var(--dt-text-3)' }}>
-    <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--dt-text-2)' }}>// {label}</span>
-    <span style={{ flex: 1, height: 1, background: 'var(--dt-border)' }} />
+  <div className="flex items-center gap-3.5 pt-9 px-7 pb-1 text-dt-text-3">
+    <span className="text-[11px] font-medium tracking-[0.14em] uppercase text-dt-text-2">// {label}</span>
+    <span className="flex-1 h-px bg-dt-border" />
   </div>
 );
 
@@ -18,20 +18,11 @@ interface TermBtnProps {
 const TermBtn = ({ onClick, children, primary }: TermBtnProps) => (
   <button
     onClick={onClick}
-    style={{
-      display: 'inline-flex', alignItems: 'center', padding: '10px 16px',
-      background: primary ? 'var(--dt-primary)' : 'var(--dt-card)',
-      color: primary ? '#0D0E12' : 'var(--dt-text)',
-      boxShadow: primary
-        ? 'inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 0 rgba(0,0,0,0.5), 0 6px 16px -6px rgba(80,250,123,0.5)'
-        : 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px var(--dt-border), 0 1px 0 rgba(0,0,0,0.5)',
-      border: 0, borderRadius: 4,
-      fontFamily: 'var(--dt-font-mono)', fontSize: 13, fontWeight: 500,
-      cursor: 'default',
-      transition: 'transform 120ms ease-out, box-shadow 120ms ease-out, filter 120ms',
-    }}
-    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.filter = 'brightness(1.08)'; }}
-    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.filter = 'brightness(1)'; }}
+    className={`inline-flex items-center py-2.5 px-4 border-0 rounded font-dt-mono text-[13px] font-medium cursor-default transition-[transform,box-shadow,filter] duration-[120ms] hover:-translate-y-px hover:brightness-110 ${
+      primary
+        ? 'bg-dt-primary text-[#0D0E12] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_1px_0_rgba(0,0,0,0.5),0_6px_16px_-6px_rgba(80,250,123,0.5)]'
+        : 'bg-dt-card text-dt-text shadow-[inset_0_1px_0_rgba(255,255,255,0.06),inset_0_0_0_1px_var(--dt-border),0_1px_0_rgba(0,0,0,0.5)]'
+    }`}
   >
     {children}
   </button>
@@ -46,16 +37,16 @@ const LiveStrip = ({ onlineLive }: { onlineLive: number }) => {
     { k: 'races',    v: '12,847',   hint: 'today' },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderRadius: 6, overflow: 'hidden', background: 'var(--dt-card)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px var(--dt-border), 0 1px 0 rgba(0,0,0,0.3), 0 8px 24px -16px rgba(0,0,0,0.6)' }}>
+    <div className="grid grid-cols-5 rounded-md overflow-hidden bg-dt-card shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_var(--dt-border),0_1px_0_rgba(0,0,0,0.3),0_8px_24px_-16px_rgba(0,0,0,0.6)]">
       {items.map((s, i) => (
-        <div key={s.k} style={{ padding: '14px 18px', boxShadow: i > 0 ? 'inset 1px 0 0 var(--dt-border)' : 'none' }}>
-          <div style={{ color: 'var(--dt-text-3)', fontSize: 11, marginBottom: 6 }}>
-            <span style={{ color: '#6272A4' }}>// {s.k}</span>
+        <div key={s.k} className={`py-3.5 px-[18px] ${i > 0 ? 'shadow-[inset_1px_0_0_var(--dt-border)]' : 'shadow-none'}`}>
+          <div className="text-dt-text-3 text-[11px] mb-1.5">
+            <span className="text-[#6272A4]">// {s.k}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            {s.live && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--dt-error)', boxShadow: '0 0 8px rgba(255,85,85,0.7)', display: 'inline-block' }} />}
-            <span className="dt-tabular" style={{ fontSize: 22, fontWeight: 500, color: 'var(--dt-primary)' }}>{s.v}</span>
-            <span style={{ fontSize: 11, color: 'var(--dt-text-2)' }}>{s.hint}</span>
+          <div className="flex items-baseline gap-2">
+            {s.live && <span className="w-1.5 h-1.5 rounded-full bg-dt-error shadow-[0_0_8px_rgba(255,85,85,0.7)] inline-block" />}
+            <span className="dt-tabular text-[22px] font-medium text-dt-primary">{s.v}</span>
+            <span className="text-[11px] text-dt-text-2">{s.hint}</span>
           </div>
         </div>
       ))}
@@ -71,31 +62,29 @@ const ModeList = ({ navigate }: { navigate: (r: string) => void }) => {
     { route: '/daily',  file: 'daily.ts',  fn: 'daily',    label: t("Today's challenge"), desc: t('One snippet, one attempt.') },
   ];
   return (
-    <div style={{ borderRadius: 6, overflow: 'hidden', background: 'var(--dt-card)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px var(--dt-border), 0 1px 0 rgba(0,0,0,0.3), 0 8px 24px -16px rgba(0,0,0,0.6)' }}>
+    <div className="rounded-md overflow-hidden bg-dt-card shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_var(--dt-border),0_1px_0_rgba(0,0,0,0.3),0_8px_24px_-16px_rgba(0,0,0,0.6)]">
       {items.map((it, i) => (
         <div
           key={it.file}
           onClick={() => navigate(it.route)}
-          style={{ display: 'grid', gridTemplateColumns: '230px 1fr 130px', alignItems: 'center', gap: 16, padding: '14px 20px', boxShadow: i > 0 ? 'inset 0 1px 0 var(--dt-border)' : 'none', cursor: 'default', transition: 'background 150ms' }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--dt-hover)'; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+          className={`grid grid-cols-[230px_1fr_130px] items-center gap-4 py-3.5 px-5 cursor-default transition-colors duration-150 hover:bg-dt-hover ${i > 0 ? 'shadow-[inset_0_1px_0_var(--dt-border)]' : 'shadow-none'}`}
         >
-          <div style={{ fontSize: 13 }}>
-            <span style={{ color: '#FF79C6' }}>import</span>{' '}
-            <span style={{ color: 'var(--dt-text-2)' }}>{`{`}</span>{' '}
-            <span style={{ color: '#50FA7B' }}>{it.fn}</span>{' '}
-            <span style={{ color: 'var(--dt-text-2)' }}>{`}`}</span>{' '}
-            <span style={{ color: '#FF79C6' }}>from</span>{' '}
-            <span style={{ color: '#F1FA8C' }}>"./{it.file}"</span>
+          <div className="text-[13px]">
+            <span className="text-[#FF79C6]">import</span>{' '}
+            <span className="text-dt-text-2">{`{`}</span>{' '}
+            <span className="text-[#50FA7B]">{it.fn}</span>{' '}
+            <span className="text-dt-text-2">{`}`}</span>{' '}
+            <span className="text-[#FF79C6]">from</span>{' '}
+            <span className="text-[#F1FA8C]">"./{it.file}"</span>
           </div>
           <div>
-            <div style={{ fontSize: 13, color: 'var(--dt-text)' }}>{it.label}</div>
-            <div style={{ fontSize: 12, color: 'var(--dt-text-2)', marginTop: 2 }}>{it.desc}</div>
+            <div className="text-[13px] text-dt-text">{it.label}</div>
+            <div className="text-xs text-dt-text-2 mt-0.5">{it.desc}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="text-right">
             <TermBtn onClick={() => navigate(it.route)} primary>
-              <span style={{ color: '#0D0E12' }}>{it.fn}</span>
-              <span style={{ color: 'rgba(13,14,18,0.7)' }}>()</span>
+              <span className="text-[#0D0E12]">{it.fn}</span>
+              <span className="text-[rgba(13,14,18,0.7)]">()</span>
             </TermBtn>
           </div>
         </div>
@@ -114,7 +103,7 @@ const ResetCountdown = () => {
   const mm = Math.floor((ms / 60000) % 60);
   const ss = Math.floor((ms / 1000) % 60);
   return (
-    <div className="dt-tabular" style={{ fontSize: 36, color: 'var(--dt-primary)', letterSpacing: '0.02em', fontFamily: 'var(--dt-font-mono)', textShadow: '0 0 16px rgba(80,250,123,0.25)' }}>
+    <div className="dt-tabular text-4xl text-dt-primary tracking-[0.02em] font-dt-mono [text-shadow:0_0_16px_rgba(80,250,123,0.25)]">
       {String(hh).padStart(2,'0')}:{String(mm).padStart(2,'0')}:{String(ss).padStart(2,'0')}
     </div>
   );
@@ -123,34 +112,34 @@ const ResetCountdown = () => {
 const DailyWidget = ({ navigate }: { navigate: (r: string) => void }) => {
   const t = useT();
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 14 }}>
-      <div style={{ background: 'var(--dt-card)', borderRadius: 6, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px var(--dt-border), 0 8px 24px -16px rgba(0,0,0,0.6)', padding: '16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, rgba(80,250,123,0.12), transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative' }}>
-          <div style={{ color: '#6272A4', fontSize: 11.5, marginBottom: 8 }}>// {t("Today's challenge")} · TypeScript · medium</div>
-          <div style={{ fontSize: 13.5, lineHeight: 1.75 }}>
-            <div><span style={{ color: '#8BE9FD' }}>const</span>{' '}<span style={{ color: '#F1FA8C' }}>todaysChallenge</span>{' '}<span style={{ color: 'var(--dt-text-2)' }}>=</span>{' '}<span style={{ color: 'var(--dt-text-2)' }}>{`{`}</span></div>
-            <div style={{ paddingLeft: 22, color: 'var(--dt-text-2)' }}>
-              date: <span style={{ color: '#F1FA8C' }}>"2026-05-27"</span>,<br/>
-              submissions: <span style={{ color: '#BD93F9' }}>4218</span>,<br/>
-              attemptsLeft: <span style={{ color: '#BD93F9' }}>1</span>,
+    <div className="grid grid-cols-[1.6fr_1fr] gap-3.5">
+      <div className="bg-dt-card rounded-md shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_var(--dt-border),0_8px_24px_-16px_rgba(0,0,0,0.6)] py-4 px-5 relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-[200px] h-[200px] pointer-events-none bg-[radial-gradient(circle,rgba(80,250,123,0.12),transparent_70%)]" />
+        <div className="relative">
+          <div className="text-[#6272A4] text-[11.5px] mb-2">// {t("Today's challenge")} · TypeScript · medium</div>
+          <div className="text-[13.5px] leading-[1.75]">
+            <div><span className="text-[#8BE9FD]">const</span>{' '}<span className="text-[#F1FA8C]">todaysChallenge</span>{' '}<span className="text-dt-text-2">=</span>{' '}<span className="text-dt-text-2">{`{`}</span></div>
+            <div className="pl-[22px] text-dt-text-2">
+              date: <span className="text-[#F1FA8C]">"2026-05-27"</span>,<br/>
+              submissions: <span className="text-[#BD93F9]">4218</span>,<br/>
+              attemptsLeft: <span className="text-[#BD93F9]">1</span>,
             </div>
-            <div><span style={{ color: 'var(--dt-text-2)' }}>{`}`}</span>;</div>
+            <div><span className="text-dt-text-2">{`}`}</span>;</div>
           </div>
-          <div style={{ marginTop: 14 }}>
+          <div className="mt-3.5">
             <TermBtn onClick={() => navigate('/daily')} primary>
-              <span style={{ color: '#0D0E12' }}>challenge.submit</span>
-              <span style={{ color: 'rgba(13,14,18,0.7)' }}>()</span>
+              <span className="text-[#0D0E12]">challenge.submit</span>
+              <span className="text-[rgba(13,14,18,0.7)]">()</span>
             </TermBtn>
           </div>
         </div>
       </div>
-      <div style={{ background: 'var(--dt-card)', borderRadius: 6, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px var(--dt-border), 0 8px 24px -16px rgba(0,0,0,0.6)', padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div className="bg-dt-card rounded-md shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_var(--dt-border),0_8px_24px_-16px_rgba(0,0,0,0.6)] py-4 px-5 flex flex-col justify-between">
         <div>
-          <div style={{ color: '#6272A4', fontSize: 11.5, marginBottom: 6 }}>// {t('Resets in')}</div>
+          <div className="text-[#6272A4] text-[11.5px] mb-1.5">// {t('Resets in')}</div>
           <ResetCountdown />
         </div>
-        <div style={{ marginTop: 14, padding: '8px 12px', borderRadius: 4, background: 'rgba(255,184,108,0.08)', boxShadow: 'inset 0 0 0 1px rgba(255,184,108,0.25)', color: '#FFB86C', fontSize: 12 }}>
+        <div className="mt-3.5 py-2 px-3 rounded bg-[rgba(255,184,108,0.08)] shadow-[inset_0_0_0_1px_rgba(255,184,108,0.25)] text-[#FFB86C] text-xs">
           ⚠ {t('not submitted')} · {t('1 attempt left')}
         </div>
       </div>
@@ -166,19 +155,19 @@ const HomeEditor = () => {
   const onlineLive = 428 + Math.round(Math.sin(tick * 0.3) * 6);
 
   return (
-    <div style={{ maxWidth: 920, padding: '40px 0 60px' }}>
-      <div style={{ padding: '0 28px 28px', position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
-          <img src="/assets/logo.png" alt="" width={48} height={48} style={{ display: 'block', margin: '-10px 0' }} />
-          <span style={{ color: '#6272A4', fontSize: 14 }}># DevTyper</span>
+    <div className="max-w-[920px] pt-10 pb-[60px]">
+      <div className="px-7 pb-7 relative">
+        <div className="flex items-center gap-3.5 mb-2">
+          <img src="/assets/logo.png" alt="" width={48} height={48} className="block -my-2.5" />
+          <span className="text-[#6272A4] text-sm"># DevTyper</span>
         </div>
-        <h1 style={{ margin: 0, fontFamily: 'var(--dt-font-mono)', fontSize: 44, fontWeight: 500, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+        <h1 className="m-0 font-dt-mono text-[44px] font-medium tracking-[-0.02em] leading-[1.1]">
           {t('Race the code you actually write.')}
         </h1>
-        <p style={{ marginTop: 18, fontSize: 15, lineHeight: 1.65, maxWidth: 580, color: 'var(--dt-text-2)' }}>
+        <p className="mt-[18px] text-[15px] leading-[1.65] max-w-[580px] text-dt-text-2">
           {t('A typing platform for developers — JavaScript, Python, Go, Java, SQL & TypeScript. Measure your speed, race up to 3 devs live, climb the global ladder.')}
         </p>
-        <div style={{ marginTop: 24, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="mt-6 flex gap-2.5 flex-wrap">
           <TermBtn onClick={() => navigate('/solo')} primary>$ devtyper start</TermBtn>
           <TermBtn onClick={() => navigate('/battle')}>$ devtyper battle --quick</TermBtn>
           <TermBtn onClick={() => navigate('/daily')}>$ devtyper daily</TermBtn>
@@ -186,17 +175,17 @@ const HomeEditor = () => {
       </div>
 
       <SectionRule label="Live" />
-      <div style={{ padding: '20px 28px 0' }}>
+      <div className="pt-5 px-7">
         <LiveStrip onlineLive={onlineLive} />
       </div>
 
       <SectionRule label="Modes" />
-      <div style={{ padding: '20px 28px 0' }}>
+      <div className="pt-5 px-7">
         <ModeList navigate={navigate} />
       </div>
 
       <SectionRule label="Today" />
-      <div style={{ padding: '20px 28px 32px' }}>
+      <div className="pt-5 px-7 pb-8">
         <DailyWidget navigate={navigate} />
       </div>
     </div>

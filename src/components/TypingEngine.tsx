@@ -11,6 +11,7 @@ interface Props {
   autoFocus?: boolean;
   showCounter?: boolean;
   resetKey?: number | string;
+  embedded?: boolean;
 }
 
 const TypingEngine = ({
@@ -23,6 +24,7 @@ const TypingEngine = ({
   autoFocus = true,
   showCounter = false,
   resetKey,
+  embedded = false,
 }: Props) => {
   const [typed, setTyped] = useState('');
   const [errors, setErrors] = useState(0);
@@ -172,16 +174,19 @@ const TypingEngine = ({
   }, [code, typed]);
 
   return (
-    <div ref={containerRef} tabIndex={0} style={{ outline: 'none', position: 'relative' }}>
+    <div ref={containerRef} tabIndex={0} className={`outline-none relative ${embedded ? 'h-full' : ''}`}>
       {showCounter && (
-        <div style={{ display: 'flex', gap: 24, marginBottom: 14, alignItems: 'baseline', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-text-2)', fontSize: 13 }}>
-          <span><span style={{ color: 'var(--dt-primary)', fontSize: 24, fontWeight: 500 }} className="dt-tabular">{wpm}</span> <span style={{ opacity: .7 }}>wpm</span></span>
-          <span><span style={{ color: 'var(--dt-text)', fontSize: 16 }} className="dt-tabular">{acc.toFixed(1)}</span><span style={{ opacity: .7 }}>% acc</span></span>
-          <span><span style={{ color: 'var(--dt-text)', fontSize: 16 }} className="dt-tabular">{(elapsedMs / 1000).toFixed(1)}</span><span style={{ opacity: .7 }}>s</span></span>
-          <span style={{ marginLeft: 'auto' }}>{typed.length} / {code.length}</span>
+        <div className="flex gap-6 mb-3.5 items-baseline font-dt-mono text-dt-text-2 text-[13px]">
+          <span><span className="text-dt-primary text-2xl font-medium dt-tabular">{wpm}</span> <span className="opacity-70">wpm</span></span>
+          <span><span className="text-dt-text text-base dt-tabular">{acc.toFixed(1)}</span><span className="opacity-70">% acc</span></span>
+          <span><span className="text-dt-text text-base dt-tabular">{(elapsedMs / 1000).toFixed(1)}</span><span className="opacity-70">s</span></span>
+          <span className="ml-auto">{typed.length} / {code.length}</span>
         </div>
       )}
-      <div className="dt-code-area" style={{ fontSize, lineHeight: 1.85 }}>
+      <div
+        className={`dt-code-area leading-[1.85] ${embedded ? '!bg-transparent !border-0 !rounded-none px-7 py-3 !overflow-x-visible' : ''}`}
+        style={{ fontSize }}
+      >
         {cells.map(({ i, ch, state, isCursor }) => {
           const isNewline = ch === '\n';
           const cls = ['ch', state !== 'pending' ? state : '', isCursor && active ? 'cursor' : '', caretStyle === 'block' ? 'caret-block' : '', caretStyle === 'under' ? 'caret-under' : ''].filter(Boolean).join(' ');

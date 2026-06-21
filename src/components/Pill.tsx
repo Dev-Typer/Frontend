@@ -10,8 +10,8 @@ interface Props {
 const Pill = ({ active, onClick, children, style }: Props) => (
   <button
     onClick={onClick}
-    className={`dt-chip${active ? ' active' : ''}`}
-    style={{ cursor: 'default', border: 0, fontFamily: 'inherit', ...style }}
+    className={`dt-chip${active ? ' active' : ''} cursor-default border-0 font-[inherit]`}
+    style={style}
   >
     {children}
   </button>

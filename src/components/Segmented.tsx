@@ -10,7 +10,7 @@ interface Props {
 }
 
 const Segmented = ({ value, onChange, options }: Props) => (
-  <div style={{ display: 'inline-flex', padding: 2, gap: 2, background: 'var(--dt-hover)', borderRadius: 'var(--dt-radius)' }}>
+  <div className="inline-flex p-0.5 gap-0.5 bg-dt-hover rounded-dt">
     {options.map((opt) => {
       const v = typeof opt === 'string' ? opt : opt.value;
       const l = typeof opt === 'string' ? opt : opt.label;
@@ -19,17 +19,7 @@ const Segmented = ({ value, onChange, options }: Props) => (
         <button
           key={v}
           onClick={() => onChange(v)}
-          className="dt-mono"
-          style={{
-            border: 0,
-            background: active ? 'var(--dt-card)' : 'transparent',
-            color: active ? 'var(--dt-text)' : 'var(--dt-text-2)',
-            padding: '7px 14px', fontSize: 13, fontWeight: 500,
-            borderRadius: 6, cursor: 'default',
-            boxShadow: active ? '0 0 0 0.5px var(--dt-border)' : 'none',
-            transition: 'background var(--dt-trans), color var(--dt-trans)',
-            fontFamily: 'inherit',
-          }}
+          className={`dt-mono border-0 px-3.5 py-[7px] text-[13px] font-medium rounded-md cursor-default transition-colors font-[inherit] ${active ? 'bg-dt-card text-dt-text shadow-[0_0_0_0.5px_var(--dt-border)]' : 'bg-transparent text-dt-text-2 shadow-none'}`}
         >
           {l}
         </button>

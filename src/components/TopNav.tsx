@@ -30,7 +30,7 @@ const TopNav = ({ theme, onTheme, isLoggedIn, onLogin, onLogout, me }: Props) =>
 
   return (
     <nav className="dt-nav">
-      <button onClick={() => navigate('/')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'default' }}>
+      <button onClick={() => navigate('/')} className="bg-transparent border-0 p-0 cursor-default">
         <Logo />
       </button>
       <div className="dt-nav-links">
@@ -45,28 +45,25 @@ const TopNav = ({ theme, onTheme, isLoggedIn, onLogin, onLogout, me }: Props) =>
         ))}
       </div>
       <button
-        className="dt-nav-link"
+        className="dt-nav-link w-9 h-9 inline-flex items-center justify-center p-0"
         onClick={onTheme}
         title={t('Toggle theme')}
-        style={{ width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
       >
         {theme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
       </button>
       {isLoggedIn ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className="flex items-center gap-1">
           <button
-            className="dt-nav-link"
+            className="dt-nav-link flex items-center gap-2 py-1 pr-1 pl-2.5"
             onClick={() => navigate('/mypage')}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 10px' }}
           >
-            <span className="dt-mono" style={{ fontSize: 13 }}>{me.handle}</span>
+            <span className="dt-mono text-[13px]">{me.handle}</span>
             <Avatar handle={me.handle} hue={me.avatarHue} size={28} />
           </button>
           <button
-            className="dt-nav-link"
+            className="dt-nav-link text-[13px] py-1 px-2"
             onClick={onLogout}
             title={t('Sign out')}
-            style={{ fontSize: 13, padding: '4px 8px' }}
           >↩</button>
         </div>
       ) : (

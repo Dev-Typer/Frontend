@@ -12,8 +12,9 @@ const ROUTE_TO_FILE: Record<string, string> = {
   'battle':         'battle.ts',
   'daily':          'daily.ts',
   'ranking':        'ranking.sql',
+  'snippets':       'snippets.ts',
   'mypage':         'profile.tsx',
-  'admin/snippets': 'snippets.ts',
+  'admin/snippets': 'admin-snippets.ts',
 };
 
 const ADMIN_TREE = [
@@ -28,6 +29,9 @@ const EDITOR_TREE = [
     { type: 'file' as const, name: 'solo.ts',   route: 'solo'   },
     { type: 'file' as const, name: 'battle.ts', route: 'battle' },
     { type: 'file' as const, name: 'daily.ts',  route: 'daily'  },
+  ]},
+  { type: 'folder' as const, name: 'browse', children: [
+    { type: 'file' as const, name: 'snippets.ts', route: 'snippets' },
   ]},
   { type: 'folder' as const, name: 'compete', children: [
     { type: 'file' as const, name: 'ranking.sql', route: 'ranking' },

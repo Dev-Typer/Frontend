@@ -25,7 +25,8 @@ const TopNav = ({ theme, onTheme, isLoggedIn, onLogin, onLogout, me }: Props) =>
     { id: 'solo',    label: t('Solo Practice')   },
     { id: 'battle',  label: t('Battle')          },
     { id: 'daily',   label: t('Daily Challenge') },
-    { id: 'ranking', label: t('Ranking')         },
+    { id: 'ranking',  label: t('Ranking')         },
+    { id: 'snippets', label: t('Snippets')        },
   ];
 
   return (

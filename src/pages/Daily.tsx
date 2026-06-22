@@ -290,15 +290,23 @@ function DailyTyping({
   );
 }
 
-// ─── Result card (no CORE — will be added after backend update) ───────────────
+function dailyCore(wpm: number, acc: number, difficulty: string, codeLength: number): number {
+  const diffW = ({ easy: 1.0, medium: 1.3, hard: 1.6 } as Record<string, number>)[difficulty] ?? 1.3;
+  const lenW = Math.min(2.0, Math.max(0.5, codeLength / 200));
+  return Math.round(wpm * (acc / 100) * diffW * lenW);
+}
+
+// ─── Result card ──────────────────────────────────────────────────────────────
 function DailyResultCard({
-  result, submitResult, onRetry,
+  result, submitResult, ch, onRetry,
 }: {
   result: TypingResult;
   submitResult: SubmitDailyChallengeResponseDto | null;
+  ch: DailyChallengeDto;
   onRetry: () => void;
 }) {
   const t = useT();
+  const myCore = dailyCore(result.wpm, result.acc, ch.snippet.difficulty, ch.snippet.content.length);
   return (
     <div className="dt-card p-9 text-center">
       <div className="w-[60px] h-[60px] rounded-full mx-auto mb-[18px] flex items-center justify-center text-dt-primary"
@@ -309,6 +317,10 @@ function DailyResultCard({
       <p className="dt-body-sm text-dt-text-2 mb-[26px]">
         {t("You'll see your final position when the day closes. Live rank shown below.")}
       </p>
+      <div className="mb-[26px]">
+        <div className="dt-mono tabular-nums text-[52px] font-bold leading-none text-dt-primary">{myCore}</div>
+        <div className="dt-label text-dt-text-3 mt-[6px]">CORE</div>
+      </div>
       <div className="flex justify-center gap-10 flex-wrap mb-6">
         <Stat label="WPM" value={result.wpm} accent />
         <Stat label="Accuracy" value={result.acc.toFixed(1)} unit="%" />
@@ -534,7 +546,7 @@ const Daily = () => {
           <div>
             {phase === 'intro'
               ? <DailyIntro ch={challenge} isLoggedIn={isLoggedIn} onStart={start} />
-              : result && <DailyResultCard result={result} submitResult={submitResult} onRetry={retry} />}
+              : result && <DailyResultCard result={result} submitResult={submitResult} ch={challenge} onRetry={retry} />}
           </div>
           <DailyLeaderboard items={leaderboard} total={leaderTotal} myUserId={myUserId ?? undefined} />
         </div>

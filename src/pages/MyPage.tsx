@@ -246,7 +246,7 @@ function StreakCard() {
 // ─── CoreDetailCard ────────────────────────────────────────────────────────────
 function SnippetCoreChip({ snip }: { snip: typeof BEST_SNIPPETS[0] }) {
   const [show, setShow] = useState(false);
-  const icon = LANG_ICON[snip.lang];
+  const icon = LANG_ICON[snip.lang.toLowerCase()];
   const DIFF_COLOR: Record<string, string> = { easy: '#3DD68C', medium: '#57E5FF', hard: '#B93CFF' };
   const dc = DIFF_COLOR[snip.diff];
   return (

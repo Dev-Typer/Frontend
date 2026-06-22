@@ -35,8 +35,8 @@ export const CODE_SNIPPETS: Record<string, Record<string, string[]>> = {
   java: {
     easy: [`int sum = 0;\nfor (int i = 1; i <= n; i++) {\n    sum += i;\n}\nreturn sum;`],
   },
-  sql: {
-    easy: [`SELECT users.name, COUNT(orders.id) AS total\nFROM users\nLEFT JOIN orders ON orders.user_id = users.id\nGROUP BY users.id\nORDER BY total DESC\nLIMIT 10;`],
+  kotlin: {
+    easy: [`fun main() {\n    val names = listOf("Alice", "Bob", "Charlie")\n    names.filter { it.length > 3 }\n         .map { it.uppercase() }\n         .forEach { println(it) }\n}`],
   },
 };
 
@@ -285,10 +285,10 @@ export const SOLO_TRACKS: SoloTrack[] = [
     code: `int sum = 0;\nfor (int i = 1; i <= n; i++) {\n    sum += i;\n}\nreturn sum;` },
   { id: 'java-stream', lang: 'java', difficulty: 'medium', title: 'Stream', avgWpm: 64,
     code: `List<String> names = users.stream()\n    .filter(u -> u.isActive())\n    .map(User::getName)\n    .sorted()\n    .collect(Collectors.toList());` },
-  { id: 'sql-join', lang: 'sql', difficulty: 'easy', title: 'LEFT JOIN', avgWpm: 71,
-    code: `SELECT users.name, COUNT(orders.id) AS total\nFROM users\nLEFT JOIN orders ON orders.user_id = users.id\nGROUP BY users.id\nORDER BY total DESC\nLIMIT 10;` },
-  { id: 'sql-window', lang: 'sql', difficulty: 'hard', title: 'RANK()', avgWpm: 57,
-    code: `SELECT\n  RANK() OVER (ORDER BY rating DESC) AS rank,\n  handle, rating\nFROM users\nWHERE last_seen > NOW() - INTERVAL '30 days'\nLIMIT 100;` },
+  { id: 'kotlin-filter', lang: 'kotlin', difficulty: 'easy', title: 'filter + map', avgWpm: 71,
+    code: `fun main() {\n    val names = listOf("Alice", "Bob", "Charlie")\n    names.filter { it.length > 3 }\n         .map { it.uppercase() }\n         .forEach { println(it) }\n}` },
+  { id: 'kotlin-coroutine', lang: 'kotlin', difficulty: 'hard', title: 'Coroutine flow', avgWpm: 55,
+    code: `import kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.*\n\nfun numberFlow(): Flow<Int> = flow {\n    for (i in 1..5) {\n        delay(100)\n        emit(i)\n    }\n}\n\nfun main() = runBlocking {\n    numberFlow()\n        .filter { it % 2 == 0 }\n        .collect { println(it) }\n}` },
   { id: 'js-long-store', lang: 'javascript', difficulty: 'hard', title: 'createStore (long)', avgWpm: 52,
     code: `function createStore(reducer, initialState) {\n  let state = initialState;\n  let listeners = [];\n\n  function getState() {\n    return state;\n  }\n\n  function dispatch(action) {\n    state = reducer(state, action);\n    listeners.forEach((listener) => listener(state));\n    return action;\n  }\n\n  function subscribe(listener) {\n    listeners.push(listener);\n    return function unsubscribe() {\n      listeners = listeners.filter((l) => l !== listener);\n    };\n  }\n\n  function replaceReducer(nextReducer) {\n    reducer = nextReducer;\n    dispatch({ type: "@@INIT" });\n  }\n\n  dispatch({ type: "@@INIT" });\n  return { getState, dispatch, subscribe, replaceReducer };\n}` },
   { id: 'py-long-bfs', lang: 'python', difficulty: 'hard', title: 'Dijkstra (long)', avgWpm: 50,

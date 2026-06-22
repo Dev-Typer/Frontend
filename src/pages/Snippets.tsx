@@ -13,13 +13,13 @@ import type { SoloTrack } from '@/types';
 // ─── Static maps ──────────────────────────────────────────────────────────────
 const LANG_COLOR: Record<string, string> = {
   javascript: '#F7DF1E', typescript: '#3178C6', python: '#3776AB',
-  go: '#00ADD8', java: '#F89820', sql: '#E48E00',
+  go: '#00ADD8', java: '#F89820', kotlin: '#7F52FF',
   'c++': '#00599C', cpp: '#00599C', 'c#': '#9B4F96', csharp: '#9B4F96',
   c: '#5C6BC0', rust: '#DEA584',
 };
 const SNIP_SOURCE: Record<string, string> = {
   javascript: 'MDN Web Docs', typescript: 'TS Handbook', python: 'Python Docs',
-  go: 'Go by Example', java: 'Java SE Docs', sql: 'PostgreSQL Docs',
+  go: 'Go by Example', java: 'Java SE Docs', kotlin: 'Kotlin Docs',
   'c++': 'cppreference', 'c#': '.NET Docs', c: 'cppreference', rust: 'The Rust Book',
 };
 const DIFF_COLOR: Record<string, string> = {
@@ -28,12 +28,12 @@ const DIFF_COLOR: Record<string, string> = {
 
 function langLabel(lang: string): string {
   return ({ javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python',
-    go: 'Go', java: 'Java', sql: 'SQL', 'c++': 'C++', cpp: 'C++',
+    go: 'Go', java: 'Java', kotlin: 'Kotlin', 'c++': 'C++', cpp: 'C++',
     'c#': 'C#', csharp: 'C#', c: 'C', rust: 'Rust' } as Record<string, string>)[lang] || lang;
 }
 function fileExt(lang: string): string {
   return ({ javascript: '.js', typescript: '.ts', python: '.py', go: '.go',
-    java: '.java', sql: '.sql', 'c++': '.cpp', cpp: '.cpp',
+    java: '.java', kotlin: '.kt', 'c++': '.cpp', cpp: '.cpp',
     'c#': '.cs', csharp: '.cs', c: '.c', rust: '.rs' } as Record<string, string>)[lang] || '';
 }
 function diffLabel(d: string): string {

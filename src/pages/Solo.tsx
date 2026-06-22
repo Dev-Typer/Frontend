@@ -16,7 +16,7 @@ const LANGS = [
   { id: 'python',     label: 'Python'     },
   { id: 'go',         label: 'Go'         },
   { id: 'java',       label: 'Java'       },
-  { id: 'sql',        label: 'SQL'        },
+  { id: 'kotlin',     label: 'Kotlin'     },
 ];
 const DIFFS = [
   { id: 'easy',   label: 'Easy',   chars: '~80 chars'  },
@@ -27,7 +27,7 @@ const DIFFS = [
 const kbdClass = 'inline-block py-px px-1.5 mx-0.5 bg-dt-hover border-[0.5px] border-dt-border rounded font-dt-mono text-[11px] text-dt-text-2';
 
 function fileExtFor(lang: string) {
-  return ({ javascript: '.js', typescript: '.ts', python: '.py', go: '.go', java: '.java', sql: '.sql' } as Record<string, string>)[lang] || '.txt';
+  return ({ javascript: '.js', typescript: '.ts', python: '.py', go: '.go', java: '.java', kotlin: '.kt' } as Record<string, string>)[lang] || '.txt';
 }
 
 // ─── CORE scoring (per-play) + best-per-snippet store ───────────────────────

@@ -1,4 +1,4 @@
-import type { User, Opponent, RankEntry, ChallengeEntry, BattleEntry, ChallengeHistoryEntry, StreakEntry, StreakStats, TodaysChallenge, TierDef, Tier, SoloTrack, BestSnippet, CoreHistoryEntry } from '@/types';
+import type { User, Opponent, RankEntry, ChallengeEntry, BattleEntry, ChallengeHistoryEntry, StreakEntry, StreakStats, TodaysChallenge, TierDef, Tier, SoloTrack, BestSnippet, CoreHistoryEntry, TopCoreEntry } from '@/types';
 
 export const CODE_SNIPPETS: Record<string, Record<string, string[]>> = {
   javascript: {
@@ -98,6 +98,14 @@ const ME_BEST_SNIPPETS: BestSnippet[] = [
   { title: 'Bit manipulation',  lang: 'C',          diff: 'medium', core: 94,  rank: 44, total: 1780 },
 ];
 
+const ME_TOP_CORE: TopCoreEntry[] = [
+  { title: 'Array reduce 패턴', lang: 'JavaScript', core: 154.4, diff: 'medium' },
+  { title: 'Binary search',     lang: 'Python',     core: 142.1, diff: 'medium' },
+  { title: 'LRU Cache',         lang: 'TypeScript', core: 138.7, diff: 'hard' },
+  { title: 'Promise chaining',  lang: 'JavaScript', core: 120.5, diff: 'medium' },
+  { title: 'Decorator pattern', lang: 'Python',     core: 115.2, diff: 'hard' },
+];
+
 const ME_CORE_HISTORY: CoreHistoryEntry[] = [
   { label: 'Jan', core: 1240 },
   { label: 'Feb', core: 1980 },
@@ -125,6 +133,7 @@ export const ME: User = {
   longestStreak: 24,
   bestSnippets: ME_BEST_SNIPPETS,
   coreHistory: ME_CORE_HISTORY,
+  topCore: ME_TOP_CORE,
   byLang: [
     { lang: 'JavaScript', core: 1680, snippets: 38, wpm: 98, plays: 112, top: { title: 'Array reduce 패턴', diff: 'medium', core: 154, rank: 6,  total: 4120 } },
     { lang: 'TypeScript', core: 1280, snippets: 24, wpm: 94, plays: 64,  top: { title: 'LRU Cache',         diff: 'hard',   core: 139, rank: 12, total: 2980 } },

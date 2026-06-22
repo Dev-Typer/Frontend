@@ -73,6 +73,7 @@ const AppRoutes = () => {
     longestStreak: 0,
     bestSnippets: [],
     coreHistory: [],
+    topCore: [],
   };
 
   const routes = (
@@ -117,7 +118,7 @@ const App = () => {
   return (
     <LangContext.Provider value={lang}>
       <BrowserRouter>
-        <div className={`dt-design-${design} dt-theme-${theme}`} style={{ minHeight: '100vh' }}>
+        <div className={`dt-design-${design} dt-theme-${theme} dt-skin-revised`} style={{ minHeight: '100vh' }}>
           <AppRoutes />
         </div>
       </BrowserRouter>

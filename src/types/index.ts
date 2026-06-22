@@ -39,6 +39,13 @@ export interface TopSnippet {
   total: number;
 }
 
+export interface TopCoreEntry {
+  title: string;
+  lang: string;
+  core: number;
+  diff: Difficulty;
+}
+
 export interface User {
   handle: string;
   joined: string;
@@ -58,6 +65,7 @@ export interface User {
   longestStreak: number;
   bestSnippets: BestSnippet[];
   coreHistory: CoreHistoryEntry[];
+  topCore: TopCoreEntry[];
 }
 
 export interface SoloTrack {

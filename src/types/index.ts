@@ -17,6 +17,28 @@ export interface AppTweaks {
   density: Density;
 }
 
+export interface BestSnippet {
+  title: string;
+  lang: string;
+  diff: Difficulty;
+  core: number;
+  rank: number;
+  total: number;
+}
+
+export interface CoreHistoryEntry {
+  label: string;
+  core: number;
+}
+
+export interface TopSnippet {
+  title: string;
+  diff: Difficulty;
+  core: number;
+  rank: number;
+  total: number;
+}
+
 export interface User {
   handle: string;
   joined: string;
@@ -29,6 +51,13 @@ export interface User {
   avgAcc: number;
   byLang: LangStat[];
   totalCore: number;
+  globalRank: number;
+  langRank: number;
+  uniqueSnippets: number;
+  currentStreak: number;
+  longestStreak: number;
+  bestSnippets: BestSnippet[];
+  coreHistory: CoreHistoryEntry[];
 }
 
 export interface SoloTrack {
@@ -43,7 +72,10 @@ export interface SoloTrack {
 export interface LangStat {
   lang: string;
   wpm: number;
-  plays: number;
+  plays?: number;
+  core?: number;
+  snippets?: number;
+  top?: TopSnippet;
 }
 
 export interface Opponent {

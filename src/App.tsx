@@ -65,6 +65,13 @@ const AppRoutes = () => {
     avgAcc: 0,
     byLang: [],
     totalCore: 0,
+    globalRank: 0,
+    langRank: 0,
+    uniqueSnippets: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    bestSnippets: [],
+    coreHistory: [],
   };
 
   const routes = (

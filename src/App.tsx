@@ -64,6 +64,7 @@ const AppRoutes = () => {
     maxWpm: 0,
     avgAcc: 0,
     byLang: [],
+    totalCore: 0,
   };
 
   const routes = (

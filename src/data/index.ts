@@ -1,4 +1,4 @@
-import type { User, Opponent, RankEntry, ChallengeEntry, BattleEntry, ChallengeHistoryEntry, StreakEntry, StreakStats, TodaysChallenge, TierDef, Tier } from '@/types';
+import type { User, Opponent, RankEntry, ChallengeEntry, BattleEntry, ChallengeHistoryEntry, StreakEntry, StreakStats, TodaysChallenge, TierDef, Tier, SoloTrack } from '@/types';
 
 export const CODE_SNIPPETS: Record<string, Record<string, string[]>> = {
   javascript: {
@@ -57,6 +57,7 @@ export const ME: User = {
   avgWpm: 92,
   maxWpm: 134,
   avgAcc: 96.4,
+  totalCore: 4820,
   byLang: [
     { lang: 'JavaScript', wpm: 98, plays: 112 },
     { lang: 'TypeScript', wpm: 94, plays: 64 },
@@ -175,3 +176,50 @@ export const STREAK_STATS: StreakStats = (() => {
   }
   return { current, best, total, days: STREAK_HISTORY.length };
 })();
+
+// ─── Solo "playlist" — flat library of snippets ─────────────────────────────
+export const SOLO_TRACKS: SoloTrack[] = [
+  { id: 'js-debounce', lang: 'javascript', difficulty: 'medium', title: 'debounce()', avgWpm: 78,
+    code: `const debounce = (fn, ms) => {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), ms);\n  };\n};` },
+  { id: 'js-fetch', lang: 'javascript', difficulty: 'medium', title: 'fetchUser()', avgWpm: 74,
+    code: `function fetchUser(id) {\n  return fetch(\`/api/users/\${id}\`)\n    .then(res => res.json())\n    .then(data => ({ ...data, fetchedAt: Date.now() }));\n}` },
+  { id: 'js-greet', lang: 'javascript', difficulty: 'easy', title: 'greet()', avgWpm: 92,
+    code: `function greet(name) {\n  return \`Hello, \${name}!\`;\n}\ngreet("world");` },
+  { id: 'js-emitter', lang: 'javascript', difficulty: 'hard', title: 'EventEmitter', avgWpm: 61,
+    code: `class EventEmitter {\n  constructor() { this.events = {}; }\n  on(event, fn) {\n    (this.events[event] ||= []).push(fn);\n    return () => this.off(event, fn);\n  }\n  emit(event, ...args) {\n    (this.events[event] || []).forEach(fn => fn(...args));\n  }\n}` },
+  { id: 'ts-result', lang: 'typescript', difficulty: 'medium', title: 'Result<T>', avgWpm: 70,
+    code: `type Result<T, E = Error> =\n  | { ok: true; value: T }\n  | { ok: false; error: E };\n\nfunction tryParse<T>(s: string): Result<T> {\n  try { return { ok: true, value: JSON.parse(s) }; }\n  catch (e) { return { ok: false, error: e as Error }; }\n}` },
+  { id: 'ts-pipe', lang: 'typescript', difficulty: 'hard', title: 'pipe()', avgWpm: 58,
+    code: `const pipe = <T>(...fns: Array<(x: T) => T>) =>\n  (input: T): T => fns.reduce((acc, fn) => fn(acc), input);\n\nconst clean = pipe<string>(\n  s => s.trim(),\n  s => s.toLowerCase(),\n);` },
+  { id: 'py-fib', lang: 'python', difficulty: 'easy', title: 'fibonacci()', avgWpm: 88,
+    code: `def fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a` },
+  { id: 'py-cache', lang: 'python', difficulty: 'medium', title: 'lru_cache', avgWpm: 72,
+    code: `from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef factorial(n: int) -> int:\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)` },
+  { id: 'py-comp', lang: 'python', difficulty: 'medium', title: 'comprehension', avgWpm: 75,
+    code: `pairs = [\n    (x, y)\n    for x in range(3)\n    for y in range(3)\n    if x != y\n]` },
+  { id: 'go-map', lang: 'go', difficulty: 'medium', title: 'Map[T, U]', avgWpm: 66,
+    code: `func Map[T, U any](s []T, f func(T) U) []U {\n    r := make([]U, len(s))\n    for i, v := range s {\n        r[i] = f(v)\n    }\n    return r\n}` },
+  { id: 'go-server', lang: 'go', difficulty: 'hard', title: 'http.Handler', avgWpm: 59,
+    code: `func handler(w http.ResponseWriter, r *http.Request) {\n    name := r.URL.Query().Get("name")\n    if name == "" {\n        name = "world"\n    }\n    fmt.Fprintf(w, "Hello, %s!", name)\n}` },
+  { id: 'java-sum', lang: 'java', difficulty: 'easy', title: 'sum loop', avgWpm: 80,
+    code: `int sum = 0;\nfor (int i = 1; i <= n; i++) {\n    sum += i;\n}\nreturn sum;` },
+  { id: 'java-stream', lang: 'java', difficulty: 'medium', title: 'Stream', avgWpm: 64,
+    code: `List<String> names = users.stream()\n    .filter(u -> u.isActive())\n    .map(User::getName)\n    .sorted()\n    .collect(Collectors.toList());` },
+  { id: 'sql-join', lang: 'sql', difficulty: 'easy', title: 'LEFT JOIN', avgWpm: 71,
+    code: `SELECT users.name, COUNT(orders.id) AS total\nFROM users\nLEFT JOIN orders ON orders.user_id = users.id\nGROUP BY users.id\nORDER BY total DESC\nLIMIT 10;` },
+  { id: 'sql-window', lang: 'sql', difficulty: 'hard', title: 'RANK()', avgWpm: 57,
+    code: `SELECT\n  RANK() OVER (ORDER BY rating DESC) AS rank,\n  handle, rating\nFROM users\nWHERE last_seen > NOW() - INTERVAL '30 days'\nLIMIT 100;` },
+  { id: 'js-long-store', lang: 'javascript', difficulty: 'hard', title: 'createStore (long)', avgWpm: 52,
+    code: `function createStore(reducer, initialState) {\n  let state = initialState;\n  let listeners = [];\n\n  function getState() {\n    return state;\n  }\n\n  function dispatch(action) {\n    state = reducer(state, action);\n    listeners.forEach((listener) => listener(state));\n    return action;\n  }\n\n  function subscribe(listener) {\n    listeners.push(listener);\n    return function unsubscribe() {\n      listeners = listeners.filter((l) => l !== listener);\n    };\n  }\n\n  function replaceReducer(nextReducer) {\n    reducer = nextReducer;\n    dispatch({ type: "@@INIT" });\n  }\n\n  dispatch({ type: "@@INIT" });\n  return { getState, dispatch, subscribe, replaceReducer };\n}` },
+  { id: 'py-long-bfs', lang: 'python', difficulty: 'hard', title: 'Dijkstra (long)', avgWpm: 50,
+    code: `import heapq\nfrom collections import defaultdict\n\ndef dijkstra(graph, start):\n    distances = {node: float("inf") for node in graph}\n    distances[start] = 0\n    visited = set()\n    queue = [(0, start)]\n\n    while queue:\n        current_dist, current = heapq.heappop(queue)\n        if current in visited:\n            continue\n        visited.add(current)\n\n        for neighbor, weight in graph[current].items():\n            distance = current_dist + weight\n            if distance < distances[neighbor]:\n                distances[neighbor] = distance\n                heapq.heappush(queue, (distance, neighbor))\n\n    return distances` },
+];
+
+export const LANG_ICON: Record<string, string> = {
+  javascript: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
+  typescript: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg',
+  python: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
+  go: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg',
+  java: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
+  sql: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
+};

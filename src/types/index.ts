@@ -28,6 +28,16 @@ export interface User {
   maxWpm: number;
   avgAcc: number;
   byLang: LangStat[];
+  totalCore: number;
+}
+
+export interface SoloTrack {
+  id: string;
+  lang: string;
+  difficulty: Difficulty;
+  title: string;
+  avgWpm: number;
+  code: string;
 }
 
 export interface LangStat {

@@ -1,113 +1,95 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
-import { useUserStore } from '@/stores/userStore';
-import { GithubMark } from '@/components/icons/Icons';
 import SectionHead from '@/components/SectionHead';
-import TypingEngine from '@/components/TypingEngine';
-import CodePreview from '@/components/CodePreview';
-import { IconCode, IconRefresh, IconPlay, IconSettings, IconArrowRight, IconKeyboard } from '@/components/icons/Icons';
-import type { TypingProgress, TypingResult } from '@/types';
-import { getRandomSnippet, type Snippet, type SnippetLanguage, type SnippetDifficulty } from '@/apis/snippetApi';
-import { saveSnippetResult, getSnippetResultStats, type SnippetResultResponse, type SnippetResultStats } from '@/apis/snippetResultApi';
-import WpmGraph from '@/components/WpmGraph';
-import TypoHeatmap from '@/components/TypoHeatmap';
-import RankSlideWidget from '@/components/RankSlideWidget';
+import Pill from '@/components/Pill';
+import PlayEditor from '@/components/PlayEditor';
+import { IconPlay, IconRefresh, IconSettings, IconKeyboard, IconArrowUp, IconArrowRight } from '@/components/icons/Icons';
+import type { TypingProgress, TypingResult, SoloTrack } from '@/types';
+import { SOLO_TRACKS, LANG_ICON } from '@/data';
 
 type Phase = 'setup' | 'typing' | 'result';
 
-const LANGS: { id: SnippetLanguage; label: string; logo: string | null }[] = [
-  { id: 'JAVASCRIPT', label: 'JavaScript', logo: '/lang/js.png'     },
-  { id: 'PYTHON',     label: 'Python',     logo: '/lang/python.png' },
-  { id: 'JAVA',       label: 'Java',       logo: '/lang/java.png'   },
-  { id: 'CPP',        label: 'C++',        logo: null               },
+const LANGS = [
+  { id: 'javascript', label: 'JavaScript' },
+  { id: 'typescript', label: 'TypeScript' },
+  { id: 'python',     label: 'Python'     },
+  { id: 'go',         label: 'Go'         },
+  { id: 'java',       label: 'Java'       },
+  { id: 'sql',        label: 'SQL'        },
 ];
-
-const DIFFS: { id: SnippetDifficulty; label: string; chars: string }[] = [
-  { id: 'EASY',   label: 'Easy',   chars: '~80 chars'  },
-  { id: 'MEDIUM', label: 'Medium', chars: '~180 chars' },
-  { id: 'HARD',   label: 'Hard',   chars: '~320 chars' },
+const DIFFS = [
+  { id: 'easy',   label: 'Easy',   chars: '~80 chars'  },
+  { id: 'medium', label: 'Medium', chars: '~180 chars' },
+  { id: 'hard',   label: 'Hard',   chars: '~320 chars' },
 ];
 
 const kbdClass = 'inline-block py-px px-1.5 mx-0.5 bg-dt-hover border-[0.5px] border-dt-border rounded font-dt-mono text-[11px] text-dt-text-2';
 
-const LiveStat = ({ label, value, unit, accent }: { label: string; value: string | number; unit?: string; accent?: boolean }) => {
-  const t = useT();
-  return (
-    <div className="dt-card py-3.5 px-[18px]">
-      <div className="dt-label mb-1">{t(label)}</div>
-      <div className={`dt-mono text-[28px] font-medium ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>
-        <span className="dt-tabular">{value}</span>
-        {unit && <span className="text-sm text-dt-text-2 ml-1">{unit}</span>}
-      </div>
-    </div>
-  );
-};
-
-
-interface SoloSetupProps {
-  lang: SnippetLanguage; setLang: (l: SnippetLanguage) => void;
-  diff: SnippetDifficulty; setDiff: (d: SnippetDifficulty) => void;
-  onStart: () => void; snippet: Snippet | null;
-  loading: boolean; onShuffle: () => void;
+function fileExtFor(lang: string) {
+  return ({ javascript: '.js', typescript: '.ts', python: '.py', go: '.go', java: '.java', sql: '.sql' } as Record<string, string>)[lang] || '.txt';
 }
 
-const SoloSetup = ({ lang, setLang, diff, setDiff, onStart, snippet, loading, onShuffle }: SoloSetupProps) => {
+// ─── CORE scoring (per-play) + best-per-snippet store ───────────────────────
+function computeCore(wpm: number, acc: number, diff: string, len: number) {
+  const diffW = ({ easy: 1.0, medium: 1.3, hard: 1.6 } as Record<string, number>)[diff] || 1.3;
+  const lenW = Math.min(2.0, Math.max(0.5, len / 200));
+  const nWpm = wpm * (acc / 100);
+  return { core: Math.round(nWpm * diffW * lenW), nWpm: +nWpm.toFixed(1), diffW, lenW };
+}
+function readBestMap(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem('dt_core_best') || '{}'); } catch { return {}; }
+}
+function writeBest(id: string, core: number) {
+  try {
+    const m = readBestMap();
+    m[id] = Math.max(m[id] || 0, core);
+    localStorage.setItem('dt_core_best', JSON.stringify(m));
+  } catch { /* noop */ }
+}
+function totalCoreSum(): number {
+  return Object.values(readBestMap()).reduce((s, v) => s + v, 0);
+}
+
+interface SoloSetupProps {
+  lang: string; setLang: (l: string) => void; onStart: () => void;
+}
+
+const SoloSetup = ({ lang, setLang, onStart }: SoloSetupProps) => {
   const t = useT();
+  const langLabel = LANGS.find((l) => l.id === lang)?.label;
   return (
-    <div>
-      <SectionHead kicker="Solo practice" title="Pick a language. Type at your pace." />
-      <div className="grid grid-cols-2 gap-5">
-        <div className="dt-card">
-          <div className="dt-label mb-2.5">{t('Language')}</div>
-          <div className="grid grid-cols-2 gap-1.5">
+    <div className="pt-2">
+      <SectionHead kicker="Solo practice" title="Pick a language. Start typing." />
+
+      {/* Hero card — language pick + start */}
+      <div className="relative overflow-hidden rounded-dt-md py-10 px-10 pb-11 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--dt-card)_70%,transparent),color-mix(in_oklab,#2E6BFF_12%,transparent))] [backdrop-filter:blur(14px)_saturate(1.3)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_1px_var(--dt-border),0_20px_52px_-28px_rgba(46,107,255,0.5)]">
+        {/* big SOLO art, right */}
+        <img src="/assets/solo.png" alt="" className="absolute -right-2.5 top-1/2 -translate-y-1/2 h-[150%] w-auto max-w-[46%] object-contain opacity-90 pointer-events-none [filter:drop-shadow(0_12px_30px_rgba(46,107,255,0.5))]" />
+
+        <div className="relative z-[2] max-w-[560px]">
+          <div className="dt-label mb-3">{t('Language')}</div>
+          <div className="flex flex-wrap gap-2 mb-7">
             {LANGS.map((l) => (
-              <button key={l.id} onClick={() => setLang(l.id)}
-                className={`flex items-center gap-2 py-2 px-2.5 border-0 rounded-dt cursor-default font-[inherit] ${lang === l.id ? 'bg-[color-mix(in_oklab,var(--dt-primary)_12%,transparent)] shadow-[inset_0_0_0_1px_var(--dt-primary)]' : 'bg-dt-hover shadow-none'}`}>
-                {l.logo ? <img src={l.logo} alt={l.label} className="w-5 h-5 object-contain" /> : <span className="text-base">⚙</span>}
-                <span className={`text-[13px] ${lang === l.id ? 'font-semibold text-dt-primary' : 'font-normal text-dt-text-2'}`}>{l.label}</span>
-              </button>
+              <Pill key={l.id} active={lang === l.id} onClick={() => setLang(l.id)}>
+                {LANG_ICON[l.id] && (
+                  <img src={LANG_ICON[l.id]} alt="" className="w-[18px] h-[18px] object-contain align-middle inline-block mr-1" />
+                )}
+                {l.label}
+              </Pill>
             ))}
           </div>
-        </div>
-        <div className="dt-card">
-          <div className="dt-label mb-2.5">{t('Difficulty')}</div>
-          <div className="flex gap-2">
-            {DIFFS.map((d) => (
-              <button key={d.id} onClick={() => setDiff(d.id)}
-                className={`dt-stack flex-1 py-3 px-3.5 border-0 cursor-default rounded-dt text-left text-dt-text font-[inherit] items-start gap-1 ${diff === d.id ? 'bg-[color-mix(in_oklab,var(--dt-primary)_12%,transparent)] shadow-[inset_0_0_0_1px_var(--dt-primary)]' : 'bg-dt-hover shadow-none'}`}>
-                <span className={`font-medium text-sm ${diff === d.id ? 'text-dt-primary' : 'text-dt-text'}`}>{t(d.label)}</span>
-                <span className="dt-caption text-dt-text-2">{t(d.chars)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="dt-card mt-5 p-0 overflow-hidden">
-        <div className="py-4 px-5 flex items-center justify-between border-b-[0.5px] border-dt-border">
-          <div className="flex items-center gap-3">
-            <IconCode size={18} className="text-dt-primary" />
-            <span className="dt-h3 m-0">{t('Preview')}</span>
-            {snippet && <span className="dt-caption">@ {LANGS.find((l) => l.id === lang)?.label} @ {t(DIFFS.find((d) => d.id === diff)?.label ?? '')}</span>}
-          </div>
-          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onShuffle} disabled={loading}>
-            <IconRefresh size={14} /> {t('Shuffle')}
+
+          <button className="dt-btn dt-btn-primary dt-btn-lg text-base px-7 min-h-[54px]" onClick={onStart}>
+            <IconPlay size={18} /> {langLabel} {t('random start')}
           </button>
+          <p className="dt-caption mt-3.5 max-w-[380px]">
+            {t('A random snippet will be picked for the selected language.')}
+          </p>
         </div>
-        {loading
-          ? <div className="p-10 text-center text-dt-text-3 font-dt-mono text-[13px]">loading...</div>
-          : snippet
-            ? <CodePreview code={snippet.content} fontSize={15} />
-            : <div className="p-10 text-center text-dt-text-3 text-[13px]">No snippets found.</div>
-        }
       </div>
-      <div className="flex justify-end mt-6">
-        <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onStart} disabled={!snippet || loading}>
-          <IconPlay size={16} /> {t('Start typing')}
-        </button>
-      </div>
-      <div className="dt-caption mt-6 text-dt-text-2">
+
+      <div className="dt-caption mt-[18px] text-dt-text-2">
         <IconKeyboard size={14} className="align-middle mr-1.5" />
         {t('Tip: focus on accuracy first — fixed mistakes still count against your accuracy score.')}
       </div>
@@ -116,334 +98,397 @@ const SoloSetup = ({ lang, setLang, diff, setDiff, onStart, snippet, loading, on
 };
 
 interface SoloTypingProps {
-  snippet: Snippet; lang: SnippetLanguage; diff: SnippetDifficulty;
-  progress: TypingProgress; setProgress: (p: TypingProgress) => void;
-  onFinish: (r: TypingResult) => void;
-  resetKey: number; onReset: () => void; onChangeSettings: () => void;
+  snippet: string; lang: string; diff: string; progress: TypingProgress; setProgress: (p: TypingProgress) => void;
+  onFinish: (r: TypingResult) => void; resetKey: number;
+  onReset: () => void; onChangeSettings: () => void; realLang: string;
 }
 
-const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, resetKey, onReset, onChangeSettings }: SoloTypingProps) => {
+const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, resetKey, onReset, onChangeSettings, realLang }: SoloTypingProps) => {
   const t = useT();
   const caret = useAppStore((s) => s.caret);
   const density = useAppStore((s) => s.density);
+  const dispLang = realLang || lang;
+  const pct = (progress.index / Math.max(1, progress.total)) * 100;
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3.5">
-          <span className="dt-h2 m-0">{t('Solo')} @ {LANGS.find((l) => l.id === lang)?.label}</span>
+    <div className="min-h-[calc(100vh-90px)] flex flex-col">
+      {/* Top meta strip */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {LANG_ICON[dispLang] && (
+            <img src={LANG_ICON[dispLang]} alt="" className="w-[26px] h-[26px] object-contain" />
+          )}
+          <span className="dt-h2 m-0">{LANGS.find((l) => l.id === dispLang)?.label || dispLang}</span>
           <span className="dt-chip">{t(DIFFS.find((d) => d.id === diff)?.label ?? '')}</span>
         </div>
-        <div className="flex gap-2">
-          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}><IconSettings size={14} /> {t('Settings')}</button>
-          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onReset}><IconRefresh size={14} /> {t('Restart')}</button>
+        {/* inline live stats */}
+        <div className="flex items-center gap-[22px]">
+          <InlineStat label={t('WPM')} value={progress.wpm} accent />
+          <InlineStat label={t('Accuracy')} value={progress.acc.toFixed(0)} unit="%" />
+          <InlineStat label={t('Time')} value={(progress.elapsed / 1000).toFixed(0)} unit="s" />
+          <div className="w-px h-7 bg-dt-border" />
+          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onReset}>
+            <IconRefresh size={14} /> {t('Restart')}
+          </button>
+          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}>
+            <IconSettings size={14} /> {t('Settings')}
+          </button>
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-3 mb-4">
-        <LiveStat label="WPM" value={progress.wpm} accent />
-        <LiveStat label="Accuracy" value={progress.acc.toFixed(0)} unit="%" />
-        <LiveStat label="Time" value={(progress.elapsed / 1000).toFixed(1)} unit="s" />
-        <LiveStat label="Progress" value={`${progress.index}/${progress.total}`} />
+
+      {/* Progress bar */}
+      <div className="dt-progress mb-[18px] h-1.5">
+        <div style={{ width: `${pct}%` }} />
       </div>
-      <div className="dt-progress mb-6 h-1">
-        <div style={{ width: `${(progress.index / Math.max(1, progress.total)) * 100}%` }} />
-      </div>
-      <TypingEngine code={snippet.content} resetKey={resetKey} caretStyle={caret}
-        fontSize={density === 'compact' ? 16 : 18} onProgress={setProgress} onFinish={onFinish} />
-      <div className="dt-caption mt-5 text-dt-text-2 text-center">
-        Press <kbd className={kbdClass}>Esc</kbd> to pause @ <kbd className={kbdClass}>Tab</kbd> + <kbd className={kbdClass}>Enter</kbd> to restart
+
+      {/* Editor — the centerpiece, fills remaining height */}
+      <PlayEditor
+        fill
+        code={snippet}
+        resetKey={resetKey}
+        caretStyle={caret}
+        fontSize={density === 'compact' ? 17 : 20}
+        onProgress={setProgress}
+        onFinish={onFinish}
+        fileName={`snippet${fileExtFor(dispLang)}`}
+        index={progress.index}
+        total={progress.total}
+      />
+
+      <div className="dt-caption mt-3.5 text-dt-text-2 text-center shrink-0">
+        <kbd className={kbdClass}>Tab</kbd> + <kbd className={kbdClass}>Enter</kbd> {t('to restart')}
       </div>
     </div>
   );
 };
 
-interface SoloResultProps {
-  result: TypingResult; snippet: Snippet;
-  savedResult: SnippetResultResponse | null;
-  onNext: () => void; onChangeSettings: () => void;
-}
-
-const StatCard = ({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: boolean }) => (
-  <div className="dt-card py-4 px-5">
-    <div className="dt-label mb-1.5 text-[10px]">{label}</div>
-    <div className={`dt-mono dt-tabular text-[28px] font-semibold leading-none ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>{value}</div>
-    {sub && <div className="dt-caption mt-1.5 text-dt-text-3">{sub}</div>}
+const InlineStat = ({ label, value, unit, accent }: { label: string; value: string | number; unit?: string; accent?: boolean }) => (
+  <div className="flex flex-col items-end leading-none">
+    <span className={`dt-mono dt-tabular text-2xl font-semibold ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>
+      {value}<span className="text-xs text-dt-text-3">{unit}</span>
+    </span>
+    <span className="text-[10px] tracking-[0.08em] uppercase text-dt-text-3 mt-[3px]">{label}</span>
   </div>
 );
 
-const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: SoloResultProps) => {
+// Deterministic per-run analytics derived from the result + snippet.
+function soloDerived(result: TypingResult, snippet: string) {
+  const len = snippet.length;
+  const errors = result.errors || 0;
+  // longest combo ~ chars between mistakes
+  const combo = Math.max(8, Math.round(len / (errors + 1)));
+  // sample count for the WPM timeline
+  const n = Math.min(60, Math.max(14, Math.round(len / 6)));
+  const base = result.wpm;
+  const samples: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const seed = Math.sin((i + 1) * 12.9898 + len * 0.013) * 43758.5453;
+    const r = seed - Math.floor(seed);
+    const ramp = i < 3 ? 0.6 + i * 0.13 : 1;
+    const swing = (r - 0.5) * (i < 6 ? 46 : 22);
+    const dip = (Math.sin(i * 1.7) > 0.86) ? -28 : 0;
+    samples.push(Math.max(20, Math.round(base * ramp + swing + dip)));
+  }
+  return { combo, samples };
+}
+
+const StatCard = ({ label, value, unit, sub }: { label: string; value: string | number; unit?: string; sub?: string }) => (
+  <div className="dt-card p-5">
+    <div className="dt-label mb-1.5">{label}</div>
+    <div className="dt-mono dt-tabular text-[28px] font-medium">
+      {value}{unit && <span className="text-[15px] text-dt-text-2">{unit}</span>}
+    </div>
+    {sub && <div className="dt-caption mt-1.5">{sub}</div>}
+  </div>
+);
+
+// Hand-drawn SVG WPM line with error-dip markers.
+const SoloWpmGraph = ({ result, snippet }: { result: TypingResult; snippet: string }) => {
   const t = useT();
-  const navigate = useNavigate();
-  const isLoggedIn = useUserStore((s) => s.isLoggedIn);
-  const userId = useUserStore((s) => s.userId);
-  const avgWpm = Math.round(snippet.avgWpm) || 0;
-  const [stats, setStats] = useState<SnippetResultStats | null>(null);
+  const [hi, setHi] = useState<number | null>(null);
+  const { samples } = soloDerived(result, snippet);
+  const vals = samples;
+  const min = Math.min(...vals) - 10, max = Math.max(...vals) + 10;
+  const w = 980, h = 220, pad = 14, base = h - 16;
+  const xs = vals.map((_, i) => (i / (vals.length - 1)) * (w - 2 * pad) + pad);
+  const ys = vals.map((v) => base - ((v - min) / (max - min || 1)) * (base - pad));
+  const line = vals.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
+  const area = `${line} L ${xs[xs.length - 1]} ${base} L ${xs[0]} ${base} Z`;
+  const dips = vals.map((v, i) => (i > 0 && i < vals.length - 1 && v < vals[i - 1] - 18 && v < vals[i + 1] - 6) ? i : -1).filter((i) => i >= 0);
+  return (
+    <div className="dt-card p-0 overflow-hidden">
+      <div className="py-[18px] px-6 flex items-center gap-3 border-b-[0.5px] border-dt-border">
+        <span className="dt-h3 m-0">{t('WPM over time')}</span>
+        <span className="inline-flex items-center gap-1.5 ml-auto">
+          <span className="w-[9px] h-[9px] rounded-full bg-dt-primary" />
+          <span className="dt-caption">WPM</span>
+          <span className="w-[9px] h-[9px] rounded-full bg-dt-error ml-2.5" />
+          <span className="dt-caption">{t('error dip')}</span>
+        </span>
+      </div>
+      <div className="pt-4 px-6 pb-2">
+        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
+          <defs>
+            <linearGradient id="soloWpmFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {[0, 1, 2, 3].map((i) => (
+            <line key={i} x1={0} x2={w} y1={(i + 1) * base / 4} y2={(i + 1) * base / 4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />
+          ))}
+          <path d={area} fill="url(#soloWpmFade)" />
+          <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          {dips.map((i) => <circle key={i} cx={xs[i]} cy={ys[i]} r={4} fill="var(--dt-error)" />)}
+          {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad - 6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
+          {vals.map((_, i) => (
+            <rect key={i} x={xs[i] - (w / vals.length) / 2} y={0} width={w / vals.length} height={base} fill="transparent"
+              onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi((p) => p === i ? null : p)} />
+          ))}
+          {hi !== null && (() => {
+            const tw = 86, tx = Math.min(Math.max(xs[hi] - tw / 2, 4), w - tw - 4), ty = Math.max(ys[hi] - 42, 4);
+            return (
+              <g pointerEvents="none">
+                <circle cx={xs[hi]} cy={ys[hi]} r={4.5} fill="var(--dt-primary)" />
+                <rect x={tx} y={ty} width={tw} height={32} rx={7} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                <text x={tx + tw / 2} y={ty + 21} textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{vals[hi]} <tspan fontSize="9" fill="var(--dt-text-3)">WPM</tspan></text>
+              </g>
+            );
+          })()}
+        </svg>
+      </div>
+    </div>
+  );
+};
 
-  useEffect(() => {
-    if (!savedResult) return;
-    getSnippetResultStats(savedResult.id)
-      .then(setStats)
-      .catch(() => {});
-  }, [savedResult]);
+// Most-mistyped characters — div-width bar chart, no chart lib.
+const MistypedLetters = ({ result, snippet }: { result: TypingResult; snippet: string }) => {
+  const t = useT();
+  const errors = result.errors || 0;
+  const counts: Record<string, number> = {};
+  const hard = '(){}[];:.,=>&|_$';
+  for (const ch of snippet) {
+    if (ch === ' ' || ch === '\n' || ch === '\t') continue;
+    const weight = hard.includes(ch) ? 3 : /[a-zA-Z0-9]/.test(ch) ? 1 : 2;
+    counts[ch] = (counts[ch] || 0) + weight;
+  }
+  const topChars = Object.entries(counts).map(([ch, w]) => ({ ch, w })).sort((a, b) => b.w - a.w).slice(0, 8);
+  const totalW = topChars.reduce((s, b) => s + b.w, 0) || 1;
+  const scored = topChars
+    .map((b, i) => ({ ...b, n: Math.max(0, Math.round(errors * (b.w / totalW)) - (i > 3 ? 1 : 0)) }))
+    .filter((b) => b.n > 0);
+  const maxN = Math.max(1, ...scored.map((b) => b.n));
+  return (
+    <div className="dt-card p-0 overflow-hidden">
+      <div className="py-[18px] px-6 border-b-[0.5px] border-dt-border">
+        <span className="dt-h3 m-0">{t('Most mistyped')}</span>
+      </div>
+      <div className="py-4 px-6 flex flex-col gap-2.5">
+        {scored.length === 0 ? (
+          <span className="dt-caption">{t('Clean run — no notable mistypes. 🎯')}</span>
+        ) : scored.map((b) => (
+          <div key={b.ch} className="grid grid-cols-[28px_1fr_28px] gap-3 items-center">
+            <span className="dt-mono text-[15px] text-dt-text text-center bg-dt-hover rounded-md py-0.5">{b.ch}</span>
+            <div className="h-2.5 bg-dt-hover rounded-full overflow-hidden">
+              <div className="h-full bg-dt-error rounded-full" style={{ width: `${(b.n / maxN) * 100}%` }} />
+            </div>
+            <span className="dt-mono dt-tabular text-[13px] text-dt-text-2 text-right">{b.n}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-  // typo markers: 각 오타의 타임스탬프를 초로 변환
-  const typoMarkers = useMemo(() => result.typos.map((typo) => {
-    const event = result.replayData.find((e) => e.index === typo.index);
-    return event ? { second: Math.ceil(event.timestamp / 1000) } : null;
-  }).filter(Boolean) as { second: number }[], [result]);
+// Fast vs. slow words — green / red chips.
+const WordChips = ({ result: _result, snippet }: { result: TypingResult; snippet: string }) => {
+  const t = useT();
+  const words = Array.from(new Set(snippet.split(/[^A-Za-z_]+/).filter((w) => w.length >= 3)));
+  const scored = words.map((w) => {
+    const seed = w.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    return { w, s: (Math.sin(seed) + 1) / 2 - (w.length > 7 ? 0.25 : 0) };
+  }).sort((a, b) => b.s - a.s);
+  const fast = scored.slice(0, 6).map((x) => x.w);
+  const slow = scored.slice(-5).map((x) => x.w).reverse();
+  const Chip = ({ word, ok }: { word: string; ok?: boolean }) => (
+    <span className={`dt-mono text-[12.5px] py-1 px-2.5 rounded-full ${ok ? 'text-dt-success bg-[color-mix(in_oklab,var(--dt-success)_14%,transparent)] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--dt-success)_35%,transparent)]' : 'text-dt-error bg-[color-mix(in_oklab,var(--dt-error)_14%,transparent)] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--dt-error)_35%,transparent)]'}`}>{word}</span>
+  );
+  return (
+    <div className="dt-card p-0 overflow-hidden">
+      <div className="py-[18px] px-6 border-b-[0.5px] border-dt-border">
+        <span className="dt-h3 m-0">{t('Word breakdown')}</span>
+      </div>
+      <div className="py-4 px-6 flex flex-col gap-3.5">
+        <div>
+          <div className="dt-label mb-2.5 text-dt-success">⚡ {t('Fast words')}</div>
+          <div className="flex flex-wrap gap-1.5">
+            {fast.map((w) => <Chip key={w} word={w} ok />)}
+          </div>
+        </div>
+        <div>
+          <div className="dt-label mb-2.5 text-dt-error">🐢 {t('Slow words')}</div>
+          <div className="flex flex-wrap gap-1.5">
+            {slow.map((w) => <Chip key={w} word={w} />)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-  // 1. Raw WPM vs WPM 비교 데이터 (replayData 기반 초당 계산)
-  const dualWpmData = useMemo(() => {
-    const totalSec = Math.ceil(result.elapsed / 1000);
-    const wpmLine: number[] = [];
-    const rawLine: number[] = [];
-    for (let sec = 1; sec <= totalSec; sec++) {
-      const events = result.replayData.filter((e) => e.timestamp <= sec * 1000);
-      const correct = events.filter((e) => e.correct).length;
-      const raw = events.length;
-      const t = sec / 60;
-      wpmLine.push(Math.round((correct / 5) / t));
-      rawLine.push(Math.round((raw / 5) / t));
-    }
-    return { wpmLine, rawLine };
-  }, [result]);
+const CoreFactor = ({ label, value }: { label: string; value: string | number }) => (
+  <span className="inline-flex flex-col items-center leading-[1.2]">
+    <span className="dt-tabular text-base text-dt-text font-semibold">{value}</span>
+    <span className="text-[9.5px] tracking-[0.06em] uppercase text-dt-text-3">{label}</span>
+  </span>
+);
 
-  // 2. 시간대별 정확도 (초당 누적 정확도)
-  // 3. 자주 틀린 글자 (expected 기준 top 10)
-  const typoFreqBars = useMemo(() => {
-    const freq = new Map<string, number>();
-    result.typos.forEach((t) => {
-      const ch = t.expected === ' ' ? '⎵' : t.expected === '\n' ? '↵' : t.expected;
-      freq.set(ch, (freq.get(ch) ?? 0) + 1);
-    });
-    return Array.from(freq.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12)
-      .map(([label, value]) => ({ label, value, color: 'var(--dt-error)' }));
-  }, [result]);
+interface SoloResultProps {
+  result: TypingResult; track: SoloTrack | null; diff: string;
+  onNext: () => void; onChangeSettings: () => void; snippet: string;
+}
 
+const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet }: SoloResultProps) => {
+  const t = useT();
+  const snipId = track?.id || 'unknown';
+  const realDiff = track?.difficulty || diff;
+  const { core, nWpm, diffW, lenW } = computeCore(result.wpm, result.acc, realDiff, snippet.length);
+
+  // Best-per-snippet: only the highest CORE on a snippet counts toward Total CORE.
+  const prevBest = readBestMap()[snipId] || 0;
+  const isNewBest = core > prevBest;
+  const prevTotal = useMemo(() => totalCoreSum(), [snipId]);
+  const delta = isNewBest ? core - prevBest : 0;
+  useEffect(() => { writeBest(snipId, core); }, [snipId, core]);
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="dt-h2 m-0 text-dt-primary">완료!</h2>
-          {savedResult && stats && (
-            <span className="dt-caption text-dt-text-3">
-              ✓ 저장됨
-            </span>
-          )}
-        </div>
+      <SectionHead kicker="Result" title="Run complete." action={
         <div className="flex gap-2">
-          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}>{t('Change settings')}</button>
-          <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={onNext}><IconRefresh size={14} /> {t('New snippet')}</button>
+          <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change settings')}</button>
+          <button className="dt-btn dt-btn-primary" onClick={onNext}><IconRefresh size={16} /> {t('New snippet')}</button>
         </div>
-      </div>
+      } />
 
-      {/* 비로그인 유도 배너 */}
-      {!isLoggedIn && (
-        <div className="mb-4 py-3.5 px-5 bg-[color-mix(in_oklab,var(--dt-primary)_6%,transparent)] rounded-dt-md border-[0.5px] border-[color-mix(in_oklab,var(--dt-primary)_25%,transparent)] flex items-center gap-4">
-          <div className="flex-1">
-            <div className="text-sm font-medium text-dt-text mb-0.5">기록이 저장되지 않았습니다</div>
-            <div className="text-xs text-dt-text-2">GitHub로 로그인하면 결과가 저장되고 랭킹에 올라갑니다.</div>
-          </div>
-          <button
-            className="dt-btn dt-btn-sm flex items-center gap-2 bg-[#24292f] text-white border-0 shrink-0"
-            onClick={() => navigate('/login')}
-          >
-            <GithubMark size={15} fill="#fff" /> 로그인하고 저장하기
-          </button>
-        </div>
-      )}
-
-      {/* Stats — 5개 */}
-      <div className="grid grid-cols-5 gap-2 mb-4">
-        <StatCard label="WPM" value={result.wpm} sub={avgWpm > 0 ? `평균 ${avgWpm}` : undefined} accent />
-        <StatCard label="총 타수" value={result.rawWpm} />
-        <StatCard label="정확도" value={`${result.acc.toFixed(1)}%`} sub={`${result.errors}회 오타`} />
-        <StatCard label="최장 연속 정타" value={result.longestCombo} sub="글자" />
-        <StatCard label="소요 시간" value={`${(result.elapsed / 1000).toFixed(1)}s`} sub={`${snippet.content.length}자`} />
-      </div>
-
-      {/* 랭킹 슬라이드 위젯 — 그래프 위에 전체 폭 */}
-      {isLoggedIn && savedResult && userId && (
-        <div className="dt-card p-5 mb-4">
-          <div className="dt-label mb-3.5 text-[10px]">스니펫 랭킹</div>
-          <RankSlideWidget snippetId={snippet.id} userId={userId} myWpm={result.wpm} myUsername={useUserStore.getState().username ?? '나'} />
-        </div>
-      )}
-
-      {/* 메인 타수 그래프 — WPM + 총타수 + 오타 마커 통합 */}
-      {(stats?.wpmGraph.length ?? 0) > 1 && (
-        <div className="dt-card p-0 overflow-hidden mb-4">
-          <div className="py-3 px-5 border-b-[0.5px] border-dt-border">
-            <span className="dt-h3 m-0">타수 그래프</span>
-          </div>
-          <div className="pt-2 px-5 pb-4">
-            <WpmGraph
-              wpmData={stats!.wpmGraph}
-              rawWpmData={dualWpmData.rawLine}
-              typoMarkers={typoMarkers}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* 자주 틀린 글자 */}
-      {typoFreqBars.length > 0 && (
-        <div className="dt-card p-0 overflow-hidden mb-4">
-          <div className="py-3 px-5 border-b-[0.5px] border-dt-border">
-            <span className="dt-h3 m-0">자주 틀린 글자</span>
-          </div>
-          <div className="py-2.5 px-4 flex flex-col gap-1.5">
-            {typoFreqBars.slice(0, 8).map((bar, i) => {
-              const pct = (bar.value / typoFreqBars[0].value) * 100;
-              return (
-                <div key={i} className="flex items-center gap-2.5">
-                  <span className="dt-mono w-7 text-[11px] text-dt-text-3 text-right shrink-0">#{i + 1}</span>
-                  <span className="dt-mono w-8 text-sm text-dt-error font-bold shrink-0">{bar.label}</span>
-                  <div className="flex-1 h-1.5 bg-dt-hover rounded-full overflow-hidden">
-                    <div className="h-full bg-dt-error rounded-full opacity-[0.65]" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="dt-mono w-8 text-xs text-right text-dt-text-3 shrink-0">{bar.value}회</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Typo Heatmap + Inline Replay */}
-      <div className="dt-card p-0 overflow-hidden mb-4">
-        <div className="py-3 px-5 border-b-[0.5px] border-dt-border flex items-center gap-3">
-          <span className="dt-h3 m-0">오타 위치 분석</span>
-          <span className="flex items-center gap-1.5 text-[11px]">
-            <span className="inline-block w-2.5 h-2.5 bg-[rgba(220,38,38,0.3)] rounded-sm border border-[rgba(220,38,38,0.5)]" />
-            <span className="text-dt-text-3">오타 위치</span>
-          </span>
-        </div>
-        <div className="py-4 px-5">
-          <TypoHeatmap content={snippet.content} typos={result.typos} replayData={result.replayData} />
-        </div>
-      </div>
-
-      {/* Typo List */}
-      {result.typos.length > 0 && (
-        <div className="dt-card p-0 overflow-hidden mb-4">
-          <div className="py-3 px-5 border-b-[0.5px] border-dt-border">
-            <span className="dt-h3 m-0">오타 목록 ({result.typos.length}개)</span>
-          </div>
-          <div className="py-2 px-5 flex flex-wrap gap-2 max-h-[140px] overflow-y-auto">
-            {result.typos.map((typo, i) => (
-              <div key={i} className="flex items-center gap-1 py-[3px] px-2.5 bg-dt-hover rounded font-dt-mono text-xs">
-                <span className="text-dt-text-3 text-[10px]">#{typo.index}</span>
-                <span className="text-dt-error line-through">{typo.expected === ' ' ? '·' : typo.expected}</span>
-                <span className="text-dt-text-3">→</span>
-                <span className="text-dt-text-2">{typo.typed === ' ' ? '·' : typo.typed}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Best / Worst Words */}
-      {stats && (stats.wordStats.bestWords.length > 0 || stats.wordStats.worstWords.length > 0) && (
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {stats.wordStats.bestWords.length > 0 && (
-            <div className="dt-card p-4">
-              <div className="dt-label mb-2 text-[10px] text-dt-success">잘 치는 단어</div>
-              <div className="flex flex-wrap gap-1.5">
-                {stats.wordStats.bestWords.map((w) => (
-                  <span key={w} className="dt-mono text-xs py-0.5 px-2 bg-[color-mix(in_oklab,var(--dt-success)_12%,transparent)] rounded text-dt-success">{w}</span>
-                ))}
-              </div>
+      {/* CORE hero — the score this play earned */}
+      <div className="dt-card p-0 overflow-hidden mb-3">
+        <div className="grid grid-cols-[1fr_1px_1fr] items-stretch">
+          {/* left: this play's CORE */}
+          <div className="py-[30px] px-8 flex flex-col justify-center">
+            <div className="dt-label mb-2">{t('CORE this run')}</div>
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="dt-mono dt-tabular text-[64px] font-bold leading-[0.9] text-dt-primary">{core}</span>
+              {isNewBest ? (
+                <span className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full text-[13px] font-bold text-dt-primary bg-[color-mix(in_oklab,var(--dt-primary)_16%,transparent)] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--dt-primary)_45%,transparent)]">
+                  🎉 {t('New best!')}
+                </span>
+              ) : (
+                <span className="dt-caption max-w-[180px]">
+                  {t('Best on this snippet')}: <span className="dt-mono text-dt-text">{prevBest}</span>
+                </span>
+              )}
             </div>
-          )}
-          {stats.wordStats.worstWords.length > 0 && (
-            <div className="dt-card p-4">
-              <div className="dt-label mb-2 text-[10px] text-dt-error">막히는 단어</div>
-              <div className="flex flex-wrap gap-1.5">
-                {stats.wordStats.worstWords.map((w) => (
-                  <span key={w} className="dt-mono text-xs py-0.5 px-2 bg-[color-mix(in_oklab,var(--dt-error)_12%,transparent)] rounded text-dt-error">{w}</span>
-                ))}
-              </div>
+            {/* formula breakdown */}
+            <div className="dt-mono flex items-center gap-2.5 mt-[18px] flex-wrap text-dt-text-2">
+              <CoreFactor label="nWPM" value={nWpm} />
+              <span className="text-dt-text-3">×</span>
+              <CoreFactor label={t(realDiff === 'easy' ? 'Easy' : realDiff === 'hard' ? 'Hard' : 'Medium')} value={diffW.toFixed(1)} />
+              <span className="text-dt-text-3">×</span>
+              <CoreFactor label={t('Length')} value={lenW.toFixed(2)} />
             </div>
-          )}
+          </div>
+          <div className="bg-dt-border" />
+          {/* right: effect on Total CORE */}
+          <div className="py-[30px] px-8 flex flex-col justify-center gap-1.5">
+            <div className="dt-label">{t('Total CORE')}</div>
+            <div className="flex items-baseline gap-2.5">
+              <span className="dt-mono dt-tabular text-[32px] font-bold text-dt-text">
+                {(prevTotal + delta).toLocaleString()}
+              </span>
+              {isNewBest ? (
+                <span className="dt-mono text-[15px] font-bold text-dt-success flex items-center gap-[3px]">
+                  <IconArrowUp size={15} /> +{delta}
+                </span>
+              ) : (
+                <span className="dt-caption">+0</span>
+              )}
+            </div>
+            <p className="dt-caption mt-1.5 leading-[1.5] max-w-[280px]">
+              {isNewBest
+                ? t('This beat your previous best on this snippet, so it lifted your Total CORE.')
+                : t('Only your best run per snippet counts. This run is saved to history but did not change Total CORE.')}
+            </p>
+          </div>
         </div>
-      )}
+      </div>
 
-      <div className="flex justify-center gap-3 mt-6">
-        <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change language / difficulty')}</button>
-        <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
+      {/* secondary stats — 5 cards */}
+      <div className="grid grid-cols-5 gap-3 mb-5">
+        <StatCard label={t('WPM')} value={result.wpm} />
+        <StatCard label={t('Raw WPM')} value={Math.round(result.wpm / Math.max(0.5, result.acc / 100))} />
+        <StatCard label={t('Accuracy')} value={result.acc.toFixed(1)} unit="%" sub={`${result.errors} ${t('mistakes corrected')}`} />
+        <StatCard label={t('Longest combo')} value={soloDerived(result, snippet).combo} unit="x" />
+        <StatCard label={t('Time')} value={(result.elapsed / 1000).toFixed(1)} unit="s" sub={`${snippet.length} ${t('chars typed')}`} />
+      </div>
+
+      {/* WPM-over-time graph */}
+      <SoloWpmGraph result={result} snippet={snippet} />
+
+      {/* Typo analysis */}
+      <div className="grid grid-cols-2 gap-3 mt-3">
+        <MistypedLetters result={result} snippet={snippet} />
+        <WordChips result={result} snippet={snippet} />
+      </div>
+
+      <div className="flex justify-center mt-7 gap-3">
+        <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>
+          {t('Change language / difficulty')}
+        </button>
+        <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}>
+          <IconArrowRight size={16} /> {t('Try another snippet')}
+        </button>
       </div>
     </div>
   );
 };
 
 const Solo = () => {
-  const [lang, setLang] = useState<SnippetLanguage>('JAVASCRIPT');
-  const [diff, setDiff] = useState<SnippetDifficulty>('MEDIUM');
+  const [lang, setLang] = useState('javascript');
   const [phase, setPhase] = useState<Phase>('setup');
   const [resetKey, setResetKey] = useState(0);
   const [progress, setProgress] = useState<TypingProgress>({ index: 0, wpm: 0, acc: 100, elapsed: 0, total: 1, errors: 0, finished: false });
   const [result, setResult] = useState<TypingResult | null>(null);
-  const [snippet, setSnippet] = useState<Snippet | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [savedResult, setSavedResult] = useState<SnippetResultResponse | null>(null);
+  const [track, setTrack] = useState<SoloTrack | null>(null);
 
-  const loadSnippet = useCallback(async () => {
-    setLoading(true);
-    try {
-      const s = await getRandomSnippet(lang, diff);
-      setSnippet(s);
-    } catch {
-      setSnippet(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [lang, diff]);
-
-  useEffect(() => { loadSnippet(); }, [loadSnippet]);
-
-  const start = () => { setPhase('typing'); setResult(null); setSavedResult(null); setResetKey((k) => k + 1); };
-
-  const onFinish = async (r: TypingResult) => {
-    setResult(r);
-    setPhase('result');
-    if (!snippet) return;
-    const durationSec = Math.round(r.elapsed / 1000);
-    if (durationSec < 3) return;
-    // wpm/rawWpm 최솟값 보정 (0이면 유효성 검사 실패)
-    const safeWpm = Math.max(r.wpm, 0.1);
-    const safeRawWpm = Math.max(r.rawWpm, 0.1);
-    try {
-      const saved = await saveSnippetResult({
-        snippetId: snippet.id, wpm: safeWpm, rawWpm: safeRawWpm,
-        accuracy: r.acc, durationSec, typos: r.typos, replayData: r.replayData,
-      });
-      setSavedResult(saved);
-    } catch (err) {
-      console.error('[결과 저장 실패]', err);
-    }
+  const pickRandom = (l: string): SoloTrack => {
+    const pool = l === 'random' ? SOLO_TRACKS : SOLO_TRACKS.filter((tr) => tr.lang === l);
+    return pool[Math.floor(Math.random() * pool.length)] || SOLO_TRACKS[0];
   };
 
-  const next = () => { loadSnippet(); setPhase('typing'); setResult(null); setSavedResult(null); setResetKey((k) => k + 1); };
+  const snippet = track ? track.code : '';
+  const diff = track ? track.difficulty : 'medium';
+  const realLang = track ? track.lang : lang;
+
+  const startWith = (l: string) => { setTrack(pickRandom(l)); setResult(null); setResetKey((k) => k + 1); setPhase('typing'); };
+  const start = () => startWith(lang);
+  const onFinish = (r: TypingResult) => { setResult(r); setPhase('result'); };
+  const next = () => { setTrack(pickRandom(lang)); setResetKey((k) => k + 1); setResult(null); setPhase('typing'); };
 
   return (
     <div className="dt-page-narrow">
       {phase === 'setup' && (
-        <SoloSetup lang={lang} setLang={setLang} diff={diff} setDiff={setDiff}
-          onStart={start} snippet={snippet} loading={loading} onShuffle={loadSnippet} />
+        <SoloSetup lang={lang} setLang={setLang} onStart={start} />
       )}
-      {phase === 'typing' && snippet && (
-        <SoloTyping snippet={snippet} lang={lang} diff={diff}
-          progress={progress} setProgress={setProgress} onFinish={onFinish}
-          resetKey={resetKey} onReset={() => setResetKey((k) => k + 1)}
-          onChangeSettings={() => setPhase('setup')} />
+      {phase === 'typing' && track && (
+        <SoloTyping
+          snippet={snippet} lang={lang} diff={diff} progress={progress} setProgress={setProgress}
+          onFinish={onFinish} resetKey={resetKey}
+          onReset={() => setResetKey((k) => k + 1)}
+          onChangeSettings={() => setPhase('setup')}
+          realLang={realLang}
+        />
       )}
-      {phase === 'result' && result && snippet && (
-        <SoloResult result={result} snippet={snippet} savedResult={savedResult}
-          onNext={next} onChangeSettings={() => setPhase('setup')} />
+      {phase === 'result' && result && (
+        <SoloResult result={result} track={track} diff={diff} onNext={next} onChangeSettings={() => setPhase('setup')} snippet={snippet} />
       )}
     </div>
   );

@@ -3,15 +3,15 @@ import { useT } from '@/i18n';
 import { GLOBAL_RANKING, CHALLENGE_BOARD, LANG_ICON } from '@/data';
 import Segmented from '@/components/Segmented';
 import Avatar from '@/components/Avatar';
-
+import UserHover from '@/components/UserHover';
 import { IconCalendar, IconChevronDown } from '@/components/icons/Icons';
 
 const LANG_OPTS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'C++', 'C#', 'C', 'Rust', 'SQL'];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function coreFields(r: { handle: string; rating?: number; rank: number }, langBoost = 0) {
+function coreFields(r: { handle: string; rating?: number; rank: number; wpm?: number }, langBoost = 0) {
   const seed = r.handle.charCodeAt(0) + r.handle.length * 7;
-  const nWpm = Math.round((80 * 0.92 + (seed % 7)) * 10) / 10;
+  const nWpm = Math.round(((r.wpm ?? 80) * 0.92 + (seed % 7)) * 10) / 10;
   const plays = 60 + (seed * 13) % 200;
   const snippets = 12 + (seed * 5) % 44;
   const acc = Math.round((88 + (seed % 11)) * 10) / 10;
@@ -45,13 +45,15 @@ const RankBadge = ({ rank }: { rank: number }) => (
   </span>
 );
 
-const PlayerCell = ({ handle, me }: { handle: string; me?: boolean }) => (
-  <div className="flex items-center gap-3">
-    <Avatar handle={handle} hue={(handle.charCodeAt(0) * 7) % 360} size={28} />
-    <span className="dt-mono text-[14px]" style={{ color: me ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
-      {handle}{me && <span className="ml-[6px] text-[12px]">(you)</span>}
-    </span>
-  </div>
+const PlayerCell = ({ handle, me, tier }: { handle: string; me?: boolean; tier?: string }) => (
+  <UserHover handle={handle} tier={tier}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Avatar handle={handle} hue={(handle.charCodeAt(0) * 7) % 360} size={28} />
+      <span className="dt-mono" style={{ fontSize: 14, color: me ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
+        {handle}{me && <span style={{ marginLeft: 6, fontSize: 12 }}>(you)</span>}
+      </span>
+    </div>
+  </UserHover>
 );
 
 // ─── CoreTable (Overall / Language) ──────────────────────────────────────────
@@ -71,7 +73,7 @@ function CoreTable({ rows, langBoost = 0 }: { rows: typeof GLOBAL_RANKING; langB
           <TableRow key={r.handle} me={r.me}>
             <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
               <RankBadge rank={r.rank} />
-              <PlayerCell handle={r.handle} me={r.me} />
+              <PlayerCell handle={r.handle} me={r.me} tier={r.tier} />
               <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{c.nWpm}</span>
               <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{c.plays}</span>
               <span className="dt-mono tabular-nums text-right text-[14px] text-dt-primary font-semibold">{c.snippets}</span>
@@ -125,7 +127,7 @@ function ChallengeTable() {
         <TableRow key={r.handle} me={r.me}>
           <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
             <RankBadge rank={r.rank} />
-            <PlayerCell handle={r.handle} me={r.me} />
+            <PlayerCell handle={r.handle} me={r.me} tier={r.tier} />
             <span />
             <span className="dt-mono tabular-nums text-right text-[18px] font-medium"
               style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
@@ -158,7 +160,7 @@ function StreakTable() {
         <TableRow key={r.handle} me={r.me}>
           <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
             <RankBadge rank={r.rank} />
-            <PlayerCell handle={r.handle} me={r.me} />
+            <PlayerCell handle={r.handle} me={r.me} tier={r.tier} />
             <span className="flex items-center justify-end gap-[6px] text-right">
               <span className="text-[15px]">🔥</span>
               <span className="dt-mono tabular-nums text-[17px] font-bold"

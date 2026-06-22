@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
@@ -30,16 +30,16 @@ const DIFFS: { id: SnippetDifficulty; label: string; chars: string }[] = [
   { id: 'HARD',   label: 'Hard',   chars: '~320 chars' },
 ];
 
-const kbd: React.CSSProperties = { display: 'inline-block', padding: '1px 6px', margin: '0 2px', background: 'var(--dt-hover)', border: '0.5px solid var(--dt-border)', borderRadius: 4, fontFamily: 'var(--dt-font-mono)', fontSize: 11, color: 'var(--dt-text-2)' };
+const kbdClass = 'inline-block py-px px-1.5 mx-0.5 bg-dt-hover border-[0.5px] border-dt-border rounded font-dt-mono text-[11px] text-dt-text-2';
 
 const LiveStat = ({ label, value, unit, accent }: { label: string; value: string | number; unit?: string; accent?: boolean }) => {
   const t = useT();
   return (
-    <div className="dt-card" style={{ padding: '14px 18px' }}>
-      <div className="dt-label" style={{ marginBottom: 4 }}>{t(label)}</div>
-      <div className="dt-mono" style={{ fontSize: 28, fontWeight: 500, color: accent ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
+    <div className="dt-card py-3.5 px-[18px]">
+      <div className="dt-label mb-1">{t(label)}</div>
+      <div className={`dt-mono text-[28px] font-medium ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>
         <span className="dt-tabular">{value}</span>
-        {unit && <span style={{ fontSize: 14, color: 'var(--dt-text-2)', marginLeft: 4 }}>{unit}</span>}
+        {unit && <span className="text-sm text-dt-text-2 ml-1">{unit}</span>}
       </div>
     </div>
   );
@@ -58,37 +58,37 @@ const SoloSetup = ({ lang, setLang, diff, setDiff, onStart, snippet, loading, on
   return (
     <div>
       <SectionHead kicker="Solo practice" title="Pick a language. Type at your pace." />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="grid grid-cols-2 gap-5">
         <div className="dt-card">
-          <div className="dt-label" style={{ marginBottom: 10 }}>{t('Language')}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+          <div className="dt-label mb-2.5">{t('Language')}</div>
+          <div className="grid grid-cols-2 gap-1.5">
             {LANGS.map((l) => (
               <button key={l.id} onClick={() => setLang(l.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: 0, borderRadius: 'var(--dt-radius)', cursor: 'pointer', fontFamily: 'inherit', background: lang === l.id ? 'color-mix(in oklab, var(--dt-primary) 12%, transparent)' : 'var(--dt-hover)', boxShadow: lang === l.id ? 'inset 0 0 0 1px var(--dt-primary)' : 'none' }}>
-                {l.logo ? <img src={l.logo} alt={l.label} style={{ width: 20, height: 20, objectFit: 'contain' }} /> : <span style={{ fontSize: 16 }}>⚙</span>}
-                <span style={{ fontSize: 13, fontWeight: lang === l.id ? 600 : 400, color: lang === l.id ? 'var(--dt-primary)' : 'var(--dt-text-2)' }}>{l.label}</span>
+                className={`flex items-center gap-2 py-2 px-2.5 border-0 rounded-dt cursor-default font-[inherit] ${lang === l.id ? 'bg-[color-mix(in_oklab,var(--dt-primary)_12%,transparent)] shadow-[inset_0_0_0_1px_var(--dt-primary)]' : 'bg-dt-hover shadow-none'}`}>
+                {l.logo ? <img src={l.logo} alt={l.label} className="w-5 h-5 object-contain" /> : <span className="text-base">⚙</span>}
+                <span className={`text-[13px] ${lang === l.id ? 'font-semibold text-dt-primary' : 'font-normal text-dt-text-2'}`}>{l.label}</span>
               </button>
             ))}
           </div>
         </div>
         <div className="dt-card">
-          <div className="dt-label" style={{ marginBottom: 10 }}>{t('Difficulty')}</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="dt-label mb-2.5">{t('Difficulty')}</div>
+          <div className="flex gap-2">
             {DIFFS.map((d) => (
-              <button key={d.id} onClick={() => setDiff(d.id)} className="dt-stack"
-                style={{ flex: 1, padding: '12px 14px', border: 0, cursor: 'pointer', background: diff === d.id ? 'color-mix(in oklab, var(--dt-primary) 12%, transparent)' : 'var(--dt-hover)', borderRadius: 'var(--dt-radius)', textAlign: 'left', boxShadow: diff === d.id ? 'inset 0 0 0 1px var(--dt-primary)' : 'none', color: 'var(--dt-text)', fontFamily: 'inherit', alignItems: 'flex-start', gap: 4 }}>
-                <span style={{ fontWeight: 500, fontSize: 14, color: diff === d.id ? 'var(--dt-primary)' : 'var(--dt-text)' }}>{t(d.label)}</span>
-                <span className="dt-caption" style={{ color: 'var(--dt-text-2)' }}>{t(d.chars)}</span>
+              <button key={d.id} onClick={() => setDiff(d.id)}
+                className={`dt-stack flex-1 py-3 px-3.5 border-0 cursor-default rounded-dt text-left text-dt-text font-[inherit] items-start gap-1 ${diff === d.id ? 'bg-[color-mix(in_oklab,var(--dt-primary)_12%,transparent)] shadow-[inset_0_0_0_1px_var(--dt-primary)]' : 'bg-dt-hover shadow-none'}`}>
+                <span className={`font-medium text-sm ${diff === d.id ? 'text-dt-primary' : 'text-dt-text'}`}>{t(d.label)}</span>
+                <span className="dt-caption text-dt-text-2">{t(d.chars)}</span>
               </button>
             ))}
           </div>
         </div>
       </div>
-      <div className="dt-card" style={{ marginTop: 20, padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid var(--dt-border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <IconCode size={18} style={{ color: 'var(--dt-primary)' }} />
-            <span className="dt-h3" style={{ margin: 0 }}>{t('Preview')}</span>
+      <div className="dt-card mt-5 p-0 overflow-hidden">
+        <div className="py-4 px-5 flex items-center justify-between border-b-[0.5px] border-dt-border">
+          <div className="flex items-center gap-3">
+            <IconCode size={18} className="text-dt-primary" />
+            <span className="dt-h3 m-0">{t('Preview')}</span>
             {snippet && <span className="dt-caption">@ {LANGS.find((l) => l.id === lang)?.label} @ {t(DIFFS.find((d) => d.id === diff)?.label ?? '')}</span>}
           </div>
           <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onShuffle} disabled={loading}>
@@ -96,19 +96,19 @@ const SoloSetup = ({ lang, setLang, diff, setDiff, onStart, snippet, loading, on
           </button>
         </div>
         {loading
-          ? <div style={{ padding: 40, textAlign: 'center', color: 'var(--dt-text-3)', fontFamily: 'var(--dt-font-mono)', fontSize: 13 }}>loading...</div>
+          ? <div className="p-10 text-center text-dt-text-3 font-dt-mono text-[13px]">loading...</div>
           : snippet
             ? <CodePreview code={snippet.content} fontSize={15} />
-            : <div style={{ padding: 40, textAlign: 'center', color: 'var(--dt-text-3)', fontSize: 13 }}>No snippets found.</div>
+            : <div className="p-10 text-center text-dt-text-3 text-[13px]">No snippets found.</div>
         }
       </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+      <div className="flex justify-end mt-6">
         <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onStart} disabled={!snippet || loading}>
           <IconPlay size={16} /> {t('Start typing')}
         </button>
       </div>
-      <div style={{ marginTop: 24, color: 'var(--dt-text-2)' }} className="dt-caption">
-        <IconKeyboard size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+      <div className="dt-caption mt-6 text-dt-text-2">
+        <IconKeyboard size={14} className="align-middle mr-1.5" />
         {t('Tip: focus on accuracy first — fixed mistakes still count against your accuracy score.')}
       </div>
     </div>
@@ -128,29 +128,29 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
   const density = useAppStore((s) => s.density);
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span className="dt-h2" style={{ margin: 0 }}>{t('Solo')} @ {LANGS.find((l) => l.id === lang)?.label}</span>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3.5">
+          <span className="dt-h2 m-0">{t('Solo')} @ {LANGS.find((l) => l.id === lang)?.label}</span>
           <span className="dt-chip">{t(DIFFS.find((d) => d.id === diff)?.label ?? '')}</span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}><IconSettings size={14} /> {t('Settings')}</button>
           <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onReset}><IconRefresh size={14} /> {t('Restart')}</button>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div className="grid grid-cols-4 gap-3 mb-4">
         <LiveStat label="WPM" value={progress.wpm} accent />
         <LiveStat label="Accuracy" value={progress.acc.toFixed(0)} unit="%" />
         <LiveStat label="Time" value={(progress.elapsed / 1000).toFixed(1)} unit="s" />
         <LiveStat label="Progress" value={`${progress.index}/${progress.total}`} />
       </div>
-      <div className="dt-progress" style={{ marginBottom: 24, height: 4 }}>
+      <div className="dt-progress mb-6 h-1">
         <div style={{ width: `${(progress.index / Math.max(1, progress.total)) * 100}%` }} />
       </div>
       <TypingEngine code={snippet.content} resetKey={resetKey} caretStyle={caret}
         fontSize={density === 'compact' ? 16 : 18} onProgress={setProgress} onFinish={onFinish} />
-      <div style={{ marginTop: 20, color: 'var(--dt-text-2)', textAlign: 'center' }} className="dt-caption">
-        Press <kbd style={kbd}>Esc</kbd> to pause @ <kbd style={kbd}>Tab</kbd> + <kbd style={kbd}>Enter</kbd> to restart
+      <div className="dt-caption mt-5 text-dt-text-2 text-center">
+        Press <kbd className={kbdClass}>Esc</kbd> to pause @ <kbd className={kbdClass}>Tab</kbd> + <kbd className={kbdClass}>Enter</kbd> to restart
       </div>
     </div>
   );
@@ -163,10 +163,10 @@ interface SoloResultProps {
 }
 
 const StatCard = ({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: boolean }) => (
-  <div className="dt-card" style={{ padding: '16px 20px' }}>
-    <div className="dt-label" style={{ marginBottom: 6, fontSize: 10 }}>{label}</div>
-    <div className="dt-mono dt-tabular" style={{ fontSize: 28, fontWeight: 600, color: accent ? 'var(--dt-primary)' : 'var(--dt-text)', lineHeight: 1 }}>{value}</div>
-    {sub && <div className="dt-caption" style={{ marginTop: 6, color: 'var(--dt-text-3)' }}>{sub}</div>}
+  <div className="dt-card py-4 px-5">
+    <div className="dt-label mb-1.5 text-[10px]">{label}</div>
+    <div className={`dt-mono dt-tabular text-[28px] font-semibold leading-none ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>{value}</div>
+    {sub && <div className="dt-caption mt-1.5 text-dt-text-3">{sub}</div>}
   </div>
 );
 
@@ -225,16 +225,16 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="dt-h2" style={{ margin: 0, color: 'var(--dt-primary)' }}>완료!</h2>
+          <h2 className="dt-h2 m-0 text-dt-primary">완료!</h2>
           {savedResult && stats && (
-            <span className="dt-caption" style={{ color: 'var(--dt-text-3)' }}>
+            <span className="dt-caption text-dt-text-3">
               ✓ 저장됨
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}>{t('Change settings')}</button>
           <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={onNext}><IconRefresh size={14} /> {t('New snippet')}</button>
         </div>
@@ -242,15 +242,14 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
 
       {/* 비로그인 유도 배너 */}
       {!isLoggedIn && (
-        <div style={{ marginBottom: 16, padding: '14px 20px', background: 'color-mix(in oklab, var(--dt-primary) 6%, transparent)', borderRadius: 'var(--dt-radius-md)', border: '0.5px solid color-mix(in oklab, var(--dt-primary) 25%, transparent)', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--dt-text)', marginBottom: 2 }}>기록이 저장되지 않았습니다</div>
-            <div style={{ fontSize: 12, color: 'var(--dt-text-2)' }}>GitHub로 로그인하면 결과가 저장되고 랭킹에 올라갑니다.</div>
+        <div className="mb-4 py-3.5 px-5 bg-[color-mix(in_oklab,var(--dt-primary)_6%,transparent)] rounded-dt-md border-[0.5px] border-[color-mix(in_oklab,var(--dt-primary)_25%,transparent)] flex items-center gap-4">
+          <div className="flex-1">
+            <div className="text-sm font-medium text-dt-text mb-0.5">기록이 저장되지 않았습니다</div>
+            <div className="text-xs text-dt-text-2">GitHub로 로그인하면 결과가 저장되고 랭킹에 올라갑니다.</div>
           </div>
           <button
-            className="dt-btn dt-btn-sm"
+            className="dt-btn dt-btn-sm flex items-center gap-2 bg-[#24292f] text-white border-0 shrink-0"
             onClick={() => navigate('/login')}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#24292f', color: '#fff', border: 0, flexShrink: 0 }}
           >
             <GithubMark size={15} fill="#fff" /> 로그인하고 저장하기
           </button>
@@ -258,7 +257,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       )}
 
       {/* Stats — 5개 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 16 }}>
+      <div className="grid grid-cols-5 gap-2 mb-4">
         <StatCard label="WPM" value={result.wpm} sub={avgWpm > 0 ? `평균 ${avgWpm}` : undefined} accent />
         <StatCard label="총 타수" value={result.rawWpm} />
         <StatCard label="정확도" value={`${result.acc.toFixed(1)}%`} sub={`${result.errors}회 오타`} />
@@ -268,19 +267,19 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
 
       {/* 랭킹 슬라이드 위젯 — 그래프 위에 전체 폭 */}
       {isLoggedIn && savedResult && userId && (
-        <div className="dt-card" style={{ padding: 20, marginBottom: 16 }}>
-          <div className="dt-label" style={{ marginBottom: 14, fontSize: 10 }}>스니펫 랭킹</div>
+        <div className="dt-card p-5 mb-4">
+          <div className="dt-label mb-3.5 text-[10px]">스니펫 랭킹</div>
           <RankSlideWidget snippetId={snippet.id} userId={userId} myWpm={result.wpm} myUsername={useUserStore.getState().username ?? '나'} />
         </div>
       )}
 
       {/* 메인 타수 그래프 — WPM + 총타수 + 오타 마커 통합 */}
       {(stats?.wpmGraph.length ?? 0) > 1 && (
-        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-            <span className="dt-h3" style={{ margin: 0 }}>타수 그래프</span>
+        <div className="dt-card p-0 overflow-hidden mb-4">
+          <div className="py-3 px-5 border-b-[0.5px] border-dt-border">
+            <span className="dt-h3 m-0">타수 그래프</span>
           </div>
-          <div style={{ padding: '8px 20px 16px' }}>
+          <div className="pt-2 px-5 pb-4">
             <WpmGraph
               wpmData={stats!.wpmGraph}
               rawWpmData={dualWpmData.rawLine}
@@ -292,21 +291,21 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
 
       {/* 자주 틀린 글자 */}
       {typoFreqBars.length > 0 && (
-        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-            <span className="dt-h3" style={{ margin: 0 }}>자주 틀린 글자</span>
+        <div className="dt-card p-0 overflow-hidden mb-4">
+          <div className="py-3 px-5 border-b-[0.5px] border-dt-border">
+            <span className="dt-h3 m-0">자주 틀린 글자</span>
           </div>
-          <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="py-2.5 px-4 flex flex-col gap-1.5">
             {typoFreqBars.slice(0, 8).map((bar, i) => {
               const pct = (bar.value / typoFreqBars[0].value) * 100;
               return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span className="dt-mono" style={{ width: 28, fontSize: 11, color: 'var(--dt-text-3)', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
-                  <span className="dt-mono" style={{ width: 32, fontSize: 14, color: 'var(--dt-error)', fontWeight: 700, flexShrink: 0 }}>{bar.label}</span>
-                  <div style={{ flex: 1, height: 6, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: 'var(--dt-error)', borderRadius: 999, opacity: 0.65 }} />
+                <div key={i} className="flex items-center gap-2.5">
+                  <span className="dt-mono w-7 text-[11px] text-dt-text-3 text-right shrink-0">#{i + 1}</span>
+                  <span className="dt-mono w-8 text-sm text-dt-error font-bold shrink-0">{bar.label}</span>
+                  <div className="flex-1 h-1.5 bg-dt-hover rounded-full overflow-hidden">
+                    <div className="h-full bg-dt-error rounded-full opacity-[0.65]" style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="dt-mono" style={{ width: 32, fontSize: 12, textAlign: 'right', color: 'var(--dt-text-3)', flexShrink: 0 }}>{bar.value}회</span>
+                  <span className="dt-mono w-8 text-xs text-right text-dt-text-3 shrink-0">{bar.value}회</span>
                 </div>
               );
             })}
@@ -315,32 +314,32 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
       )}
 
       {/* Typo Heatmap + Inline Replay */}
-      <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-        <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="dt-h3" style={{ margin: 0 }}>오타 위치 분석</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-            <span style={{ display: 'inline-block', width: 10, height: 10, background: 'rgba(220,38,38,0.3)', borderRadius: 2, border: '1px solid rgba(220,38,38,0.5)' }} />
-            <span style={{ color: 'var(--dt-text-3)' }}>오타 위치</span>
+      <div className="dt-card p-0 overflow-hidden mb-4">
+        <div className="py-3 px-5 border-b-[0.5px] border-dt-border flex items-center gap-3">
+          <span className="dt-h3 m-0">오타 위치 분석</span>
+          <span className="flex items-center gap-1.5 text-[11px]">
+            <span className="inline-block w-2.5 h-2.5 bg-[rgba(220,38,38,0.3)] rounded-sm border border-[rgba(220,38,38,0.5)]" />
+            <span className="text-dt-text-3">오타 위치</span>
           </span>
         </div>
-        <div style={{ padding: '16px 20px' }}>
+        <div className="py-4 px-5">
           <TypoHeatmap content={snippet.content} typos={result.typos} replayData={result.replayData} />
         </div>
       </div>
 
       {/* Typo List */}
       {result.typos.length > 0 && (
-        <div className="dt-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{ padding: '12px 20px', borderBottom: '0.5px solid var(--dt-border)' }}>
-            <span className="dt-h3" style={{ margin: 0 }}>오타 목록 ({result.typos.length}개)</span>
+        <div className="dt-card p-0 overflow-hidden mb-4">
+          <div className="py-3 px-5 border-b-[0.5px] border-dt-border">
+            <span className="dt-h3 m-0">오타 목록 ({result.typos.length}개)</span>
           </div>
-          <div style={{ padding: '8px 20px', display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 140, overflowY: 'auto' }}>
+          <div className="py-2 px-5 flex flex-wrap gap-2 max-h-[140px] overflow-y-auto">
             {result.typos.map((typo, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: 'var(--dt-hover)', borderRadius: 4, fontFamily: 'var(--dt-font-mono)', fontSize: 12 }}>
-                <span style={{ color: 'var(--dt-text-3)', fontSize: 10 }}>#{typo.index}</span>
-                <span style={{ color: 'var(--dt-error)', textDecoration: 'line-through' }}>{typo.expected === ' ' ? '·' : typo.expected}</span>
-                <span style={{ color: 'var(--dt-text-3)' }}>→</span>
-                <span style={{ color: 'var(--dt-text-2)' }}>{typo.typed === ' ' ? '·' : typo.typed}</span>
+              <div key={i} className="flex items-center gap-1 py-[3px] px-2.5 bg-dt-hover rounded font-dt-mono text-xs">
+                <span className="text-dt-text-3 text-[10px]">#{typo.index}</span>
+                <span className="text-dt-error line-through">{typo.expected === ' ' ? '·' : typo.expected}</span>
+                <span className="text-dt-text-3">→</span>
+                <span className="text-dt-text-2">{typo.typed === ' ' ? '·' : typo.typed}</span>
               </div>
             ))}
           </div>
@@ -349,23 +348,23 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
 
       {/* Best / Worst Words */}
       {stats && (stats.wordStats.bestWords.length > 0 || stats.wordStats.worstWords.length > 0) && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <div className="grid grid-cols-2 gap-3 mb-4">
           {stats.wordStats.bestWords.length > 0 && (
-            <div className="dt-card" style={{ padding: 16 }}>
-              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-success)', fontSize: 10 }}>잘 치는 단어</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div className="dt-card p-4">
+              <div className="dt-label mb-2 text-[10px] text-dt-success">잘 치는 단어</div>
+              <div className="flex flex-wrap gap-1.5">
                 {stats.wordStats.bestWords.map((w) => (
-                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-success) 12%, transparent)', borderRadius: 4, color: 'var(--dt-success)' }}>{w}</span>
+                  <span key={w} className="dt-mono text-xs py-0.5 px-2 bg-[color-mix(in_oklab,var(--dt-success)_12%,transparent)] rounded text-dt-success">{w}</span>
                 ))}
               </div>
             </div>
           )}
           {stats.wordStats.worstWords.length > 0 && (
-            <div className="dt-card" style={{ padding: 16 }}>
-              <div className="dt-label" style={{ marginBottom: 8, color: 'var(--dt-error)', fontSize: 10 }}>막히는 단어</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div className="dt-card p-4">
+              <div className="dt-label mb-2 text-[10px] text-dt-error">막히는 단어</div>
+              <div className="flex flex-wrap gap-1.5">
                 {stats.wordStats.worstWords.map((w) => (
-                  <span key={w} className="dt-mono" style={{ fontSize: 12, padding: '2px 8px', background: 'color-mix(in oklab, var(--dt-error) 12%, transparent)', borderRadius: 4, color: 'var(--dt-error)' }}>{w}</span>
+                  <span key={w} className="dt-mono text-xs py-0.5 px-2 bg-[color-mix(in_oklab,var(--dt-error)_12%,transparent)] rounded text-dt-error">{w}</span>
                 ))}
               </div>
             </div>
@@ -373,7 +372,7 @@ const SoloResult = ({ result, snippet, savedResult, onNext, onChangeSettings }: 
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24 }}>
+      <div className="flex justify-center gap-3 mt-6">
         <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change language / difficulty')}</button>
         <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
       </div>

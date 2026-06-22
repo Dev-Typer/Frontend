@@ -5,7 +5,7 @@ import { useUserStore } from '@/stores/userStore';
 import { getMe, logout } from '@/apis/authApi';
 import { LangContext } from '@/i18n';
 import ContemporaryShell from '@/pages/ContemporaryShell';
-import HomeEditor from '@/pages/Home/HomeEditor';
+import HomeContemporary from '@/pages/Home/HomeContemporary';
 import Solo from '@/pages/Solo';
 import Battle from '@/pages/Battle';
 import Daily from '@/pages/Daily';
@@ -76,7 +76,7 @@ const AppRoutes = () => {
 
   const routes = (
     <Routes>
-      <Route path="/" element={<HomeEditor />} />
+      <Route path="/" element={<HomeContemporary me={me} />} />
       <Route path="/solo" element={<Solo />} />
       <Route path="/battle" element={<Battle />} />
       <Route path="/daily" element={<Daily />} />

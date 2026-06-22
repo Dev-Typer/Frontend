@@ -7,7 +7,7 @@ import Avatar from '@/components/Avatar';
 import Stat from '@/components/Stat';
 import { IconClock, IconPlay, IconTrophy, IconX, IconCode, IconChevronRight } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
-import { LANG_ICON } from '@/data';
+import { LANG_ICON, TODAYS_CHALLENGE } from '@/data';
 import {
   getDailyChallenge,
   submitDailyChallenge,
@@ -425,7 +425,19 @@ const Daily = () => {
   useEffect(() => {
     getDailyChallenge()
       .then(ch => { setChallenge(ch); })
-      .catch(() => {})
+      .catch(() => {
+        setChallenge({
+          id: 0,
+          date: TODAYS_CHALLENGE.date,
+          snippet: {
+            id: 0, title: 'Daily Challenge',
+            content: TODAYS_CHALLENGE.code,
+            language: TODAYS_CHALLENGE.language,
+            difficulty: TODAYS_CHALLENGE.difficulty as 'easy' | 'medium' | 'hard',
+            playCount: 0, avgWpm: 0,
+          },
+        });
+      })
       .finally(() => setLoading(false));
     loadLeaderboard();
   }, []);

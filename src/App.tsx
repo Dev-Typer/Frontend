@@ -13,6 +13,7 @@ import Daily from '@/pages/Daily';
 import Ranking from '@/pages/Ranking';
 import MyPage from '@/pages/MyPage';
 import Login from '@/pages/Login';
+import Snippets from '@/pages/Snippets';
 import SnippetRankingPage from '@/pages/ranking/SnippetRankingPage';
 import AdminSnippets from '@/pages/admin/AdminSnippets';
 
@@ -81,6 +82,7 @@ const AppRoutes = () => {
       <Route path="/battle" element={<Battle />} />
       <Route path="/daily" element={<Daily />} />
       <Route path="/ranking" element={<Ranking />} />
+      <Route path="/snippets" element={<Snippets />} />
       <Route path="/mypage" element={<AuthGuard><MyPage /></AuthGuard>} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin/snippets" element={

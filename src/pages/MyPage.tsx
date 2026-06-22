@@ -18,32 +18,12 @@ const BADGES = [
   { emoji: '👑', name: '챌린지 1위',      color: '#FFD060', earned: false },
 ];
 
-const CORE_HISTORY = [
-  { label: 'Jan', core: 420  },
-  { label: 'Feb', core: 890  },
-  { label: 'Mar', core: 1540 },
-  { label: 'Apr', core: 2210 },
-  { label: 'May', core: 3380 },
-  { label: 'Jun', core: 4820 },
-];
-
-const BEST_SNIPPETS = [
-  { title: 'debounce()', lang: 'javascript', diff: 'medium', core: 184, rank: 3,  total: 2140 },
-  { title: 'fetchUser()', lang: 'javascript', diff: 'medium', core: 162, rank: 7,  total: 1890 },
-  { title: 'EventEmitter', lang: 'javascript', diff: 'hard',   core: 298, rank: 12, total: 1340 },
-  { title: 'Result<T>',    lang: 'typescript', diff: 'medium', core: 221, rank: 4,  total: 1120 },
-  { title: 'pipe()',       lang: 'typescript', diff: 'hard',   core: 310, rank: 2,  total: 980  },
-  { title: 'fibonacci()',  lang: 'python',     diff: 'easy',   core: 128, rank: 18, total: 2340 },
-  { title: '@cache',       lang: 'python',     diff: 'medium', core: 198, rank: 9,  total: 1560 },
-  { title: 'Map[T,U]',    lang: 'go',         diff: 'medium', core: 177, rank: 5,  total: 780  },
-  { title: 'RANK()',       lang: 'sql',        diff: 'hard',   core: 262, rank: 3,  total: 640  },
-  { title: 'LEFT JOIN',   lang: 'sql',        diff: 'easy',   core: 108, rank: 22, total: 1280 },
-];
-
-const LANG_CORE = ME.byLang.map((l, i) => ({
+const CORE_HISTORY = ME.coreHistory;
+const BEST_SNIPPETS = ME.bestSnippets;
+const LANG_CORE = ME.byLang.map(l => ({
   lang: l.lang,
-  core: Math.round(l.wpm * l.plays * 0.48 - i * 40),
-  snippets: Math.floor(l.plays * 0.62),
+  core: l.core ?? 0,
+  snippets: l.snippets ?? 0,
 }));
 
 // ─── Level helpers ────────────────────────────────────────────────────────────

@@ -4,8 +4,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
 import { getMe, logout } from '@/apis/authApi';
 import { LangContext } from '@/i18n';
-import TopNav from '@/components/TopNav';
-import EditorShell from '@/pages/EditorShell';
+import ContemporaryShell from '@/pages/ContemporaryShell';
 import HomeEditor from '@/pages/Home/HomeEditor';
 import Solo from '@/pages/Solo';
 import Battle from '@/pages/Battle';
@@ -36,7 +35,6 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
-  const design = useAppStore((s) => s.design);
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
@@ -94,19 +92,10 @@ const AppRoutes = () => {
     </Routes>
   );
 
-  if (design === 'editor') {
-    return (
-      <EditorShell me={me} isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
-        {routes}
-      </EditorShell>
-    );
-  }
-
   return (
-    <>
-      <TopNav theme={theme} onTheme={toggleTheme} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} onLogout={handleLogout} me={me} />
+    <ContemporaryShell me={me} isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
       {routes}
-    </>
+    </ContemporaryShell>
   );
 };
 

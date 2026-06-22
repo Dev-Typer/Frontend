@@ -1,16 +1,19 @@
-/* DevTyper — design system tokens (editor 디자인 전용, dark/light 2테마) */
+/* DevTyper — design system tokens (cosmic/contemporary + "Velocity" 리스킨, dark/light 2테마) */
 
 :root {
+  /* Common semantic */
   --dt-success: #16A34A;
   --dt-warning: #D97706;
   --dt-error: #DC2626;
   --dt-info: #3B82F6;
 
+  /* Typing area (always dark, theme-invariant) */
   --dt-type-bg: #0F1117;
   --dt-type-border: #2D324A;
   --dt-type-pending: #4A5070;
   --dt-type-error-bg: rgba(255, 95, 95, 0.16);
 
+  /* Tier badges (shared across designs) */
   --dt-bronze-bg: #4A2010;     --dt-bronze-fg: #E8956A;
   --dt-silver-bg: #2A2A2E;     --dt-silver-fg: #B0B0BA;
   --dt-gold-bg: #3A2C00;       --dt-gold-fg: #FFD060;
@@ -18,42 +21,91 @@
   --dt-diamond-bg: #001A40;    --dt-diamond-fg: #5AA8FF;
   --dt-master-bg: #1E0038;     --dt-master-fg: #B87AFF;
 
+  /* Spacing scale (4pt base) */
   --dt-s-xs: 4px; --dt-s-sm: 8px; --dt-s-md: 12px; --dt-s-lg: 16px;
   --dt-s-xl: 24px; --dt-s-2xl: 32px; --dt-s-3xl: 48px;
 
+  /* Motion */
   --dt-trans: 150ms ease-out;
 }
 
-/* EDITOR — All monospace, IDE chrome, terminal greens / amber */
-.dt-design-editor {
-  --dt-primary: #50FA7B;
-  --dt-primary-dark: #3FE56C;
-  --dt-primary-deeper: #2BD058;
-  --dt-secondary: #F1FA8C;
-  --dt-tertiary: #BD93F9;
-  --dt-quaternary: #8BE9FD;
-  --dt-font-display: 'JetBrains Mono', ui-monospace, monospace;
-  --dt-font-sans: 'JetBrains Mono', ui-monospace, monospace;
-  --dt-font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --dt-radius-sm: 2px; --dt-radius: 3px; --dt-radius-md: 4px; --dt-radius-pill: 999px;
-  --dt-heading-weight: 500;
-  --dt-display-tracking: -0.02em;
-  --dt-heading-tracking: 0;
-  --dt-type-correct: #50FA7B;
-  --dt-type-error: #FF5555;
+/* ───────────────────────────────────────────────────────────────────────────
+   CONTEMPORARY — Velocity skin: deep-space navy, cyan → blue → violet
+─────────────────────────────────────────────────────────────────────────── */
+.dt-design-contemporary {
+  --dt-primary: #2E6BFF;
+  --dt-primary-dark: #2257DB;
+  --dt-primary-deeper: #1944B0;
+  --dt-secondary: #B93CFF;
+  --dt-gradient: linear-gradient(135deg, #57E5FF 0%, #2E6BFF 50%, #B93CFF 100%);
+  --dt-gradient-soft: linear-gradient(135deg, rgba(87,229,255,0.14) 0%, rgba(46,107,255,0.14) 50%, rgba(185,60,255,0.14) 100%);
+  --dt-gradient-pink: linear-gradient(135deg, #B93CFF 0%, #7A4CFF 100%);
+
+  --dt-font-display: 'Jost', system-ui, sans-serif;
+  --dt-font-sans: 'Jost', system-ui, sans-serif;
+  --dt-font-mono: 'Overpass Mono', ui-monospace, monospace;
+
+  --dt-radius-sm: 12px;
+  --dt-radius: 16px;
+  --dt-radius-md: 22px;
+  --dt-radius-pill: 999px;
+
+  --dt-heading-weight: 600;
+  --dt-display-tracking: -0.03em;
+  --dt-heading-tracking: -0.015em;
+
+  --dt-type-correct: #57E5FF;
+  --dt-type-error: #FF4D6D;
 }
-.dt-design-editor.dt-theme-dark {
-  --dt-bg: #0D0E12; --dt-surface: #14161D; --dt-card: #181B23; --dt-hover: #1F2330;
-  --dt-border: #2A2F3D; --dt-text: #E6E8EE; --dt-text-2: #7A8195; --dt-text-3: #4A5063;
-  --dt-card-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px var(--dt-border), 0 1px 0 rgba(0,0,0,0.4), 0 12px 32px -20px rgba(0,0,0,0.8);
+.dt-design-contemporary.dt-theme-dark {
+  --dt-bg: #070C1F;
+  --dt-surface: #0C1330;
+  --dt-card: #111A3A;
+  --dt-hover: #19234A;
+  --dt-border: #232E55;
+  --dt-text: #EAF1FB;
+  --dt-text-2: #93A2C2;
+  --dt-text-3: #5C6B8E;
+  --dt-card-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 0 0 1px rgba(120,150,255,0.06),
+    0 2px 8px -2px rgba(0,0,0,0.4),
+    0 12px 32px -22px rgba(46,107,255,0.22);
 }
-.dt-design-editor.dt-theme-light {
-  --dt-bg: #FAFAF6; --dt-surface: #F2F2EC; --dt-card: #FFFFFF; --dt-hover: #EDEDE5;
-  --dt-border: #D8D8D0; --dt-text: #1A1B1F; --dt-text-2: #5A5B5F; --dt-text-3: #8C8E94;
-  --dt-card-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 0 0 0.5px var(--dt-border), 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -12px rgba(0,0,0,0.10);
+.dt-design-contemporary.dt-theme-light {
+  --dt-bg: #EEF3FA;
+  --dt-surface: #FFFFFF;
+  --dt-card: #FFFFFF;
+  --dt-hover: #EAF1FA;
+  --dt-border: #DCE6F2;
+  --dt-text: #0C1626;
+  --dt-text-2: #51617A;
+  --dt-text-3: #8A99AE;
+  --dt-card-shadow:
+    0 1px 2px rgba(20,40,80,0.04),
+    0 8px 28px -12px rgba(44,123,229,0.18),
+    0 0 0 1px rgba(20,40,80,0.05);
+}
+/* light-beam backdrop on the deep-navy canvas */
+.dt-design-contemporary.dt-theme-dark {
+  background-color: var(--dt-bg);
+  background-image:
+    radial-gradient(1100px 620px at 78% -8%, rgba(46,107,255,0.13), transparent 60%),
+    radial-gradient(900px 560px at 12% 4%, rgba(87,229,255,0.07), transparent 58%),
+    radial-gradient(1200px 800px at 50% 120%, rgba(185,60,255,0.06), transparent 60%);
+  background-attachment: fixed;
+}
+.dt-design-contemporary.dt-theme-light {
+  background-color: var(--dt-bg);
+  background-image:
+    radial-gradient(1000px 560px at 80% -10%, rgba(46,107,255,0.10), transparent 60%),
+    radial-gradient(900px 520px at 10% 0%, rgba(87,229,255,0.08), transparent 58%);
+  background-attachment: fixed;
 }
 
-/* Base */
+/* ───────────────────────────────────────────────────────────────────────────
+   Base
+─────────────────────────────────────────────────────────────────────────── */
 html, body { margin: 0; padding: 0; }
 html { background: #0F1117; }
 body {
@@ -75,23 +127,55 @@ body {
 * { box-sizing: border-box; }
 button { font-family: inherit; }
 
-/* Typography */
-.dt-display { font-family: var(--dt-font-display); font-size: 40px; font-weight: var(--dt-heading-weight); letter-spacing: var(--dt-display-tracking); line-height: 1.05; }
-.dt-h1 { font-family: var(--dt-font-display); font-size: 28px; font-weight: var(--dt-heading-weight); letter-spacing: var(--dt-heading-tracking); line-height: 1.2; }
-.dt-h2 { font-family: var(--dt-font-display); font-size: 20px; font-weight: var(--dt-heading-weight); line-height: 1.3; }
+/* ───────────────────────────────────────────────────────────────────────────
+   Typography utility classes — pick up design tokens
+─────────────────────────────────────────────────────────────────────────── */
+.dt-display {
+  font-family: var(--dt-font-display);
+  font-size: 40px;
+  font-weight: var(--dt-heading-weight);
+  letter-spacing: var(--dt-display-tracking);
+  line-height: 1.05;
+}
+.dt-h1 {
+  font-family: var(--dt-font-display);
+  font-size: 28px;
+  font-weight: var(--dt-heading-weight);
+  letter-spacing: var(--dt-heading-tracking);
+  line-height: 1.2;
+}
+.dt-h2 {
+  font-family: var(--dt-font-display);
+  font-size: 20px;
+  font-weight: var(--dt-heading-weight);
+  line-height: 1.3;
+}
 .dt-h3 { font-size: 16px; font-weight: 500; line-height: 1.5; }
 .dt-body { font-size: 16px; font-weight: 400; line-height: 1.6; }
 .dt-body-sm { font-size: 14px; font-weight: 400; line-height: 1.6; }
 .dt-caption { font-size: 13px; font-weight: 400; line-height: 1.5; color: var(--dt-text-2); }
-.dt-label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--dt-text-2); }
+.dt-label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+  line-height: 1.4; text-transform: uppercase; color: var(--dt-text-2);
+}
 .dt-code { font-family: var(--dt-font-mono); font-size: 15px; line-height: 1.8; font-weight: 400; }
 .dt-mono { font-family: var(--dt-font-mono); font-variant-numeric: tabular-nums; }
 .dt-tabular { font-variant-numeric: tabular-nums; }
 
-/* Cards */
-.dt-card { background: var(--dt-card); border-radius: var(--dt-radius-md); padding: 20px; box-shadow: var(--dt-card-shadow); transition: background var(--dt-trans), box-shadow var(--dt-trans); }
+/* ───────────────────────────────────────────────────────────────────────────
+   Cards
+─────────────────────────────────────────────────────────────────────────── */
+.dt-card {
+  background: var(--dt-card);
+  border-radius: var(--dt-radius-md);
+  padding: 20px;
+  box-shadow: var(--dt-card-shadow);
+  transition: background var(--dt-trans), box-shadow var(--dt-trans);
+}
 
-/* Buttons */
+/* ───────────────────────────────────────────────────────────────────────────
+   Buttons — base then design-specific tweaks (with depth)
+─────────────────────────────────────────────────────────────────────────── */
 .dt-btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: var(--dt-s-sm);
@@ -102,30 +186,90 @@ button { font-family: inherit; }
   transition: background var(--dt-trans), color var(--dt-trans), border-color var(--dt-trans), transform 120ms ease-out, box-shadow 120ms ease-out, filter var(--dt-trans);
   font-family: inherit; white-space: nowrap;
   position: relative;
-  font-family: var(--dt-font-mono);
 }
 .dt-btn-primary {
-  background: var(--dt-primary); color: #0D0E12;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 1px 2px rgba(0,0,0,0.20), 0 4px 12px -4px color-mix(in oklab, var(--dt-primary) 50%, transparent);
+  background: var(--dt-primary); color: #001A14;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    0 1px 2px rgba(0,0,0,0.20),
+    0 4px 12px -4px color-mix(in oklab, var(--dt-primary) 50%, transparent);
 }
 .dt-btn-primary:hover {
   background: var(--dt-primary-dark);
   transform: translateY(-1px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 1px 2px rgba(0,0,0,0.25), 0 8px 20px -6px color-mix(in oklab, var(--dt-primary) 60%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    0 1px 2px rgba(0,0,0,0.25),
+    0 8px 20px -6px color-mix(in oklab, var(--dt-primary) 60%, transparent);
 }
-.dt-btn-primary:active { background: var(--dt-primary-deeper); transform: translateY(0); box-shadow: inset 0 1px 2px rgba(0,0,0,0.20), 0 1px 1px rgba(0,0,0,0.10); }
-.dt-btn-secondary { background: transparent; color: var(--dt-text); box-shadow: inset 0 0 0 1px var(--dt-border), inset 0 1px 0 rgba(255,255,255,0.03); }
-.dt-btn-secondary:hover { background: var(--dt-hover); transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--dt-border), inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 12px -4px rgba(0,0,0,0.3); }
+.dt-btn-primary:active {
+  background: var(--dt-primary-deeper);
+  transform: translateY(0);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.20),
+    0 1px 1px rgba(0,0,0,0.10);
+}
+.dt-btn-secondary {
+  background: transparent; color: var(--dt-text);
+  box-shadow:
+    inset 0 0 0 1px var(--dt-border),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.dt-btn-secondary:hover {
+  background: var(--dt-hover);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px var(--dt-border),
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 4px 12px -4px rgba(0,0,0,0.3);
+}
 .dt-btn-secondary:active { transform: translateY(0); }
-.dt-btn-ghost { background: transparent; color: var(--dt-primary); box-shadow: inset 0 0 0 1px var(--dt-primary); }
+.dt-btn-ghost {
+  background: transparent; color: var(--dt-primary);
+  box-shadow: inset 0 0 0 1px var(--dt-primary);
+}
 .dt-btn-ghost:hover { background: color-mix(in oklab, var(--dt-primary) 10%, transparent); }
 .dt-btn-danger { background: var(--dt-error); color: #fff; }
 .dt-btn-danger:hover { filter: brightness(0.92); }
 .dt-btn-sm { min-height: 32px; padding: 0 12px; font-size: 13px; }
 .dt-btn-lg { min-height: 48px; padding: 0 22px; font-size: 15px; }
 
-/* Tier badges */
-.dt-tier { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--dt-radius-pill); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--dt-font-sans); }
+/* Contemporary: gradient primary with depth, pill-ish radius */
+.dt-design-contemporary .dt-btn { border-radius: var(--dt-radius-md); }
+.dt-design-contemporary .dt-btn-primary {
+  background: var(--dt-gradient);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.30),
+    0 1px 2px rgba(0,0,0,0.25),
+    0 8px 24px -6px rgba(200,0,223,0.55);
+}
+.dt-design-contemporary .dt-btn-primary:hover {
+  background: var(--dt-gradient);
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.35),
+    0 1px 2px rgba(0,0,0,0.25),
+    0 14px 32px -6px rgba(200,0,223,0.65);
+}
+.dt-design-contemporary .dt-btn-primary:active {
+  filter: brightness(0.92); background: var(--dt-gradient);
+  transform: translateY(0);
+  box-shadow:
+    inset 0 1px 3px rgba(0,0,0,0.3),
+    0 1px 1px rgba(0,0,0,0.15);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Tier badges
+─────────────────────────────────────────────────────────────────────────── */
+.dt-tier {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: var(--dt-radius-pill);
+  font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: var(--dt-font-sans);
+}
 .dt-tier-bronze { background: var(--dt-bronze-bg); color: var(--dt-bronze-fg); }
 .dt-tier-silver { background: var(--dt-silver-bg); color: var(--dt-silver-fg); }
 .dt-tier-gold { background: var(--dt-gold-bg); color: var(--dt-gold-fg); }
@@ -134,10 +278,11 @@ button { font-family: inherit; }
 .dt-tier-master { background: var(--dt-master-bg); color: var(--dt-master-fg); }
 .dt-tier-unranked { background: var(--dt-hover); color: var(--dt-text-2); }
 
-/* Generic */
+/* ───────────────────────────────────────────────────────────────────────────
+   Generic + Nav
+─────────────────────────────────────────────────────────────────────────── */
 .dt-divider { height: 1px; background: var(--dt-border); border: 0; }
 
-/* Nav */
 .dt-nav {
   position: sticky; top: 0; z-index: 50;
   background: var(--dt-surface);
@@ -146,171 +291,607 @@ button { font-family: inherit; }
   padding: 0 32px; gap: 32px;
 }
 .dt-nav-links { display: flex; gap: 4px; flex: 1; }
-.dt-nav-link { background: transparent; border: 0; color: var(--dt-text-2); padding: 8px 12px; border-radius: var(--dt-radius); font-size: 13px; font-weight: 400; font-family: inherit; cursor: default; transition: color var(--dt-trans), background var(--dt-trans); }
+.dt-nav-link {
+  background: transparent; border: 0; color: var(--dt-text-2);
+  padding: 8px 12px; border-radius: var(--dt-radius);
+  font-size: 14px; font-weight: 400; font-family: inherit;
+  cursor: default; transition: color var(--dt-trans), background var(--dt-trans);
+}
 .dt-nav-link:hover { color: var(--dt-text); background: var(--dt-hover); }
 .dt-nav-link.active { color: var(--dt-primary); }
 
 /* Logo */
-.dt-logo { display: inline-flex; align-items: center; gap: 8px; font-family: var(--dt-font-mono); font-size: 16px; font-weight: 500; letter-spacing: -0.02em; color: var(--dt-text); }
-.dt-logo-mark { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--dt-radius-sm); background: var(--dt-primary); color: #0D0E12; font-family: var(--dt-font-mono); font-weight: 500; font-size: 14px; position: relative; }
+.dt-logo {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--dt-font-mono); font-size: 16px; font-weight: 500;
+  letter-spacing: -0.02em; color: var(--dt-text);
+}
+.dt-design-contemporary .dt-logo {
+  font-family: var(--dt-font-display);
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+.dt-logo-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: var(--dt-radius-sm);
+  background: var(--dt-primary); color: #001A14;
+  font-family: var(--dt-font-mono); font-weight: 500; font-size: 14px;
+  position: relative;
+}
+.dt-design-contemporary .dt-logo-mark { background: var(--dt-gradient); color: #fff; }
 
 /* Avatar */
-.dt-avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--dt-radius); font-size: 12px; font-weight: 500; color: #001A14; font-family: var(--dt-font-mono); }
+.dt-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  font-size: 12px; font-weight: 500; color: #001A14;
+  font-family: var(--dt-font-mono);
+}
 
-/* Code area */
-.dt-code-area { background: var(--dt-type-bg); border: 0.5px solid var(--dt-type-border); border-radius: var(--dt-radius-md); padding: 28px 32px; font-family: var(--dt-font-mono); font-size: 18px; line-height: 1.85; color: var(--dt-type-pending); position: relative; white-space: pre; overflow-x: auto; }
+/* Code area (theme-invariant dark) */
+.dt-code-area {
+  background: var(--dt-type-bg);
+  border: 0.5px solid var(--dt-type-border);
+  border-radius: var(--dt-radius-md);
+  padding: 28px 32px;
+  font-family: var(--dt-font-mono);
+  font-size: 18px;
+  line-height: 1.85;
+  color: var(--dt-type-pending);
+  position: relative;
+  white-space: pre;
+  overflow-x: auto;
+}
+.dt-design-contemporary .dt-code-area { border-radius: var(--dt-radius-md); border: 1px solid rgba(60,160,230,0.28); }
+
 .dt-code-area .ch { position: relative; transition: color 60ms linear; }
 .dt-code-area .ch.correct { color: var(--dt-type-correct); }
 .dt-code-area .ch.error { color: var(--dt-type-error); background: var(--dt-type-error-bg); border-radius: 2px; }
-.dt-code-area .ch.cursor::before { content: ''; position: absolute; left: -1px; top: 12%; bottom: 12%; width: 2px; background: var(--dt-type-correct); animation: dt-blink 1s step-end infinite; }
+.dt-code-area .ch.cursor::before {
+  content: ''; position: absolute; left: -1px; top: 12%; bottom: 12%;
+  width: 2px; background: var(--dt-type-correct);
+  animation: dt-blink 1s step-end infinite;
+}
 .dt-code-area .ch.cursor.caret-block::before { width: 100%; opacity: 0.35; top: 0; bottom: 0; }
 .dt-code-area .ch.cursor.caret-under::before { width: 100%; height: 2px; top: auto; bottom: 4px; }
-@keyframes dt-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes dt-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
 
 /* Progress */
 .dt-progress { background: var(--dt-hover); border-radius: 999px; height: 6px; overflow: hidden; }
 .dt-progress > div { height: 100%; background: var(--dt-primary); border-radius: 999px; transition: width 300ms ease-out; }
+.dt-design-contemporary .dt-progress > div { background: var(--dt-gradient); }
 
 /* Inputs */
-.dt-input { background: var(--dt-card); color: var(--dt-text); border: 0.5px solid var(--dt-border); border-radius: var(--dt-radius); padding: 10px 12px; font-size: 14px; font-family: inherit; min-height: 40px; outline: none; transition: border-color var(--dt-trans); }
+.dt-input {
+  background: var(--dt-card); color: var(--dt-text);
+  border: 0.5px solid var(--dt-border); border-radius: var(--dt-radius);
+  padding: 10px 12px; font-size: 14px; font-family: inherit;
+  min-height: 40px; outline: none;
+  transition: border-color var(--dt-trans);
+}
 .dt-input:focus { border-color: var(--dt-primary); }
 
-/* Chip */
-.dt-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: var(--dt-radius-pill); background: var(--dt-hover); color: var(--dt-text-2); font-size: 12px; font-weight: 500; }
+/* Pill / chip */
+.dt-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: var(--dt-radius-pill);
+  background: var(--dt-hover); color: var(--dt-text-2);
+  font-size: 12px; font-weight: 500;
+}
 .dt-chip.active { background: color-mix(in oklab, var(--dt-primary) 18%, transparent); color: var(--dt-primary); }
+.dt-design-contemporary .dt-chip.active { background: var(--dt-gradient-soft); color: var(--dt-primary); }
 
-/* Layout */
+/* Layout helpers */
 .dt-stack { display: flex; flex-direction: column; }
 .dt-row { display: flex; align-items: center; }
 .dt-grow { flex: 1; }
-.dt-page { max-width: none; margin: 0; padding: 24px 28px 40px; }
-.dt-page-narrow { max-width: none; margin: 0; padding: 24px 28px 40px; }
+
+/* Page container */
+.dt-page { max-width: 1280px; margin: 0 auto; padding: 48px 32px 80px; }
+.dt-page-narrow { max-width: 960px; margin: 0 auto; padding: 48px 32px 80px; }
 
 /* Live dot */
-.dt-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dt-error); box-shadow: 0 0 0 0 rgba(255,95,95,0.6); animation: dt-pulse 1.6s ease-out infinite; display: inline-block; }
-@keyframes dt-pulse { 0% { box-shadow: 0 0 0 0 rgba(255,95,95,0.55); } 100% { box-shadow: 0 0 0 8px rgba(255,95,95,0); } }
-@keyframes dt-spin { to { transform: rotate(360deg); } }
-@keyframes dt-pop { 0% { transform: scale(0.5); opacity: 0; } 40% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.dt-live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--dt-error);
+  box-shadow: 0 0 0 0 rgba(255,95,95,0.6);
+  animation: dt-pulse 1.6s ease-out infinite;
+  display: inline-block;
+}
+@keyframes dt-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,95,95,0.55); }
+  100% { box-shadow: 0 0 0 8px rgba(255,95,95,0); }
+}
+
+@keyframes dt-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Page slide transitions (nav direction) */
+@keyframes dt-slide-next {
+  from { opacity: 0; transform: translateX(56px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes dt-slide-prev {
+  from { opacity: 0; transform: translateX(-56px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Login page
+   Contemporary nav (sticky, gradient brand, pill links)
 ─────────────────────────────────────────────────────────────────────────── */
-.dt-login-bg {
-  min-height: 100vh;
-  background: var(--dt-bg);
-  color: var(--dt-text);
-  font-family: var(--dt-font-mono);
-  display: grid;
-  place-items: center;
-  padding: 32px;
-  position: relative;
-  overflow: hidden;
+.dt-cnav {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in oklab, var(--dt-bg) 72%, transparent);
+  backdrop-filter: saturate(1.5) blur(16px);
+  -webkit-backdrop-filter: saturate(1.5) blur(16px);
+  border-bottom: 1px solid var(--dt-border);
 }
-
-.dt-login-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(circle, rgba(80, 250, 123, 0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
-  mask-image: radial-gradient(ellipse at center, black 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 75%);
+.dt-cnav-inner {
+  max-width: 1500px; margin: 0 auto;
+  height: 76px; display: grid; align-items: center;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px; padding: 0 44px;
 }
-
-.dt-login-card {
-  background: var(--dt-card);
-  border-radius: 8px;
-  padding: 40px 36px 32px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px var(--dt-border),
-    0 1px 0 rgba(0, 0, 0, 0.4),
-    0 24px 64px -32px rgba(0, 0, 0, 0.8);
+.dt-cnav-brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: transparent; border: 0; padding: 4px; cursor: default;
+  border-radius: 14px; justify-self: start;
 }
-
-.dt-btn-github {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  background: #24292f;
+.dt-cnav-wordmark {
+  font-family: var(--dt-font-display); font-weight: 700; font-size: 21px;
+  letter-spacing: -0.03em; color: var(--dt-text);
+}
+/* centered pill group, TypeGG-style */
+.dt-cnav-links {
+  display: flex; align-items: center; gap: 4px; justify-self: center;
+  padding: 5px; border-radius: 999px;
+  background: color-mix(in oklab, var(--dt-card) 70%, transparent);
+  box-shadow: inset 0 0 0 1px var(--dt-border);
+}
+.dt-cnav-link {
+  background: transparent; border: 0;
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--dt-text-2); font-family: var(--dt-font-sans);
+  font-size: 14.5px; font-weight: 600;
+  padding: 9px 18px; border-radius: 999px;
+  cursor: default; min-height: 40px; white-space: nowrap;
+  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+.dt-cnav-link:hover { color: var(--dt-text); }
+.dt-cnav-link.active {
   color: #fff;
-  padding: 14px 18px;
-  border: 0;
-  border-radius: 6px;
-  cursor: default;
-  font-family: var(--dt-font-mono);
-  font-size: 14px;
-  font-weight: 500;
+  background: var(--dt-gradient);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 1px 0 rgba(0, 0, 0, 0.5),
-    0 8px 20px -8px rgba(0, 0, 0, 0.6);
-  transition: transform 120ms ease-out, filter 120ms ease-out;
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 4px 14px -4px rgba(44,123,229,0.7);
 }
-.dt-btn-github:hover {
-  filter: brightness(1.14);
-  transform: translateY(-1px);
+.dt-cnav-right { display: flex; align-items: center; gap: 10px; justify-self: end; }
+.dt-cnav-icon {
+  width: 44px; height: 44px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; color: var(--dt-text-2);
+  cursor: default; transition: color 150ms, background 150ms;
 }
-.dt-btn-github:active {
-  transform: translateY(0);
-  filter: brightness(0.95);
+.dt-cnav-icon:hover { color: var(--dt-text); background: var(--dt-hover); }
+.dt-cnav-profile {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: transparent; border: 0; cursor: default;
+  padding: 5px 12px 5px 5px; border-radius: 999px;
+  min-height: 44px;
+  transition: background 150ms;
+}
+.dt-cnav-profile:hover { background: var(--dt-hover); }
+.dt-cnav-profile-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.dt-cnav-handle { font-size: 13px; font-weight: 500; color: var(--dt-text); line-height: 1.2; }
+.dt-cnav-tier { font-size: 11px; color: var(--dt-text-2); line-height: 1.2; }
+
+/* Contemporary: glass cards across all pages (DEV_TYPER hero vibe) */
+.dt-design-contemporary .dt-card {
+  background: color-mix(in oklab, var(--dt-card) 55%, transparent);
+  backdrop-filter: blur(10px) saturate(1.3);
+  -webkit-backdrop-filter: blur(10px) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 0 1px var(--dt-border),
+    0 14px 44px -22px rgba(0,0,0,0.6);
 }
 
-.dt-perm-list {
-  margin-top: 24px;
-  padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.02);
+/* Contemporary: pages inside shell drop the default max-width container */
+.dt-design-contemporary .dt-page,
+.dt-design-contemporary .dt-page-narrow {
+  max-width: 1500px; margin: 0 auto; padding: 48px 44px 96px;
+}
+.dt-design-contemporary .dt-page-narrow { max-width: 1140px; }
+
+/* Overall size (Tweaks → Size) — one zoom on the whole content area, all pages */
+.dt-design-contemporary.dt-size-compact .dt-contem-shell main { zoom: 0.88; }
+.dt-design-contemporary.dt-size-wide .dt-contem-shell main { zoom: 1.06; }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Accessibility — visible focus, reduced motion (per contemporary spec)
+─────────────────────────────────────────────────────────────────────────── */
+:where(button, a, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--dt-primary);
+  outline-offset: 2px;
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px var(--dt-border);
 }
-
-.dt-perm-badge {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
-  flex-shrink: 0;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
-.dt-perm-badge--grant {
-  background: rgba(80, 250, 123, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(80, 250, 123, 0.4);
-  color: var(--dt-primary);
-}
-.dt-perm-badge--deny {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--dt-border);
-  color: var(--dt-text-3);
-}
-
-.dt-spinner {
-  width: 28px;
-  height: 28px;
-  border: 2px solid var(--dt-border);
-  border-top-color: var(--dt-primary);
-  border-radius: 50%;
-  animation: dt-spin 0.9s linear infinite;
-}
-
-.dt-btn-back {
-  background: transparent;
-  border: 0;
-  padding: 6px 10px;
-  color: var(--dt-text-3);
-  cursor: default;
-  font-size: 12.5px;
-  font-family: inherit;
-  transition: color var(--dt-trans);
-}
-.dt-btn-back:hover { color: var(--dt-text-2); }
 
 ::selection { background: color-mix(in oklab, var(--dt-primary) 30%, transparent); color: inherit; }
+
+/* ── Stargaze: warp the UI forward, reveal only the backdrop ───────────────── */
+.dt-warp {
+  transform-origin: 58% 46%;
+  transition: transform 600ms cubic-bezier(.7,0,.84,0), opacity 460ms ease-in, filter 600ms ease-in;
+}
+.dt-warp.is-warping {
+  transform: scale(2.8);
+  opacity: 0;
+  filter: blur(12px);
+  pointer-events: none;
+}
+.dt-immersive .dt-atmos { animation: dt-space-push 680ms cubic-bezier(.4,0,.2,1) both; }
+@keyframes dt-space-push {
+  from { filter: brightness(0.85); }
+  to   { filter: brightness(1.12); }
+}
+.dt-stargaze-exit {
+  position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%);
+  z-index: 60; display: inline-flex; align-items: center; gap: 9px;
+  padding: 12px 18px 12px 16px; border: 0; cursor: default;
+  border-radius: 999px; font-family: var(--dt-font-sans);
+  font-size: 13.5px; font-weight: 600; color: #fff;
+  background: rgba(12,16,28,0.55);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), 0 12px 36px -10px rgba(0,0,0,0.7);
+  backdrop-filter: blur(12px) saturate(1.3); -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  opacity: 0; animation: dt-exit-in 380ms ease-out 360ms forwards;
+}
+.dt-stargaze-exit:hover { background: rgba(20,26,42,0.72); }
+.dt-stargaze-esc {
+  font-family: var(--dt-font-mono); font-size: 10px; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 6px; color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.12);
+}
+@keyframes dt-exit-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ── Abstract backdrops (Tweaks → Background) ─────────────────────────────── */
+/* Mouse-parallax depth — atmosphere drifts with the cursor, planets drift more */
+.dt-atmos {
+  transform: translate3d(calc(var(--ax, 0) * 1px), calc(var(--ay, 0) * 1px), 0);
+  transition: transform 420ms cubic-bezier(.2,.6,.2,1);
+  will-change: transform;
+}
+.dt-atmos-planets {
+  position: absolute; inset: 0;
+  transform: translate3d(calc(var(--ax, 0) * 2.4px), calc(var(--ay, 0) * 2.4px), 0);
+  transition: transform 420ms cubic-bezier(.2,.6,.2,1);
+}
+/* Blobs only render for the Bloom variant */
+.dt-atmos-blob {
+  position: absolute; border-radius: 50%; display: none;
+  filter: blur(72px); opacity: 0.5; will-change: transform;
+}
+.dt-bg-bloom .dt-atmos-blob { display: block; }
+.dt-atmos-1 {
+  width: 620px; height: 620px; top: -170px; right: -120px;
+  background: radial-gradient(circle, rgba(87,229,255,0.5), transparent 70%);
+  animation: dt-drift1 26s ease-in-out infinite;
+}
+.dt-atmos-2 {
+  width: 560px; height: 560px; bottom: -200px; left: -150px;
+  background: radial-gradient(circle, rgba(185,60,255,0.42), transparent 70%);
+  animation: dt-drift2 32s ease-in-out infinite;
+}
+.dt-atmos-3 {
+  width: 500px; height: 500px; top: 36%; left: 44%;
+  background: radial-gradient(circle, rgba(46,107,255,0.34), transparent 70%);
+  animation: dt-drift3 30s ease-in-out infinite;
+}
+@keyframes dt-drift1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-44px,44px); } }
+@keyframes dt-drift2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(52px,-32px); } }
+@keyframes dt-drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-30px,-42px) scale(1.08); } }
+
+/* Mesh — vivid saturated gradient field, slow drift */
+.dt-bg-mesh {
+  background:
+    radial-gradient(50% 60% at 15% 18%, rgba(87,229,255,0.55), transparent 60%),
+    radial-gradient(46% 56% at 86% 14%, rgba(185,60,255,0.50), transparent 60%),
+    radial-gradient(56% 60% at 76% 86%, rgba(46,107,255,0.50), transparent 62%),
+    radial-gradient(46% 52% at 18% 90%, rgba(255,90,140,0.40), transparent 60%);
+  background-size: 200% 200%;
+  filter: blur(18px) saturate(1.25);
+  animation: dt-mesh 24s ease-in-out infinite;
+}
+@keyframes dt-mesh { 0%,100% { background-position: 0% 0%; } 50% { background-position: 100% 100%; } }
+
+/* Aurora — flowing diagonal bands */
+.dt-bg-aurora {
+  background:
+    linear-gradient(115deg, transparent 18%, rgba(87,229,255,0.36) 36%, transparent 52%),
+    linear-gradient(115deg, transparent 38%, rgba(185,60,255,0.32) 58%, transparent 74%),
+    linear-gradient(115deg, transparent 54%, rgba(46,107,255,0.30) 72%, transparent 90%);
+  background-size: 220% 220%;
+  filter: blur(36px);
+  animation: dt-aurora 18s ease-in-out infinite;
+}
+@keyframes dt-aurora { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* Grid — technical / modern, static */
+.dt-bg-grid {
+  background-image:
+    linear-gradient(rgba(120,150,255,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,150,255,0.07) 1px, transparent 1px),
+    radial-gradient(840px 520px at 72% 8%, rgba(46,107,255,0.16), transparent 60%);
+  background-size: 38px 38px, 38px 38px, 100% 100%;
+}
+
+/* Deep space — dense starfield + nebula, very slow drift */
+.dt-bg-stars {
+  background-image:
+    radial-gradient(1.4px 1.4px at 20% 30%, rgba(255,255,255,0.85), transparent),
+    radial-gradient(1.2px 1.2px at 60% 70%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1.6px 1.6px at 82% 22%, rgba(255,255,255,0.75), transparent),
+    radial-gradient(1px 1px at 42% 82%, rgba(255,255,255,0.55), transparent),
+    radial-gradient(1.3px 1.3px at 90% 60%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1.1px 1.1px at 12% 62%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1.5px 1.5px at 33% 12%, rgba(190,220,255,0.8), transparent),
+    radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.3px 1.3px at 52% 52%, rgba(255,240,210,0.7), transparent),
+    radial-gradient(1px 1px at 8% 88%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.6px 1.6px at 96% 84%, rgba(200,225,255,0.75), transparent),
+    radial-gradient(1.1px 1.1px at 26% 46%, rgba(255,255,255,0.55), transparent),
+    radial-gradient(760px 520px at 50% -4%, rgba(122,76,255,0.22), transparent 60%),
+    radial-gradient(680px 460px at 88% 96%, rgba(46,107,255,0.18), transparent 62%);
+  background-size:
+    320px 320px, 280px 280px, 360px 360px, 300px 300px, 340px 340px,
+    260px 260px, 380px 380px, 240px 240px, 300px 300px, 280px 280px,
+    360px 360px, 320px 320px, 100% 100%, 100% 100%;
+  animation: dt-stars 90s linear infinite;
+}
+@keyframes dt-stars {
+  from { background-position: 0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0, 50% 0, 50% 100%; }
+  to   { background-position: 320px 320px,-280px 280px,360px -360px,-300px 300px,340px 340px,260px -260px,-380px 380px,240px 240px,-300px 300px,280px -280px,-360px 360px,320px 320px, 50% 0, 50% 100%; }
+}
+/* Planets — soft shaded spheres, only in deep-space */
+.dt-planet { position: absolute; border-radius: 50%; display: none; will-change: transform; }
+.dt-bg-stars .dt-planet { display: block; }
+.dt-planet-1 {
+  width: 180px; height: 180px; top: 9%; right: 8%;
+  background: radial-gradient(circle at 32% 30%, #9bbcff, #3358c8 55%, #16245c 100%);
+  box-shadow: 0 0 72px rgba(46,107,255,0.45), inset -12px -10px 34px rgba(0,0,0,0.45);
+  animation: dt-float1 28s ease-in-out infinite;
+}
+.dt-planet-1::after {
+  content: ''; position: absolute; inset: -28% -12%; border-radius: 50%;
+  border: 6px solid rgba(160,190,255,0.22); transform: rotate(-22deg) scaleY(0.32);
+}
+.dt-planet-2 {
+  width: 92px; height: 92px; bottom: 15%; left: 9%;
+  background: radial-gradient(circle at 35% 30%, #dcb8ff, #8a4cff 60%, #3a1f70 100%);
+  box-shadow: 0 0 48px rgba(138,76,255,0.42), inset -9px -7px 22px rgba(0,0,0,0.5);
+  animation: dt-float2 34s ease-in-out infinite;
+}
+.dt-planet-3 {
+  width: 56px; height: 56px; top: 58%; left: 58%;
+  background: radial-gradient(circle at 35% 32%, #bdf7ff, #2ec9d8 60%, #134e62 100%);
+  box-shadow: 0 0 36px rgba(46,201,216,0.42), inset -7px -6px 16px rgba(0,0,0,0.45);
+  animation: dt-float3 24s ease-in-out infinite;
+}
+@keyframes dt-float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-18px,16px); } }
+@keyframes dt-float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(14px,-18px); } }
+@keyframes dt-float3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-12px,-14px) scale(1.06); } }
+
+/* Plain — cover the token light-beams with flat canvas */
+.dt-bg-plain { background: var(--dt-bg); }
+
+/* Light + velocity dampening so vivid fields don't overwhelm */
+.dt-theme-light .dt-bg-mesh,
+.dt-theme-light .dt-bg-aurora { opacity: 0.55; }
+/* Deep space on light: dark stars on bone + soft pastel nebula (white dots would vanish) */
+.dt-theme-light .dt-bg-stars {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(40,50,90,0.55), transparent),
+    radial-gradient(1.3px 1.3px at 60% 70%, rgba(40,50,90,0.4), transparent),
+    radial-gradient(1.7px 1.7px at 82% 22%, rgba(40,50,90,0.5), transparent),
+    radial-gradient(1.1px 1.1px at 42% 82%, rgba(40,50,90,0.38), transparent),
+    radial-gradient(1.4px 1.4px at 90% 60%, rgba(40,50,90,0.45), transparent),
+    radial-gradient(1.2px 1.2px at 12% 62%, rgba(40,50,90,0.4), transparent),
+    radial-gradient(1.6px 1.6px at 33% 12%, rgba(60,80,160,0.5), transparent),
+    radial-gradient(1.1px 1.1px at 70% 40%, rgba(40,50,90,0.35), transparent),
+    radial-gradient(1.4px 1.4px at 52% 52%, rgba(120,90,40,0.4), transparent),
+    radial-gradient(1.1px 1.1px at 8% 88%, rgba(40,50,90,0.35), transparent),
+    radial-gradient(1.7px 1.7px at 96% 84%, rgba(50,70,140,0.5), transparent),
+    radial-gradient(1.2px 1.2px at 26% 46%, rgba(40,50,90,0.4), transparent),
+    radial-gradient(760px 520px at 50% -4%, rgba(122,76,255,0.10), transparent 60%),
+    radial-gradient(680px 460px at 88% 96%, rgba(46,107,255,0.10), transparent 62%);
+  opacity: 1;
+}
+.dt-theme-light .dt-planet { box-shadow: 0 0 40px rgba(46,107,255,0.25), inset -10px -8px 26px rgba(0,0,0,0.28); }
+.dt-skin-revised .dt-atmos-blob { opacity: 0.3; filter: blur(86px); }
+.dt-skin-revised.dt-theme-light .dt-atmos-blob { opacity: 0.2; }
+.dt-skin-revised .dt-bg-mesh,
+.dt-skin-revised .dt-bg-aurora { opacity: 0.4; }
+
+/* Korean: break lines at word boundaries, never mid-syllable */
+[data-lang="ko"] { word-break: keep-all; line-break: strict; }
+
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background: var(--dt-border); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
 *::-webkit-scrollbar-thumb:hover { background: var(--dt-text-3); border: 3px solid transparent; background-clip: content-box; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REVISED SKIN — "VELOCITY"
+   A light athletic-scoreboard reskin layered over the contemporary design.
+   Bone paper · ink hairlines · vermilion "go" accent · Anton condensed display.
+   Toggled at runtime via .dt-skin-revised on the root (alongside contemporary).
+═══════════════════════════════════════════════════════════════════════════ */
+.dt-design-contemporary.dt-skin-revised {
+  --dt-font-display: 'Anton', 'Hanken Grotesk', 'Pretendard', system-ui, sans-serif;
+  --dt-font-sans: 'Hanken Grotesk', 'Pretendard', system-ui, sans-serif;
+  --dt-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --dt-radius-sm: 4px;
+  --dt-radius: 6px;
+  --dt-radius-md: 10px;
+  --dt-radius-pill: 999px;
+
+  --dt-heading-weight: 400;          /* Anton is single-weight, reads heavy */
+  --dt-display-tracking: 0.005em;
+  --dt-heading-tracking: 0;
+
+  /* Vermilion signature + cobalt→violet brand (theme-invariant) */
+  --dt-primary: #F23A2F;
+  --dt-primary-dark: #D62F25;
+  --dt-primary-deeper: #AE241C;
+  --dt-secondary: #1E50FF;
+  --dt-gradient: linear-gradient(120deg, #1E50FF 0%, #7A4CFF 100%);
+  --dt-gradient-soft: linear-gradient(135deg, rgba(30,80,255,0.12) 0%, rgba(122,76,255,0.12) 100%);
+  --dt-gradient-pink: linear-gradient(120deg, #F23A2F 0%, #FF7A3C 100%);
+
+  --dt-type-correct: #50FA7B;
+  --dt-type-error: #FF5555;
+  --rev-arena: #14161D;
+}
+
+/* Light "bone paper" velocity */
+.dt-design-contemporary.dt-skin-revised.dt-theme-light {
+  --dt-bg: #F1EFE8;
+  --dt-surface: #FFFFFF;
+  --dt-card: #FFFFFF;
+  --dt-hover: #EAE7DD;
+  --dt-border: #D6D2C6;
+  --dt-text: #16171C;
+  --dt-text-2: #5B5C56;
+  --dt-text-3: #9A988D;
+  --rev-edge: #1A1B20;
+  --rev-arena: #14161D;
+  --dt-card-shadow: 4px 4px 0 rgba(22,23,28,0.08), inset 0 0 0 1.5px var(--rev-edge);
+  background-color: var(--dt-bg);
+  background-image:
+    repeating-linear-gradient(135deg, rgba(30,80,255,0.035) 0 1.5px, transparent 1.5px 24px),
+    radial-gradient(900px 520px at 86% -12%, rgba(242,58,47,0.07), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Dark "midnight track" velocity */
+.dt-design-contemporary.dt-skin-revised.dt-theme-dark {
+  --dt-bg: #131419;
+  --dt-surface: #1A1C22;
+  --dt-card: #1C1E25;
+  --dt-hover: #24262E;
+  --dt-border: #34373F;
+  --dt-text: #EDEEF2;
+  --dt-text-2: #9A9CA6;
+  --dt-text-3: #62646E;
+  --rev-edge: #3A3D47;
+  --rev-arena: #0F1015;
+  --dt-card-shadow: 5px 5px 0 rgba(0,0,0,0.45), inset 0 0 0 1.5px var(--rev-edge);
+  background-color: var(--dt-bg);
+  background-image:
+    repeating-linear-gradient(135deg, rgba(242,58,47,0.05) 0 1.5px, transparent 1.5px 24px),
+    radial-gradient(900px 520px at 86% -12%, rgba(242,58,47,0.10), transparent 60%),
+    radial-gradient(820px 520px at 8% 112%, rgba(30,80,255,0.09), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Scoreboard cards — solid panel, bold edge, hard offset shadow (no glass) */
+.dt-design-contemporary.dt-skin-revised .dt-card {
+  background: var(--dt-card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--dt-card-shadow);
+}
+
+/* Anton condensed caps for big display type (latin/numerals; Hangul falls back).
+   Condensed faces need generous tracking, or caps headings read cramped. */
+.dt-design-contemporary.dt-skin-revised .dt-display {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.12;
+}
+.dt-design-contemporary.dt-skin-revised .dt-h1 {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.18;
+}
+.dt-design-contemporary.dt-skin-revised .dt-h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+/* Override any inline negative tracking on headings (tuned for the original Jost). */
+.dt-design-contemporary.dt-skin-revised h1,
+.dt-design-contemporary.dt-skin-revised h2 {
+  letter-spacing: 0.035em !important;
+}
+.dt-design-contemporary.dt-skin-revised .dt-cnav-wordmark,
+.dt-design-contemporary.dt-skin-revised .dt-logo {
+  letter-spacing: 0.04em;
+}
+
+/* Nav: solid bar with bold underline; printed pill group */
+.dt-design-contemporary.dt-skin-revised .dt-cnav {
+  background: color-mix(in oklab, var(--dt-bg) 88%, transparent);
+  border-bottom: 1.5px solid var(--rev-edge);
+}
+.dt-design-contemporary.dt-skin-revised .dt-cnav-links {
+  background: var(--dt-card);
+  box-shadow: inset 0 0 0 1.5px var(--rev-edge);
+}
+.dt-design-contemporary.dt-skin-revised .dt-cnav-link.active {
+  background: var(--dt-primary);
+  color: #fff;
+  box-shadow: inset 0 0 0 1.5px var(--rev-edge), 0 2px 0 rgba(0,0,0,0.22);
+}
+.dt-design-contemporary.dt-skin-revised .dt-cnav-wordmark {
+  font-family: 'Anton', 'Hanken Grotesk', sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Primary button — vermilion sport print with bold edge + hard shadow */
+.dt-design-contemporary.dt-skin-revised .dt-btn-primary {
+  background: var(--dt-primary);
+  color: #fff;
+  box-shadow: inset 0 0 0 1.5px var(--rev-edge), 3px 3px 0 rgba(0,0,0,0.16);
+}
+.dt-design-contemporary.dt-skin-revised .dt-btn-primary:hover {
+  background: var(--dt-primary-dark);
+  transform: translate(-1px, -1px);
+  box-shadow: inset 0 0 0 1.5px var(--rev-edge), 5px 5px 0 rgba(0,0,0,0.18);
+}
+.dt-design-contemporary.dt-skin-revised .dt-btn-primary:active {
+  background: var(--dt-primary-deeper);
+  transform: translate(0, 0);
+  box-shadow: inset 0 0 0 1.5px var(--rev-edge), 1px 1px 0 rgba(0,0,0,0.16);
+}
+.dt-design-contemporary.dt-skin-revised .dt-btn-secondary {
+  background: var(--dt-card);
+  box-shadow: inset 0 0 0 1.5px var(--rev-edge);
+}
+
+/* Logo mark keeps brand gradient */
+.dt-design-contemporary.dt-skin-revised .dt-logo-mark { background: var(--dt-gradient); color: #fff; }
+
+/* Arena boxes (SOLO / BATTLE) become dark "scoreboard screen" panels */
+.dt-design-contemporary.dt-skin-revised .dt-revskin-arena {
+  background: var(--rev-arena) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: inset 0 0 0 1.5px var(--rev-edge), 6px 6px 0 rgba(0,0,0,0.30) !important;
+}
+.dt-design-contemporary.dt-skin-revised .dt-revskin-arena p { color: rgba(234,241,251,0.74) !important; }
+
+/* Progress + chips stay on brand */
+.dt-design-contemporary.dt-skin-revised .dt-chip.active { background: var(--dt-gradient-soft); color: var(--dt-secondary); }

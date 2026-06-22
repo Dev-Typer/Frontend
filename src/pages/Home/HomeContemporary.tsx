@@ -1,0 +1,418 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useT } from '@/i18n';
+import Avatar from '@/components/Avatar';
+import UserHover from '@/components/UserHover';
+import { IconPlay, IconUser, IconCode } from '@/components/icons/Icons';
+import { GLOBAL_RANKING, TODAYS_CHALLENGE } from '@/data';
+import type { User } from '@/types';
+
+interface Props {
+  me: User;
+}
+
+// ─── Profile strip ────────────────────────────────────────────────────────────
+
+const HomeProfileStrip = ({ me }: { me: User }) => {
+  const t = useT();
+  return (
+    <div className="dt-card" style={{ padding: 0, overflow: 'hidden', position: 'relative', flex: 1, minWidth: 0 }}>
+      <div style={{ position: 'relative', height: 76 }}>
+        <img
+          src="/assets/banner-default.gif"
+          alt=""
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(90deg, rgba(7,11,20,0.82) 0%, rgba(7,11,20,0.45) 50%, rgba(7,11,20,0.65) 100%)',
+        }} />
+        {/* Identity left */}
+        <div style={{
+          position: 'absolute', left: 16, top: 0, bottom: 0,
+          display: 'flex', alignItems: 'center', gap: 12, zIndex: 2,
+        }}>
+          <div style={{
+            width: 46, height: 46, borderRadius: 12,
+            background: 'rgba(16,26,45,0.6)', backdropFilter: 'blur(8px)',
+            boxShadow: 'inset 0 0 0 2px var(--dt-primary), 0 6px 18px -8px rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
+          }}>
+            <Avatar handle={me.handle} hue={me.avatarHue} size={46} />
+          </div>
+          <div className="dt-stack" style={{ gap: 5 }}>
+            <h1 style={{
+              margin: 0, fontFamily: 'var(--dt-font-mono)', fontWeight: 700,
+              fontSize: 19, lineHeight: 1, color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,0.7)',
+            }}>{me.handle}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600,
+                color: 'var(--dt-warning)', background: 'rgba(255,184,108,0.18)',
+                boxShadow: 'inset 0 0 0 1px rgba(255,184,108,0.4)',
+              }}>🔥 {me.currentStreak}</span>
+              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11 }}>
+                {t('Global rank')} <span className="dt-mono" style={{ color: '#fff' }}>#{me.globalRank}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        {/* CORE right */}
+        <div style={{
+          position: 'absolute', right: 16, top: 0, bottom: 0,
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-end', zIndex: 2,
+        }}>
+          <div className="dt-tabular" style={{
+            fontFamily: 'var(--dt-font-mono)', fontWeight: 700, fontSize: 28, lineHeight: 0.9,
+            color: '#fff', textShadow: '0 3px 16px rgba(0,0,0,0.6)',
+          }}>{me.totalCore.toLocaleString()}</div>
+          <div style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginTop: 3 }}>CORE</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Streak card ─────────────────────────────────────────────────────────────
+
+const CurrentStreakCard = ({ me }: { me: User }) => {
+  const t = useT();
+  return (
+    <div style={{
+      position: 'relative', height: '100%', minHeight: 0, minWidth: 0,
+      display: 'flex', alignItems: 'center', gap: 16, padding: '0 4px',
+    }}>
+      <span style={{ fontSize: 54, lineHeight: 1, flexShrink: 0, filter: 'drop-shadow(0 4px 16px rgba(255,107,44,0.5))' }}>🔥</span>
+      <div className="dt-stack" style={{ gap: 2 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--dt-text-2)' }}>{t('Streak')}</span>
+        <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 800, fontSize: 40, lineHeight: 1, color: 'var(--dt-text)' }}>
+          <span className="dt-tabular">{me.currentStreak}</span> {t('Day')}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ─── Arena leaderboard ───────────────────────────────────────────────────────
+
+const ArenaLeaderboard = ({ focus, navigate }: { focus: string; navigate: (r: string) => void }) => {
+  const t = useT();
+  const isBattle = focus === 'battle';
+  const accent = isBattle ? '#B93CFF' : '#57E5FF';
+  const rows = isBattle
+    ? GLOBAL_RANKING.slice(0, 6).map(r => ({ handle: r.handle, tier: r.tier, value: r.rating, me: r.me }))
+    : [...GLOBAL_RANKING].sort((a, b) => b.wpm - a.wpm).slice(0, 6).map(r => ({ handle: r.handle, tier: r.tier, value: r.wpm, me: r.me }));
+  const unit = isBattle ? '' : ' WPM';
+
+  return (
+    <div className="dt-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{
+        padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 10,
+        boxShadow: 'inset 0 -1px 0 var(--dt-border)',
+      }}>
+        <span style={{ fontSize: 16 }}>{isBattle ? '⚔️' : '🎯'}</span>
+        <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--dt-text)' }}>
+          {isBattle ? t('Battle ranking') : t('Solo ranking')}
+        </span>
+        <span style={{
+          marginLeft: 'auto', fontSize: 11, fontWeight: 600,
+          padding: '3px 10px', borderRadius: 999, color: accent,
+          background: `color-mix(in oklab, ${accent} 16%, transparent)`,
+        }}>{isBattle ? t('by rating') : t('by avg WPM')}</span>
+      </div>
+
+      <div style={{ flex: 1, padding: '6px 8px' }}>
+        {rows.map((r, i) => (
+          <div key={r.handle} style={{
+            display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: 10,
+            alignItems: 'center', padding: '8px 12px', borderRadius: 10,
+            background: r.me ? `color-mix(in oklab, ${accent} 10%, transparent)` : 'transparent',
+          }}>
+            <span className="dt-mono" style={{
+              fontSize: 13, fontWeight: 600, textAlign: 'center',
+              color: i < 3 ? accent : 'var(--dt-text-3)',
+            }}>{i + 1}</span>
+            <UserHover handle={r.handle} tier={r.tier}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                <Avatar handle={r.handle} hue={(r.handle.charCodeAt(0) * 7) % 360} size={24} />
+                <span className="dt-mono" style={{
+                  fontSize: 13, color: r.me ? accent : 'var(--dt-text)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {r.handle}{r.me && ' (you)'}
+                </span>
+              </div>
+            </UserHover>
+            <span className="dt-mono dt-tabular" style={{ fontSize: 14, fontWeight: 600, color: 'var(--dt-text)' }}>
+              {r.value}<span style={{ fontSize: 10, color: 'var(--dt-text-3)' }}>{unit}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={() => navigate('/ranking')}
+        style={{ margin: 14, marginTop: 4 }}>
+        {t('View full ranking')} →
+      </button>
+    </div>
+  );
+};
+
+// ─── Arena box ───────────────────────────────────────────────────────────────
+
+interface ArenaBoxProps {
+  navigate: (r: string) => void;
+  to: string;
+  bg: string;
+  glow: string;
+  accent: string;
+  title: string;
+  desc: string;
+  tags: { label: string; color: string; icon?: string; user?: boolean }[];
+  onHover?: () => void;
+  onActivate?: () => void;
+  comingSoon?: boolean;
+}
+
+const ArenaBox = ({ navigate, to, bg, glow, accent, title, desc, tags, onHover, onActivate, comingSoon }: ArenaBoxProps) => {
+  const t = useT();
+  const [hover, setHover] = useState(false);
+  const interactive = !comingSoon;
+  const glowFaint = glow.replace(/[\d.]+\)$/, '0.12)');
+  const glowSheen = glow.replace(/[\d.]+\)$/, '0.16)');
+
+  return (
+    <button
+      onClick={() => { if (!interactive) return; onActivate ? onActivate() : navigate(to); }}
+      onMouseEnter={() => { if (interactive) { setHover(true); onHover?.(); } }}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: 'relative', overflow: 'hidden',
+        border: 0, cursor: interactive ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left',
+        borderRadius: 'var(--dt-radius-md)',
+        minHeight: 150, padding: 0, flex: 1,
+        background: `linear-gradient(120deg, color-mix(in oklab, var(--dt-card) 72%, transparent) 0%, ${glowFaint} 100%)`,
+        backdropFilter: 'blur(14px) saturate(1.4)', WebkitBackdropFilter: 'blur(14px) saturate(1.4)',
+        boxShadow: hover
+          ? `inset 0 1px 0 rgba(255,255,255,0.18), inset 0 0 0 1.5px ${accent}, 0 26px 64px -24px ${glow}`
+          : `inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 0 1px var(--dt-border), 0 16px 44px -28px ${glow}`,
+        transform: hover ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'transform 220ms ease, box-shadow 220ms ease',
+        display: 'flex', alignItems: 'center',
+      }}
+    >
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+        filter: comingSoon ? 'grayscale(1) brightness(0.55)' : 'none',
+        opacity: comingSoon ? 0.6 : 1,
+        transition: 'filter 220ms ease',
+      }}>
+        <img src={bg} alt="" style={{
+          position: 'absolute', right: 0, top: '50%',
+          height: '116%', width: 'auto', maxWidth: '44%', objectFit: 'contain',
+          transform: hover ? 'translateY(-50%) scale(1.05)' : 'translateY(-50%) scale(1)',
+          transition: 'transform 600ms cubic-bezier(.2,.6,.2,1)',
+          filter: `drop-shadow(0 12px 30px ${glow})`,
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: `radial-gradient(90% 120% at 0% 50%, ${glowSheen}, transparent 60%)`,
+          opacity: hover ? 1 : 0, transition: 'opacity 220ms ease',
+        }} />
+        <div style={{ position: 'relative', zIndex: 2, padding: '22px 26px', maxWidth: '64%' }}>
+          <h3 style={{
+            margin: 0, fontFamily: 'var(--dt-font-display)', fontWeight: 800,
+            fontSize: 30, letterSpacing: '0.02em', lineHeight: 1,
+            background: 'linear-gradient(100deg, #2E6BFF 0%, #57E5FF 14%, #7A4CFF 45%, #B93CFF 100%)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>{title}</h3>
+          <p style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.45, color: 'var(--dt-text-2)', maxWidth: 220 }}>{desc}</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            {tags.map((tag, i) => (
+              <span key={i} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '5px 11px', borderRadius: 9,
+                fontSize: 12, fontWeight: 600,
+                color: tag.color, background: `color-mix(in oklab, ${tag.color} 16%, transparent)`,
+                boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${tag.color} 40%, transparent)`,
+              }}>
+                {tag.icon && <span style={{ fontSize: 12 }}>{tag.icon}</span>}
+                {tag.user && <IconUser size={12} />}
+                {tag.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {comingSoon && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 3,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+          pointerEvents: 'none',
+        }}>
+          <span style={{
+            fontFamily: 'var(--dt-font-display)', fontWeight: 800, fontSize: 26, letterSpacing: '0.04em',
+            color: '#FFFFFF', textShadow: '0 2px 16px rgba(0,0,0,0.6)',
+          }}>{title}</span>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            padding: '7px 16px', borderRadius: 999,
+            fontSize: 13, fontWeight: 600, color: '#FFFFFF',
+            background: 'rgba(255,255,255,0.12)',
+            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.28)',
+            backdropFilter: 'blur(6px)',
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#FFB547' }} />
+            {t('Coming soon')}
+          </span>
+        </div>
+      )}
+    </button>
+  );
+};
+
+// ─── Mode arena ──────────────────────────────────────────────────────────────
+
+const ModeArena = ({ navigate }: { navigate: (r: string) => void }) => {
+  const t = useT();
+  const [focus, setFocus] = useState('solo');
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 18,
+      marginTop: 28, alignItems: 'stretch',
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <ArenaBox
+          navigate={navigate}
+          to="/battle"
+          bg="/assets/vs.png"
+          glow="rgba(185,60,255,0.55)"
+          accent="#B93CFF"
+          title="BATTLE"
+          desc={t('Race other devs in real time.')}
+          comingSoon
+          tags={[{ label: t('Most popular'), color: '#FF7A3C', icon: '🔥' }]}
+        />
+        <ArenaBox
+          navigate={navigate}
+          to="/solo"
+          bg="/assets/solo.png"
+          glow="rgba(46,107,255,0.55)"
+          accent="#57E5FF"
+          title="SOLO"
+          desc={t('Practice random snippets.')}
+          onHover={() => setFocus('solo')}
+          onActivate={() => navigate('/solo')}
+          tags={[{ label: t('Singleplayer'), color: '#57E5FF', user: true }]}
+        />
+      </div>
+      <ArenaLeaderboard focus={focus} navigate={navigate} />
+    </div>
+  );
+};
+
+// ─── Daily challenge section ──────────────────────────────────────────────────
+
+const DIFF_COLOR: Record<string, string> = {
+  easy: '#3DD68C',
+  medium: '#57E5FF',
+  hard: '#B93CFF',
+};
+
+const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) => {
+  const t = useT();
+  const ch = TODAYS_CHALLENGE;
+  const diffColor = DIFF_COLOR[ch.difficulty] || '#57E5FF';
+  const diffLabel = ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
+
+  return (
+    <section style={{ marginTop: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '0 4px' }}>
+        <h2 style={{ margin: 0, fontFamily: 'var(--dt-font-display)', fontWeight: 600, fontSize: 20, color: 'var(--dt-text)' }}>
+          {t("Today's Challenge")}
+        </h2>
+        <span className="dt-caption" style={{ marginLeft: 'auto' }}>{ch.date}</span>
+      </div>
+
+      <div className="dt-card" style={{ padding: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: '300px 1fr' }}>
+        {/* Left: language art */}
+        <button
+          onClick={() => navigate('/daily')}
+          style={{
+            position: 'relative', border: 0, cursor: 'pointer', textAlign: 'left',
+            padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            background: `linear-gradient(150deg, color-mix(in oklab, ${diffColor} 20%, transparent) 0%, transparent 70%)`,
+            boxShadow: 'inset -1px 0 0 var(--dt-border)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <IconCode size={48} style={{ color: diffColor }} />
+            <div className="dt-stack" style={{ gap: 2 }}>
+              <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--dt-text)', lineHeight: 1 }}>
+                {ch.language}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: diffColor }}>
+                {t(diffLabel).toUpperCase()}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '4px 12px', borderRadius: 999, marginBottom: 14,
+              fontSize: 12, fontWeight: 600,
+              color: diffColor, background: `color-mix(in oklab, ${diffColor} 16%, transparent)`,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: diffColor }} />
+              {t(diffLabel)}
+            </span>
+            <p className="dt-caption" style={{ margin: '0 0 16px' }}>
+              4,218{t('명 중')} · {t('One snippet, one attempt.')}
+            </p>
+            <span className="dt-btn dt-btn-primary" style={{ pointerEvents: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <IconPlay size={14} /> {t('Take the challenge')}
+            </span>
+          </div>
+        </button>
+
+        {/* Right: code preview */}
+        <div style={{ padding: '24px 28px', overflow: 'hidden' }}>
+          <pre style={{
+            margin: 0, fontFamily: 'var(--dt-font-mono)', fontSize: 14, lineHeight: 1.75,
+            color: 'var(--dt-text)', whiteSpace: 'pre', overflowX: 'auto',
+          }}>{ch.code}</pre>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─── HomeContemporary ─────────────────────────────────────────────────────────
+
+const HomeContemporary = ({ me }: Props) => {
+  const navigate = useNavigate();
+  return (
+    <div style={{
+      maxWidth: 1100, margin: '0 auto', padding: '20px 44px 40px',
+      minHeight: 'calc(100vh - 24px)',
+      display: 'flex', flexDirection: 'column', justifyContent: 'center',
+    }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <HomeProfileStrip me={me} />
+        </div>
+        <div style={{ width: 240, flexShrink: 0 }}>
+          <CurrentStreakCard me={me} />
+        </div>
+      </div>
+      <ModeArena navigate={navigate} />
+      <DailyChallengeSection navigate={navigate} />
+    </div>
+  );
+};
+
+export default HomeContemporary;

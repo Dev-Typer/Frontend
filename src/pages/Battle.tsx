@@ -5,7 +5,7 @@ import { CODE_SNIPPETS, OPPONENTS, RECENT_BATTLES, ME } from '@/data';
 import SectionHead from '@/components/SectionHead';
 import Avatar from '@/components/Avatar';
 import TierBadge from '@/components/TierBadge';
-import TypingEngine from '@/components/TypingEngine';
+import PlayEditor from '@/components/PlayEditor';
 import Stat from '@/components/Stat';
 import { IconBolt, IconSwords, IconUsers, IconRefresh, IconCheck, IconMedal, IconArrowRight } from '@/components/icons/Icons';
 import type { Opponent, TypingProgress, TypingResult, BotState, FinalRanking, Racer } from '@/types';
@@ -19,66 +19,78 @@ function ratingDelta(rank: number, totalPlayers: number): number {
   return 0;
 }
 
+const CheckeredFlag = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" className="block">
+    <rect x="2" y="1" width="1.2" height="14" fill="currentColor" />
+    <g transform="translate(3.4,1.5)">
+      {[0, 1, 2].map((r) => [0, 1, 2, 3].map((c) => (
+        (r + c) % 2 === 0 && <rect key={`${r}-${c}`} x={c * 2.6} y={r * 2.6} width="2.6" height="2.6" fill="currentColor" />
+      )))}
+      <rect x="0" y="0" width="10.4" height="7.8" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.5" />
+    </g>
+  </svg>
+);
+
 const BattleLobby = ({ onQuickMatch }: { onQuickMatch: () => void }) => {
   const t = useT();
   const [roomCode, setRoomCode] = useState('');
   return (
     <div>
       <SectionHead kicker="Battle" title="Race developers at your level." />
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20 }}>
-        <div className="dt-card" style={{ padding: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <IconBolt size={22} style={{ color: 'var(--dt-primary)' }} />
-            <h3 className="dt-h2" style={{ margin: 0 }}>{t('Quick match')}</h3>
-            <span className="dt-chip" style={{ marginLeft: 'auto' }}>{t('~8s queue')}</span>
+      <div className="grid grid-cols-[1.4fr_1fr] gap-5">
+        <div className="dt-card p-8">
+          <div className="flex items-center gap-3 mb-5">
+            <IconBolt size={22} className="text-dt-primary" />
+            <h3 className="dt-h2 m-0">{t('Quick match')}</h3>
+            <span className="dt-chip ml-auto">{t('~8s queue')}</span>
           </div>
-          <p className="dt-body-sm" style={{ color: 'var(--dt-text-2)', margin: '0 0 24px 0' }}>
+          <p className="dt-body-sm text-dt-text-2 mb-6">
             {t("We'll pair you with 1–3 developers within ±150 rating of you. Same snippet, same start, first to finish wins.")}
           </p>
-          <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onQuickMatch} style={{ width: '100%' }}>
+          <button className="dt-btn dt-btn-primary dt-btn-lg w-full" onClick={onQuickMatch}>
             <IconSwords size={18} /> {t('Find a match')}
           </button>
-          <div className="dt-divider" style={{ margin: '24px 0' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div className="dt-body-sm" style={{ color: 'var(--dt-text-2)' }}>{t('Matching pool')}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="dt-divider my-6" />
+          <div className="flex items-center justify-between">
+            <div className="dt-body-sm text-dt-text-2">{t('Matching pool')}</div>
+            <div className="flex items-center gap-1.5">
               <span className="dt-live-dot" />
-              <span className="dt-mono" style={{ fontSize: 13 }}>37 {t('in queue')}</span>
+              <span className="dt-mono text-[13px]">37 {t('in queue')}</span>
             </div>
           </div>
         </div>
-        <div className="dt-card" style={{ padding: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <IconUsers size={20} style={{ color: 'var(--dt-text-2)' }} />
-            <h3 className="dt-h3" style={{ margin: 0 }}>{t('Play with friends')}</h3>
+        <div className="dt-card p-7">
+          <div className="flex items-center gap-3 mb-4">
+            <IconUsers size={20} className="text-dt-text-2" />
+            <h3 className="dt-h3 m-0">{t('Play with friends')}</h3>
           </div>
-          <p className="dt-body-sm" style={{ color: 'var(--dt-text-2)', margin: '0 0 20px 0' }}>{t('Create a room and share the code, or join one.')}</p>
-          <button className="dt-btn dt-btn-secondary" style={{ width: '100%', marginBottom: 8 }}>{t('Create a room')}</button>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input className="dt-input dt-mono" placeholder="DT-XXXXXX" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} style={{ flex: 1 }} />
+          <p className="dt-body-sm text-dt-text-2 mb-5">{t('Create a room and share the code, or join one.')}</p>
+          <button className="dt-btn dt-btn-secondary w-full mb-2">{t('Create a room')}</button>
+          <div className="flex gap-2">
+            <input className="dt-input dt-mono flex-1" placeholder="DT-XXXXXX" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} />
             <button className="dt-btn dt-btn-secondary">{t('Join')}</button>
           </div>
         </div>
       </div>
-      <div style={{ marginTop: 32 }}>
+      <div className="mt-8">
         <SectionHead title="Your recent battles" />
-        <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="dt-card p-0 overflow-hidden">
           {RECENT_BATTLES.slice(0, 5).map((b, i, arr) => (
-            <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '64px 1.6fr 1fr 100px 80px 80px', padding: '14px 24px', alignItems: 'center', gap: 16, borderBottom: i < arr.length - 1 ? '0.5px solid var(--dt-border)' : '0' }}>
+            <div key={b.id} className={`grid grid-cols-[64px_1.6fr_1fr_100px_80px_80px] py-3.5 px-6 items-center gap-4 ${i < arr.length - 1 ? 'border-b-[0.5px] border-dt-border' : ''}`}>
               <span className="dt-caption">{b.when}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="flex items-center gap-2">
                 {b.opponents.map((o, oi) => (
-                  <div key={o} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div key={o} className="flex items-center gap-1.5">
                     <Avatar handle={o} hue={(o.charCodeAt(0) * 7) % 360} size={22} />
                     <span className="dt-mono dt-body-sm">{o}</span>
-                    {oi < b.opponents.length - 1 && <span style={{ color: 'var(--dt-text-3)' }}>·</span>}
+                    {oi < b.opponents.length - 1 && <span className="text-dt-text-3">·</span>}
                   </div>
                 ))}
               </div>
               <span className="dt-chip">{b.lang}</span>
-              <span className="dt-mono dt-body-sm" style={{ color: 'var(--dt-text-2)' }}>{b.myWpm} wpm</span>
-              <span className="dt-mono" style={{ color: b.myRank === 1 ? 'var(--dt-warning)' : 'var(--dt-text)', fontWeight: 500, fontSize: 14 }}>#{b.myRank}</span>
-              <span className="dt-mono dt-tabular" style={{ fontSize: 14, color: b.delta >= 0 ? 'var(--dt-success)' : 'var(--dt-error)' }}>{b.delta >= 0 ? '+' : ''}{b.delta}</span>
+              <span className="dt-mono dt-body-sm text-dt-text-2">{b.myWpm} wpm</span>
+              <span className={`dt-mono text-sm font-medium ${b.myRank === 1 ? 'text-dt-warning' : 'text-dt-text'}`}>#{b.myRank}</span>
+              <span className={`dt-mono dt-tabular text-sm ${b.delta >= 0 ? 'text-dt-success' : 'text-dt-error'}`}>{b.delta >= 0 ? '+' : ''}{b.delta}</span>
             </div>
           ))}
         </div>
@@ -90,15 +102,15 @@ const BattleLobby = ({ onQuickMatch }: { onQuickMatch: () => void }) => {
 const Matching = () => {
   const t = useT();
   return (
-    <div style={{ minHeight: 'calc(100vh - 200px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-      <div style={{ position: 'relative', width: 120, height: 120, marginBottom: 32 }}>
-        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--dt-border)', borderTopColor: 'var(--dt-primary)', animation: 'dt-spin 1.2s linear infinite' }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <IconSwords size={40} style={{ color: 'var(--dt-primary)' }} />
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center flex-col">
+      <div className="relative w-[120px] h-[120px] mb-8">
+        <div className="absolute inset-0 rounded-full border-2 border-dt-border [border-top-color:var(--dt-primary)] animate-[dt-spin_1.2s_linear_infinite]" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <IconSwords size={40} className="text-dt-primary" />
         </div>
       </div>
-      <h2 className="dt-h1" style={{ margin: 0, marginBottom: 8 }}>{t('Finding opponents…')}</h2>
-      <p className="dt-body" style={{ color: 'var(--dt-text-2)', margin: 0 }}>{t('Looking for developers within ±150 rating')}</p>
+      <h2 className="dt-h1 m-0 mb-2">{t('Finding opponents…')}</h2>
+      <p className="dt-body text-dt-text-2 m-0">{t('Looking for developers within ±150 rating')}</p>
     </div>
   );
 };
@@ -110,14 +122,14 @@ const Countdown = ({ count, opponents }: { count: number; opponents: Opponent[] 
   return (
     <div>
       <SectionHead title="Match found · starting in…" />
-      <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ display: 'flex' }}>
+      <div className="dt-card p-0 overflow-hidden">
+        <div className="flex">
           {all.map((p, i) => (
-            <div key={i} style={{ flex: 1, padding: '24px 20px', borderRight: i < all.length - 1 ? '0.5px solid var(--dt-border)' : '0', display: 'flex', alignItems: 'center', gap: 14, background: 'you' in p && p.you ? 'color-mix(in oklab, var(--dt-primary) 6%, transparent)' : 'transparent' }}>
+            <div key={i} className={`flex-1 py-6 px-5 flex items-center gap-3.5 ${i < all.length - 1 ? 'border-r-[0.5px] border-dt-border' : ''} ${'you' in p && p.you ? 'bg-[color-mix(in_oklab,var(--dt-primary)_6%,transparent)]' : 'bg-transparent'}`}>
               <Avatar handle={p.handle} hue={'you' in p && p.you ? me.avatarHue : (p as Opponent).hue} size={44} ring={'you' in p && p.you ? 'var(--dt-primary)' : undefined} />
-              <div className="dt-stack" style={{ gap: 2, minWidth: 0 }}>
-                <span className="dt-mono" style={{ fontSize: 14, fontWeight: 500 }}>{p.handle}{'you' in p && p.you && <span style={{ color: 'var(--dt-primary)', marginLeft: 6 }}>(you)</span>}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="dt-stack gap-0.5 min-w-0">
+                <span className="dt-mono text-sm font-medium">{p.handle}{'you' in p && p.you && <span className="text-dt-primary ml-1.5">(you)</span>}</span>
+                <div className="flex items-center gap-1.5">
                   <TierBadge tier={p.tier} />
                   <span className="dt-caption dt-mono">{p.rating}</span>
                 </div>
@@ -125,8 +137,8 @@ const Countdown = ({ count, opponents }: { count: number; opponents: Opponent[] 
             </div>
           ))}
         </div>
-        <div style={{ padding: 64, textAlign: 'center', background: 'var(--dt-type-bg)', borderTop: '0.5px solid var(--dt-border)' }}>
-          <div key={count} className="dt-mono" style={{ fontSize: 140, lineHeight: 1, fontWeight: 500, color: count === 0 ? 'var(--dt-primary)' : 'var(--dt-text)', animation: 'dt-pop 600ms ease-out' }}>
+        <div className="py-16 text-center bg-dt-type-bg border-t-[0.5px] border-dt-border">
+          <div key={count} className={`dt-mono text-[140px] leading-none font-medium animate-[dt-pop_600ms_ease-out] ${count === 0 ? 'text-dt-primary' : 'text-dt-text'}`}>
             {count === 0 ? t('GO') : count}
           </div>
         </div>
@@ -136,36 +148,52 @@ const Countdown = ({ count, opponents }: { count: number; opponents: Opponent[] 
 };
 
 const RaceAvatars = ({ racers }: { racers: Racer[] }) => (
-  <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 24px 10px 100px', borderBottom: '0.5px solid var(--dt-border)', color: 'var(--dt-text-3)', fontSize: 11, fontFamily: 'var(--dt-font-mono)', letterSpacing: '0.08em' }}>
+  <div className="dt-card p-0 overflow-hidden">
+    <div className="flex justify-between pt-2.5 pr-6 pb-2.5 pl-[100px] border-b-[0.5px] border-dt-border text-dt-text-3 text-[11px] font-dt-mono tracking-[0.08em]">
       <span>START</span><span>25%</span><span>50%</span><span>75%</span>
-      <span style={{ color: 'var(--dt-primary)' }}>FINISH</span>
+      <span className="flex items-center gap-1.5 text-dt-primary">
+        <CheckeredFlag size={15} /> FINISH
+      </span>
     </div>
-    <div style={{ position: 'relative', padding: '12px 24px' }}>
+    <div className="relative py-3 px-6">
       {[0.25, 0.5, 0.75].map((t) => (
-        <div key={t} style={{ position: 'absolute', top: 0, bottom: 0, left: `calc(100px + (100% - 124px) * ${t})`, width: 1, background: 'var(--dt-border)', opacity: 0.5 }} />
+        <div key={t} className="absolute top-0 bottom-0 w-px bg-dt-border opacity-50" style={{ left: `calc(100px + (100% - 124px) * ${t})` }} />
       ))}
-      <div style={{ position: 'absolute', top: 0, bottom: 0, right: 'calc(80px + 24px)', width: 2, background: 'repeating-linear-gradient(180deg, var(--dt-primary) 0, var(--dt-primary) 6px, transparent 6px, transparent 12px)' }} />
+      <div
+        className="absolute top-0 bottom-0 opacity-90 rounded-[1px] shadow-[0_0_12px_color-mix(in_oklab,var(--dt-primary)_40%,transparent)]"
+        style={{
+          right: 'calc(80px + 24px)', width: 8,
+          backgroundImage: 'repeating-conic-gradient(var(--dt-primary) 0% 25%, #0B0E16 0% 50%)',
+          backgroundSize: '8px 8px',
+        }}
+      />
       {racers.map((r) => {
         const pct = r.progress * 100;
         return (
-          <div key={r.handle} style={{ display: 'grid', gridTemplateColumns: '92px 1fr 80px', alignItems: 'center', gap: 0, padding: '8px 0', position: 'relative' }}>
-            <div className="dt-stack" style={{ gap: 2, minWidth: 0, paddingRight: 8 }}>
-              <span className="dt-mono" style={{ fontSize: 12, fontWeight: r.you ? 500 : 400, color: r.you ? 'var(--dt-primary)' : 'var(--dt-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div key={r.handle} className="grid grid-cols-[92px_1fr_80px] items-center gap-0 py-2 relative">
+            <div className="dt-stack gap-0.5 min-w-0 pr-2">
+              <span className={`dt-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis ${r.you ? 'font-medium text-dt-primary' : 'font-normal text-dt-text'}`}>
                 {r.handle}{r.you ? ' ★' : ''}
               </span>
-              <span className="dt-caption dt-mono" style={{ fontSize: 10 }}>{r.wpm} wpm</span>
+              <span className="dt-caption dt-mono text-[10px]">{r.wpm} wpm</span>
             </div>
-            <div style={{ position: 'relative', height: 36 }}>
-              <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 14, height: 2, width: `calc(${pct}% - 14px)`, background: r.you ? 'var(--dt-primary)' : `oklch(78% 0.14 ${r.hue})`, opacity: 0.4, borderRadius: 999, transition: 'width 200ms linear' }} />
-              <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 14, right: 0, height: 1, background: 'repeating-linear-gradient(90deg, var(--dt-border) 0, var(--dt-border) 3px, transparent 3px, transparent 8px)', opacity: 0.5 }} />
-              <div style={{ position: 'absolute', top: '50%', left: `calc(${pct}% * 0.93)`, transform: 'translate(0, -50%)', transition: 'left 200ms linear', zIndex: 2 }}>
+            <div className="relative h-9">
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 left-3.5 h-0.5 opacity-40 rounded-full transition-[width] duration-200 ease-linear ${r.you ? 'bg-dt-primary' : ''}`}
+                style={{ width: `calc(${pct}% - 14px)`, background: r.you ? undefined : `oklch(78% 0.14 ${r.hue})` }}
+              />
+              <div className="absolute top-1/2 -translate-y-1/2 left-3.5 right-0 h-px opacity-50 [background:repeating-linear-gradient(90deg,var(--dt-border)_0,var(--dt-border)_3px,transparent_3px,transparent_8px)]" />
+              <div className="absolute top-1/2 -translate-y-1/2 z-[2] transition-[left] duration-200 ease-linear" style={{ left: `calc(${pct}% * 0.93)` }}>
                 <Avatar handle={r.handle} hue={r.you ? 170 : r.hue} size={32} ring={r.you ? 'var(--dt-primary)' : undefined} />
-                {r.done && <div style={{ position: 'absolute', top: -4, right: -4, width: 14, height: 14, borderRadius: '50%', background: 'var(--dt-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#001A14' }}><IconCheck size={10} strokeWidth={3} /></div>}
+                {r.done && (
+                  <div className="absolute -top-2 -right-2.5 text-dt-success drop-shadow-[0_0_4px_color-mix(in_oklab,var(--dt-success)_60%,transparent)]">
+                    <CheckeredFlag size={16} />
+                  </div>
+                )}
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <span className="dt-mono dt-tabular" style={{ fontSize: 13, color: r.done ? 'var(--dt-success)' : 'var(--dt-text-2)' }}>{Math.round(pct)}%</span>
+            <div className="text-right">
+              <span className={`dt-mono dt-tabular text-[13px] ${r.done ? 'text-dt-success' : 'text-dt-text-2'}`}>{Math.round(pct)}%</span>
             </div>
           </div>
         );
@@ -175,19 +203,22 @@ const RaceAvatars = ({ racers }: { racers: Racer[] }) => (
 );
 
 const RaceBars = ({ racers }: { racers: Racer[] }) => (
-  <div className="dt-card" style={{ padding: 24 }}>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+  <div className="dt-card p-6">
+    <div className="flex flex-col gap-3.5">
       {racers.map((r) => (
         <div key={r.handle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex justify-between mb-1.5">
+            <div className="flex items-center gap-2">
               <Avatar handle={r.handle} hue={r.you ? 170 : r.hue} size={22} />
-              <span className="dt-mono" style={{ fontSize: 13, color: r.you ? 'var(--dt-primary)' : 'var(--dt-text)' }}>{r.handle}{r.you && ' ★'}</span>
+              <span className={`dt-mono text-[13px] ${r.you ? 'text-dt-primary' : 'text-dt-text'}`}>{r.handle}{r.you && ' ★'}</span>
             </div>
-            <span className="dt-mono dt-tabular" style={{ fontSize: 13 }}>{r.wpm} wpm · {Math.round(r.progress * 100)}%</span>
+            <span className="dt-mono dt-tabular text-[13px]">{r.wpm} wpm · {Math.round(r.progress * 100)}%</span>
           </div>
-          <div style={{ height: 8, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ width: `${r.progress * 100}%`, height: '100%', background: r.you ? 'var(--dt-primary)' : `oklch(78% 0.14 ${r.hue})`, borderRadius: 999, transition: 'width 200ms linear' }} />
+          <div className="h-2 bg-dt-hover rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-[width] duration-200 ease-linear ${r.you ? 'bg-dt-primary' : ''}`}
+              style={{ width: `${r.progress * 100}%`, background: r.you ? undefined : `oklch(78% 0.14 ${r.hue})` }}
+            />
           </div>
         </div>
       ))}
@@ -196,17 +227,20 @@ const RaceBars = ({ racers }: { racers: Racer[] }) => (
 );
 
 const RaceLanes = ({ racers }: { racers: Racer[] }) => (
-  <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${racers.length}, 1fr)`, height: 220 }}>
+  <div className="dt-card p-0 overflow-hidden">
+    <div className="grid h-[220px]" style={{ gridTemplateColumns: `repeat(${racers.length}, 1fr)` }}>
       {racers.map((r, i) => (
-        <div key={r.handle} style={{ borderRight: i < racers.length - 1 ? '0.5px solid var(--dt-border)' : '0', position: 'relative', padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ marginBottom: 12 }}><Avatar handle={r.handle} hue={r.you ? 170 : r.hue} size={36} ring={r.you ? 'var(--dt-primary)' : undefined} /></div>
-          <span className="dt-mono" style={{ fontSize: 12, color: r.you ? 'var(--dt-primary)' : 'var(--dt-text)' }}>{r.handle}</span>
-          <span className="dt-caption dt-mono" style={{ marginBottom: 12 }}>{r.wpm} wpm</span>
-          <div style={{ flex: 1, width: 12, background: 'var(--dt-hover)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${r.progress * 100}%`, background: r.you ? 'var(--dt-primary)' : `oklch(78% 0.14 ${r.hue})`, transition: 'height 200ms linear' }} />
+        <div key={r.handle} className={`relative p-4 flex flex-col items-center ${i < racers.length - 1 ? 'border-r-[0.5px] border-dt-border' : ''}`}>
+          <div className="mb-3"><Avatar handle={r.handle} hue={r.you ? 170 : r.hue} size={36} ring={r.you ? 'var(--dt-primary)' : undefined} /></div>
+          <span className={`dt-mono text-xs ${r.you ? 'text-dt-primary' : 'text-dt-text'}`}>{r.handle}</span>
+          <span className="dt-caption dt-mono mb-3">{r.wpm} wpm</span>
+          <div className="flex-1 w-3 bg-dt-hover rounded-full overflow-hidden relative">
+            <div
+              className={`absolute bottom-0 left-0 right-0 transition-[height] duration-200 ease-linear ${r.you ? 'bg-dt-primary' : ''}`}
+              style={{ height: `${r.progress * 100}%`, background: r.you ? undefined : `oklch(78% 0.14 ${r.hue})` }}
+            />
           </div>
-          <span className="dt-mono dt-tabular" style={{ marginTop: 8, fontSize: 13 }}>{Math.round(r.progress * 100)}%</span>
+          <span className="dt-mono dt-tabular mt-2 text-[13px]">{Math.round(r.progress * 100)}%</span>
         </div>
       ))}
     </div>
@@ -306,25 +340,35 @@ const BattleRace = ({ snippet, opponents, progress, setProgress, onFinish, reset
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
           <span className="dt-live-dot" />
-          <span className="dt-label" style={{ color: 'var(--dt-error)' }}>LIVE BATTLE</span>
+          <span className="dt-label text-dt-error">LIVE BATTLE</span>
           <span className="dt-caption">·</span>
-          <span className="dt-mono dt-body-sm" style={{ color: 'var(--dt-text-2)' }}>{startedAt ? ((Date.now() - startedAt) / 1000).toFixed(1) : '0.0'}s</span>
+          <span className="dt-mono dt-body-sm text-dt-text-2">{startedAt ? ((Date.now() - startedAt) / 1000).toFixed(1) : '0.0'}s</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 24, fontFamily: 'var(--dt-font-mono)' }}>
-          <span><span style={{ color: 'var(--dt-primary)', fontSize: 22, fontWeight: 500 }} className="dt-tabular">{progress.wpm}</span> <span style={{ color: 'var(--dt-text-2)', fontSize: 12 }}>WPM</span></span>
-          <span><span style={{ fontSize: 16 }} className="dt-tabular">{progress.acc.toFixed(0)}</span><span style={{ color: 'var(--dt-text-2)', fontSize: 12 }}>%</span></span>
+        <div className="flex items-baseline gap-6 font-dt-mono">
+          <span><span className="dt-tabular text-dt-primary text-[22px] font-medium">{progress.wpm}</span> <span className="text-dt-text-2 text-xs">WPM</span></span>
+          <span><span className="dt-tabular text-base">{progress.acc.toFixed(0)}</span><span className="text-dt-text-2 text-xs">%</span></span>
         </div>
       </div>
       <RaceTrack racers={racers} vizStyle={raceViz} />
-      <div style={{ marginTop: 24 }}>
-        <TypingEngine code={snippet} resetKey={resetKey} caretStyle={caret} fontSize={density === 'compact' ? 16 : 18} onProgress={handleProgress} onFinish={handleMyFinish} />
+      <div className="mt-6">
+        <PlayEditor
+          code={snippet}
+          resetKey={resetKey}
+          caretStyle={caret}
+          fontSize={density === 'compact' ? 16 : 18}
+          onProgress={handleProgress}
+          onFinish={handleMyFinish}
+          fileName="battle.js"
+          index={progress.index}
+          total={progress.total}
+        />
       </div>
       {myFinish && !allDone && (
-        <div style={{ marginTop: 20, padding: 16, background: 'var(--dt-card)', borderRadius: 'var(--dt-radius-md)', border: '0.5px solid var(--dt-primary)', textAlign: 'center', color: 'var(--dt-primary)' }}>
-          <IconCheck size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+        <div className="mt-5 p-4 bg-dt-card rounded-dt-md border-[0.5px] border-dt-primary text-center text-dt-primary">
+          <IconCheck size={20} className="align-middle mr-2" />
           You finished! Waiting for others to complete…
         </div>
       )}
@@ -340,53 +384,53 @@ const BattleResult = ({ ranking, onRematch, onLobby }: { ranking: FinalRanking; 
   return (
     <div>
       <SectionHead title="Race complete." kicker="Result" action={
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           <button className="dt-btn dt-btn-secondary" onClick={onLobby}>Back to lobby</button>
           <button className="dt-btn dt-btn-primary" onClick={onRematch}><IconRefresh size={16} /> Rematch</button>
         </div>
       } />
-      <div className="dt-card" style={{ padding: 32, marginBottom: 20, textAlign: 'center', background: ranking.myRank === 1 ? 'color-mix(in oklab, var(--dt-primary) 14%, var(--dt-card))' : 'var(--dt-card)' }}>
-        <div className="dt-label" style={{ color: ranking.myRank === 1 ? 'var(--dt-primary)' : 'var(--dt-text-2)', marginBottom: 8 }}>You finished</div>
-        <div className="dt-mono" style={{ fontSize: 80, fontWeight: 500, lineHeight: 1, color: ranking.myRank === 1 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>{rankLabel}</div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginTop: 24, fontFamily: 'var(--dt-font-mono)' }}>
+      <div className={`dt-card p-8 mb-5 text-center ${ranking.myRank === 1 ? 'bg-[color-mix(in_oklab,var(--dt-primary)_14%,var(--dt-card))]' : ''}`}>
+        <div className={`dt-label mb-2 ${ranking.myRank === 1 ? 'text-dt-primary' : 'text-dt-text-2'}`}>You finished</div>
+        <div className={`dt-mono text-[80px] font-medium leading-none ${ranking.myRank === 1 ? 'text-dt-primary' : 'text-dt-text'}`}>{rankLabel}</div>
+        <div className="flex justify-center gap-8 mt-6 font-dt-mono">
           <Stat label="Your WPM" value={ranking.wpm} accent />
           <Stat label="Accuracy" value={ranking.acc.toFixed(1)} unit="%" />
           <Stat label="Time" value={(ranking.elapsed / 1000).toFixed(1)} unit="s" />
         </div>
       </div>
-      <div className="dt-card" style={{ padding: 20, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="dt-card p-5 mb-5 flex items-center justify-between">
         <div>
           <div className="dt-label">Rating change</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 4 }}>
-            <span className="dt-mono dt-tabular" style={{ fontSize: 24, color: 'var(--dt-text-2)' }}>{me.rating}</span>
-            <IconArrowRight size={18} style={{ color: 'var(--dt-text-3)' }} />
-            <span className="dt-mono dt-tabular" style={{ fontSize: 32, fontWeight: 500, color: ranking.delta >= 0 ? 'var(--dt-success)' : 'var(--dt-error)' }}>{me.rating + ranking.delta}</span>
-            <span className="dt-mono dt-tabular" style={{ fontSize: 16, color: ranking.delta >= 0 ? 'var(--dt-success)' : 'var(--dt-error)' }}>({ranking.delta >= 0 ? '+' : ''}{ranking.delta})</span>
+          <div className="flex items-baseline gap-3 mt-1">
+            <span className="dt-mono dt-tabular text-2xl text-dt-text-2">{me.rating}</span>
+            <IconArrowRight size={18} className="text-dt-text-3" />
+            <span className={`dt-mono dt-tabular text-[32px] font-medium ${ranking.delta >= 0 ? 'text-dt-success' : 'text-dt-error'}`}>{me.rating + ranking.delta}</span>
+            <span className={`dt-mono dt-tabular text-base ${ranking.delta >= 0 ? 'text-dt-success' : 'text-dt-error'}`}>({ranking.delta >= 0 ? '+' : ''}{ranking.delta})</span>
           </div>
         </div>
         <TierBadge tier={me.tier} size="lg" />
       </div>
-      <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 24px', borderBottom: '0.5px solid var(--dt-border)' }}><span className="dt-h3" style={{ margin: 0 }}>Final standings</span></div>
+      <div className="dt-card p-0 overflow-hidden">
+        <div className="py-4 px-6 border-b-[0.5px] border-dt-border"><span className="dt-h3 m-0">Final standings</span></div>
         {podium.map((p, i) => {
           const rank = i + 1;
-          const medalColor = ['var(--dt-warning)', 'var(--dt-silver-fg)', 'var(--dt-bronze-fg)'][i] ?? 'var(--dt-text-2)';
+          const medalColor = ['text-dt-warning', 'text-dt-silver-fg', 'text-dt-bronze-fg'][i] ?? 'text-dt-text-2';
           return (
-            <div key={p.handle} style={{ display: 'grid', gridTemplateColumns: '48px 1fr auto auto auto', gap: 16, padding: '16px 24px', alignItems: 'center', background: p.you ? 'color-mix(in oklab, var(--dt-primary) 6%, transparent)' : 'transparent', borderBottom: i < podium.length - 1 ? '0.5px solid var(--dt-border)' : '0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {rank <= 3 && <IconMedal size={18} style={{ color: medalColor }} />}
-                <span className="dt-mono" style={{ fontSize: 16, fontWeight: 500 }}>#{rank}</span>
+            <div key={p.handle} className={`grid grid-cols-[48px_1fr_auto_auto_auto] gap-4 py-4 px-6 items-center ${p.you ? 'bg-[color-mix(in_oklab,var(--dt-primary)_6%,transparent)]' : ''} ${i < podium.length - 1 ? 'border-b-[0.5px] border-dt-border' : ''}`}>
+              <div className="flex items-center gap-1.5">
+                {rank <= 3 && <IconMedal size={18} className={medalColor} />}
+                <span className="dt-mono text-base font-medium">#{rank}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="flex items-center gap-3">
                 <Avatar handle={p.handle} hue={p.you ? 170 : p.hue ?? 0} size={32} ring={p.you ? 'var(--dt-primary)' : undefined} />
-                <span className="dt-mono" style={{ fontSize: 14 }}>{p.handle}{p.you && <span style={{ color: 'var(--dt-primary)', marginLeft: 6 }}>(you)</span>}</span>
+                <span className="dt-mono text-sm">{p.handle}{p.you && <span className="text-dt-primary ml-1.5">(you)</span>}</span>
               </div>
               <TierBadge tier={p.tier} />
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span className="dt-mono dt-tabular" style={{ fontSize: 18, fontWeight: 500, color: rank === 1 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>{p.wpm}</span>
+              <div className="flex items-baseline gap-1">
+                <span className={`dt-mono dt-tabular text-lg font-medium ${rank === 1 ? 'text-dt-primary' : 'text-dt-text'}`}>{p.wpm}</span>
                 <span className="dt-caption">wpm</span>
               </div>
-              <span className="dt-mono dt-tabular" style={{ fontSize: 13, color: 'var(--dt-text-2)' }}>{p.acc.toFixed(1)}%</span>
+              <span className="dt-mono dt-tabular text-[13px] text-dt-text-2">{p.acc.toFixed(1)}%</span>
             </div>
           );
         })}

@@ -307,12 +307,12 @@ function CoreDetailCard() {
         </div>
         <div className="flex items-baseline gap-[6px]">
           <span className="dt-mono tabular-nums text-[30px] font-bold text-dt-primary">{ME.totalCore.toLocaleString()}</span>
-          <span className="dt-label text-dt-text-3">· {BEST_SNIPPETS.length} {t('snippets')}</span>
+          <span className="dt-label text-dt-text-3">· {ME.uniqueSnippets} {t('snippets')}</span>
         </div>
       </div>
       <div className="px-6 py-4 pb-[18px]">
         <div className="dt-label mb-3">{t('Top snippets by CORE')}</div>
-        <div className="flex flex-wrap gap-[10px]">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10, justifyItems: 'center' }}>
           {shown.map((s, i) => <SnippetCoreChip key={i} snip={s} />)}
         </div>
         {rest > 0 && (
@@ -329,11 +329,11 @@ function CoreDetailCard() {
       <div className="flex gap-7 px-6 py-[14px] border-t border-dt-border/50">
         <div className="flex flex-col gap-[2px]">
           <span className="dt-label">{t('Global rank')}</span>
-          <span className="dt-mono tabular-nums text-[18px] text-dt-text">#11</span>
+          <span className="dt-mono tabular-nums text-[18px] text-dt-text">#{ME.globalRank}</span>
         </div>
         <div className="flex flex-col gap-[2px]">
           <span className="dt-label">JavaScript {t('rank')}</span>
-          <span className="dt-mono tabular-nums text-[18px] text-dt-text">#4</span>
+          <span className="dt-mono tabular-nums text-[18px] text-dt-text">#{ME.langRank}</span>
         </div>
         <div className="flex flex-col gap-[2px] ml-auto items-end justify-center">
           <span className="dt-caption text-right max-w-[230px] leading-[1.45]">
@@ -446,7 +446,7 @@ function CoreGrowthCard() {
 function LanguageRadarCard() {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
-  const langs = LANG_CORE.slice(0, 6);
+  const langs = LANG_CORE.slice(0, 10);
   const maxCore = Math.max(...langs.map(l => l.core));
   const cx = 150, cy = 150, R = 110;
   const n = langs.length;

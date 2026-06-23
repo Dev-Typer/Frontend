@@ -230,3 +230,68 @@ export interface FinalPlayer {
 }
 
 export type Route = 'home' | 'solo' | 'battle' | 'daily' | 'ranking' | 'mypage' | 'login';
+
+// ─── API 응답 타입 ────────────────────────────────────────────────────────────
+
+export interface StreakDayEntry {
+  date: string;
+  submitted: boolean;
+  wpm: number | null;
+}
+
+export interface UserStreakResponse {
+  userId: number;
+  type: 'year' | 'recent';
+  year: number | null;
+  current: number;
+  longest: number;
+  yearData: StreakDayEntry[];
+}
+
+export interface WpmMonthEntry {
+  month: string;
+  avgWpm: number;
+}
+
+export interface UserWpmHistoryResponse {
+  userId: number;
+  range: string;
+  results: WpmMonthEntry[];
+}
+
+export interface CoreSnippetEntry {
+  snippetId: number;
+  title: string;
+  language: string;
+  wpm: number;
+  core: number;
+}
+
+export interface UserCoreResponse {
+  userId: number;
+  totalCore: number;
+  snippetCount: number;
+  snippetList: CoreSnippetEntry[];
+}
+
+export interface LangCoreEntry {
+  language: string;
+  snippetCount: number;
+  totalCore: number;
+}
+
+export interface UserCoreByLangResponse {
+  userId: number;
+  byLanguage: LangCoreEntry[];
+}
+
+export interface CoreHistoryPoint {
+  date: string;
+  totalCore: number;
+}
+
+export interface UserCoreHistoryResponse {
+  userId: number;
+  range: string;
+  points: CoreHistoryPoint[];
+}

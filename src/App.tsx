@@ -41,9 +41,7 @@ const AppRoutes = () => {
   const { isLoggedIn, setUser, clearUser, username, role } = useUserStore();
 
   useEffect(() => {
-    getMe()
-      .then((data) => setUser(data.userId, data.username, data.role))
-      .catch(() => {});
+    getMe().then((data) => setUser(data)).catch(() => {});
   }, [setUser]);
 
   const handleLogout = async () => {

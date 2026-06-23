@@ -25,6 +25,9 @@ export interface MeResponse {
   userId: number;
   username: string;
   role: 'USER' | 'ADMIN';
+  profileUrl: string | null;
+  bannerUrl: string | null;
+  createdAt: string;
 }
 
 let isRefreshing = false;
@@ -95,8 +98,7 @@ api.interceptors.response.use(
 );
 
 export const getMe = async (): Promise<MeResponse> => {
-  // A: 濡쒓렇???щ? ?뺤씤???붿껌 ???ㅽ뙣?대룄 retry 遺덊븘??
-  const { data } = await api.get<ApiResponse<MeResponse>>('/api/auth/me', {
+  const { data } = await api.get<ApiResponse<MeResponse>>('/api/user/me', {
     _skipAuthRetry: true,
   } as AxiosRequestConfigWithRetry);
   return data.data!;

@@ -63,8 +63,8 @@ function monthLabel(iso: string): string {
 }
 
 // ─── 카드 스켈레톤 ─────────────────────────────────────────────────────────────
-const CardSkeleton = () => (
-  <div className="dt-card animate-pulse" style={{ minHeight: 120 }} />
+const CardSkeleton = ({ height = 240 }: { height?: number }) => (
+  <div className="dt-card animate-pulse" style={{ minHeight: height }} />
 );
 
 // ─── ProfileHeader ────────────────────────────────────────────────────────────
@@ -174,7 +174,6 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
 
       {/* 아이덴티티 */}
       <div className="absolute left-8 bottom-[26px] flex items-end gap-[18px] z-[3]">
-        {/* Avatar + 업로드 오버레이 */}
         <input ref={profileInput} type="file" accept="image/*" className="hidden" onChange={handleProfileUpload} />
         <div
           className="relative w-[84px] h-[84px] rounded-[18px] shrink-0 flex items-center justify-center overflow-hidden cursor-default"
@@ -268,6 +267,8 @@ const BadgesCard = () => {
 };
 
 // ─── StreakCard ────────────────────────────────────────────────────────────────
+const GHOST_WEEKS = 53;
+
 const ContributionCell = ({ cell, size }: { cell: StreakEntry | null; size: number }) => {
   if (!cell) return <div style={{ width: size, height: size }} />;
   const lv = !cell.submitted ? 0 : !cell.wpm ? 1 : cell.wpm < 80 ? 2 : cell.wpm < 100 ? 3 : 4;
@@ -343,8 +344,9 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   );
 
   const handleYear = (y: number) => { setYear(y); onYearChange(y); };
+  const isEmpty = !loading && weeks.length === 0;
 
-  if (loading) return <CardSkeleton />;
+  if (loading) return <CardSkeleton height={280} />;
 
   return (
     <div className="dt-card mt-5 px-[22px] py-[18px] overflow-hidden relative">
@@ -371,18 +373,42 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
       </div>
       <div className="font-dt-mono">
         <div className="relative h-4 mb-1">
-          {monthSpans.map((m, i) => (
+          {!isEmpty && monthSpans.map((m, i) => (
             <span key={i} className="absolute text-[10px] text-dt-text-3 whitespace-nowrap"
               style={{ left: m.week * col }}>{MONTHS[m.month]}</span>
           ))}
         </div>
-        <div className="flex" style={{ gap }}>
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col" style={{ gap }}>
-              {week.map((cellData, di) => <ContributionCell key={di} cell={cellData} size={cell} />)}
+
+        {isEmpty ? (
+          /* 고스트 그리드 + 빈 상태 오버레이 */
+          <div className="relative">
+            <div className="flex pointer-events-none" style={{ gap, opacity: 0.35 }}>
+              {Array.from({ length: GHOST_WEEKS }, (_, wi) => (
+                <div key={wi} className="flex flex-col" style={{ gap }}>
+                  {Array.from({ length: 7 }, (_, di) => (
+                    <div key={di} style={{ width: cell, height: cell, background: levelBg(0), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.06)' }} />
+                  ))}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
+              <span className="text-[28px] leading-none">🔥</span>
+              <div className="text-center">
+                <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">오늘 첫 기록을 남겨보세요</p>
+                <p className="text-[11px] text-dt-text-3">데일리 챌린지를 완료하면 스트릭이 쌓입니다</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex" style={{ gap }}>
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col" style={{ gap }}>
+                {week.map((cellData, di) => <ContributionCell key={di} cell={cellData} size={cell} />)}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center gap-[6px] mt-3 text-[10px] text-dt-text-3">
           <span>{t('Less')}</span>
           {[0,1,2,3,4].map(lv => (
@@ -450,7 +476,7 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
   const shown = expanded ? list : list.slice(0, CAP);
   const rest  = list.length - CAP;
 
-  if (loading) return <CardSkeleton />;
+  if (loading) return <CardSkeleton height={280} />;
 
   return (
     <div className="dt-card p-0 overflow-hidden">
@@ -466,14 +492,27 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
           <span className="dt-label text-dt-text-3">· {data?.snippetCount ?? 0} {t('snippets')}</span>
         </div>
       </div>
-      <div className="px-6 py-4 pb-[18px]">
+      <div className="px-6 py-4 pb-[18px]" style={{ minHeight: 140 }}>
         <div className="dt-label mb-3">{t('Top snippets by CORE')}</div>
         {list.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10, justifyItems: 'center' }}>
             {shown.map((s, i) => <CoreChip key={i} title={s.title} language={s.language} core={s.core} />)}
           </div>
         ) : (
-          <p className="text-dt-text-3 text-[13px]">{t('No records yet.')}</p>
+          /* 고스트 칩 + 빈 상태 */
+          <div className="relative">
+            <div className="pointer-events-none opacity-20"
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10 }}>
+              {Array.from({ length: 10 }, (_, i) => (
+                <div key={i} className="w-[52px] h-[52px] rounded-[12px]"
+                  style={{ background: 'var(--dt-hover)', boxShadow: 'inset 0 0 0 1px var(--dt-border)' }} />
+              ))}
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-[8px]">
+              <p className="text-[13px] font-semibold text-dt-text-2">⌨️ 아직 플레이한 스니펫이 없습니다</p>
+              <p className="text-[11px] text-dt-text-3">Solo 모드에서 스니펫을 플레이하면 CORE가 쌓입니다</p>
+            </div>
+          </div>
         )}
         {rest > 0 && (
           <button onClick={() => setExpanded(e => !e)}
@@ -507,8 +546,9 @@ const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
   const t = useT();
   const langs = (data?.byLanguage ?? []).filter(l => l.totalCore > 0);
   const maxCore = langs.length ? Math.max(...langs.map(l => l.totalCore)) : 1;
+  const GHOST_LANGS = ['JavaScript', 'Python', 'TypeScript', 'Java', 'Kotlin'];
 
-  if (loading) return <CardSkeleton />;
+  if (loading) return <CardSkeleton height={280} />;
 
   return (
     <div className="dt-card p-0 overflow-hidden">
@@ -516,25 +556,49 @@ const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
         <span className="dt-h3 m-0">{t('CORE by language')}</span>
         <div className="dt-caption mt-[3px]">{t('Sum of your best CORE per snippet')}</div>
       </div>
-      <div className="py-3">
-        {langs.length === 0 && <p className="px-6 py-4 text-dt-text-3 text-[13px]">{t('No records yet.')}</p>}
-        {langs.map(l => (
-          <div key={l.language} className="grid items-center gap-4 px-6 py-[10px]"
-            style={{ gridTemplateColumns: '132px 1fr 72px 60px' }}>
-            <span className="flex items-center gap-[9px] min-w-0">
-              {LANG_ICON[l.language.toLowerCase()] && (
-                <img src={LANG_ICON[l.language.toLowerCase()]} alt="" className="w-[18px] h-[18px] object-contain shrink-0" />
-              )}
-              <span className="dt-body-sm truncate">{LANG_DISPLAY[l.language] ?? l.language}</span>
-            </span>
-            <div className="h-[6px] bg-dt-hover rounded-full overflow-hidden">
-              <div style={{ width: `${(l.totalCore / maxCore) * 100}%`, height: '100%', background: 'var(--dt-primary)', borderRadius: 999 }} />
-            </div>
-            <span className="dt-mono tabular-nums text-right text-[14px] font-semibold text-dt-primary">{l.totalCore}</span>
-            <span className="dt-mono tabular-nums dt-caption text-right">{l.snippetCount}</span>
+
+      {langs.length === 0 ? (
+        /* 고스트 바 + 빈 상태 */
+        <div className="relative py-3" style={{ minHeight: 200 }}>
+          <div className="pointer-events-none opacity-[0.12]">
+            {GHOST_LANGS.map((_l, i) => (
+              <div key={i} className="grid items-center gap-4 px-6 py-[10px]"
+                style={{ gridTemplateColumns: '132px 1fr 72px 60px' }}>
+                <div className="h-[13px] rounded" style={{ width: `${60 + i * 15}%`, background: 'var(--dt-text-3)' }} />
+                <div className="h-[6px] rounded-full" style={{ width: `${90 - i * 14}%`, background: 'var(--dt-primary)' }} />
+                <div className="h-[13px] rounded ml-auto" style={{ width: 36, background: 'var(--dt-text-3)' }} />
+                <div className="h-[13px] rounded ml-auto" style={{ width: 20, background: 'var(--dt-text-3)' }} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
+            <span className="text-[28px] leading-none">🌐</span>
+            <div className="text-center">
+              <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">아직 언어 데이터가 없습니다</p>
+              <p className="text-[11px] text-dt-text-3">다양한 언어로 스니펫을 플레이해보세요</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="py-3">
+          {langs.map(l => (
+            <div key={l.language} className="grid items-center gap-4 px-6 py-[10px]"
+              style={{ gridTemplateColumns: '132px 1fr 72px 60px' }}>
+              <span className="flex items-center gap-[9px] min-w-0">
+                {LANG_ICON[l.language.toLowerCase()] && (
+                  <img src={LANG_ICON[l.language.toLowerCase()]} alt="" className="w-[18px] h-[18px] object-contain shrink-0" />
+                )}
+                <span className="dt-body-sm truncate">{LANG_DISPLAY[l.language] ?? l.language}</span>
+              </span>
+              <div className="h-[6px] bg-dt-hover rounded-full overflow-hidden">
+                <div style={{ width: `${(l.totalCore / maxCore) * 100}%`, height: '100%', background: 'var(--dt-primary)', borderRadius: 999 }} />
+              </div>
+              <span className="dt-mono tabular-nums text-right text-[14px] font-semibold text-dt-primary">{l.totalCore}</span>
+              <span className="dt-mono tabular-nums dt-caption text-right">{l.snippetCount}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -552,13 +616,16 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   const vals   = points.map(p => p.totalCore);
   const max    = vals.length ? Math.max(...vals) : 1;
   const w = 640, h = 200, pad = 12, base = h - 22;
-  const xs = vals.map((_, i) => (i / Math.max(vals.length - 1, 1)) * (w - 2 * pad) + pad);
+  const gain = vals.length >= 2 ? vals[vals.length-1] - vals[0] : 0;
+
+  const xs = vals.length > 0
+    ? vals.map((_, i) => (i / Math.max(vals.length - 1, 1)) * (w - 2 * pad) + pad)
+    : [];
   const ys = vals.map(v => base - (v / (max || 1)) * (base - pad));
   const line = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
   const area = points.length > 1 ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
-  const gain = vals.length >= 2 ? vals[vals.length-1] - vals[0] : 0;
 
-  if (loading) return <CardSkeleton />;
+  if (loading) return <CardSkeleton height={280} />;
 
   return (
     <div className="dt-card p-0 overflow-hidden">
@@ -572,11 +639,10 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
           <span className="dt-caption">CORE</span>
         </div>
       </div>
-      <div className="px-6 py-[18px] pb-[10px]">
-        {points.length < 2
-          ? <p className="text-dt-text-3 text-[13px] py-8 text-center">{t('No records yet.')}</p>
-          : (
-          <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
+      <div className="px-6 py-[18px] pb-[10px]" style={{ minHeight: 220 }}>
+        {/* 항상 SVG 프레임 렌더 — 데이터 없으면 고스트 격자 + 오버레이 */}
+        <div className="relative">
+          <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block" style={points.length < 2 ? { opacity: 0.15 } : {}}>
             <defs>
               <linearGradient id="coreFade" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.28" />
@@ -586,31 +652,51 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
             {[0,1,2,3].map(i => (
               <line key={i} x1={0} x2={w} y1={(i+1)*base/4} y2={(i+1)*base/4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />
             ))}
-            <path d={area} fill="url(#coreFade)" />
-            <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
-            {points.map((p, i) => (
-              <g key={i}>
-                <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 6 : i === points.length-1 ? 5 : 3} fill="var(--dt-primary)" />
-                <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(p.date)}</text>
-                <rect x={xs[i]-22} y={0} width={44} height={base} fill="transparent"
-                  onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
-              </g>
+            {/* 고스트 x축 레이블 (빈 상태) */}
+            {points.length < 2 && Array.from({ length: 6 }, (_, i) => (
+              <text key={i} x={pad + (i / 5) * (w - 2 * pad)} y={h - 4}
+                textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
+                {['Jan','Feb','Mar','Apr','May','Jun'][i]}
+              </text>
             ))}
-            {hi !== null && (() => {
-              const prev = hi > 0 ? vals[hi] - vals[hi-1] : null;
-              const tw = 116, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-64, 6);
-              return (
-                <g pointerEvents="none">
-                  <rect x={tx} y={ty} width={tw} height={52} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
-                  <text x={tx+12} y={ty+20} fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(points[hi].date)}</text>
-                  <text x={tx+12} y={ty+40} fontSize="15" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{vals[hi].toLocaleString()} <tspan fontSize="9" fill="var(--dt-text-3)">CORE</tspan></text>
-                  {prev !== null && <text x={tx+tw-12} y={ty+40} textAnchor="end" fontSize="11" fill="#3DD68C" fontFamily="var(--dt-font-mono)">+{prev}</text>}
-                </g>
-              );
-            })()}
+            {points.length > 1 && (
+              <>
+                <path d={area} fill="url(#coreFade)" />
+                <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
+                {points.map((p, i) => (
+                  <g key={i}>
+                    <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 6 : i === points.length-1 ? 5 : 3} fill="var(--dt-primary)" />
+                    <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(p.date)}</text>
+                    <rect x={xs[i]-22} y={0} width={44} height={base} fill="transparent"
+                      onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
+                  </g>
+                ))}
+                {hi !== null && (() => {
+                  const prev = hi > 0 ? vals[hi] - vals[hi-1] : null;
+                  const tw = 116, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-64, 6);
+                  return (
+                    <g pointerEvents="none">
+                      <rect x={tx} y={ty} width={tw} height={52} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                      <text x={tx+12} y={ty+20} fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(points[hi].date)}</text>
+                      <text x={tx+12} y={ty+40} fontSize="15" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{vals[hi].toLocaleString()} <tspan fontSize="9" fill="var(--dt-text-3)">CORE</tspan></text>
+                      {prev !== null && <text x={tx+tw-12} y={ty+40} textAnchor="end" fontSize="11" fill="#3DD68C" fontFamily="var(--dt-font-mono)">+{prev}</text>}
+                    </g>
+                  );
+                })()}
+              </>
+            )}
           </svg>
-        )}
+          {points.length < 2 && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
+              <span className="text-[28px] leading-none">📈</span>
+              <div className="text-center">
+                <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">CORE 성장 그래프가 여기 표시됩니다</p>
+                <p className="text-[11px] text-dt-text-3">첫 스니펫을 플레이하면 트래킹이 시작됩니다</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -622,7 +708,16 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
   const [hi, setHi] = useState<number | null>(null);
   const langs = (data?.byLanguage ?? []).filter(l => l.totalCore > 0).slice(0, 10);
   const maxCore = langs.length ? Math.max(...langs.map(l => l.totalCore)) : 1;
-  const cx = 150, cy = 150, R = 110, n = langs.length;
+  const cx = 150, cy = 150, R = 110;
+  const isEmpty = langs.length < 2;
+
+  /* 레이더 그리기용 — 빈 상태엔 정육각형 고스트 사용 */
+  const GHOST_N = 6;
+  const ghostAngle = (i: number) => -Math.PI / 2 + (i / GHOST_N) * Math.PI * 2;
+  const ghostPt = (i: number, r: number): [number, number] => [cx + Math.cos(ghostAngle(i)) * r, cy + Math.sin(ghostAngle(i)) * r];
+  const ghostPolygon = (r: number) => Array.from({ length: GHOST_N }, (_, i) => ghostPt(i, r * R).join(',')).join(' ');
+
+  const n = langs.length;
   const angle = (i: number) => -Math.PI / 2 + (i / n) * Math.PI * 2;
   const pt = (i: number, r: number): [number, number] => [cx + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r];
   const rings = [0.25, 0.5, 0.75, 1];
@@ -630,7 +725,7 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
   const dataPoly = langs.map((l, i) => pt(i, (l.totalCore / maxCore) * R).join(',')).join(' ');
   const top = langs.length ? langs.reduce((a, b) => b.totalCore > a.totalCore ? b : a, langs[0]) : null;
 
-  if (loading) return <CardSkeleton />;
+  if (loading) return <CardSkeleton height={380} />;
 
   return (
     <div className="dt-card p-0 overflow-hidden">
@@ -646,10 +741,29 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
           </span>
         )}
       </div>
-      {langs.length < 2
-        ? <p className="px-6 py-8 text-center text-dt-text-3 text-[13px]">{t('No records yet.')}</p>
-        : (
-        <div className="p-4 flex justify-center">
+
+      <div className="p-4 flex justify-center relative" style={{ minHeight: 300 }}>
+        {isEmpty ? (
+          /* 고스트 레이더 링 + 빈 상태 오버레이 */
+          <>
+            <svg viewBox="0 0 300 300" className="w-full max-w-[320px] h-auto opacity-[0.12] pointer-events-none">
+              {[0.25, 0.5, 0.75, 1].map((r, i) => (
+                <polygon key={i} points={ghostPolygon(r)} fill="none" stroke="var(--dt-border)" strokeWidth="0.75" opacity="0.7" />
+              ))}
+              {Array.from({ length: GHOST_N }, (_, i) => {
+                const [x, y] = ghostPt(i, R);
+                return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.6" />;
+              })}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
+              <span className="text-[28px] leading-none">🕸️</span>
+              <div className="text-center">
+                <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">2개 이상의 언어를 플레이하면 활성화됩니다</p>
+                <p className="text-[11px] text-dt-text-3">언어별 CORE 분포를 레이더 차트로 확인하세요</p>
+              </div>
+            </div>
+          </>
+        ) : (
           <svg viewBox="0 0 300 300" className="w-full max-w-[320px] h-auto">
             {rings.map((r, i) => <polygon key={i} points={polygon(r)} fill="none" stroke="var(--dt-border)" strokeWidth="0.75" opacity="0.7" />)}
             {langs.map((_, i) => {
@@ -686,8 +800,8 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
               );
             })()}
           </svg>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -702,19 +816,19 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
   const results = data?.results ?? [];
-
-  if (loading) return <CardSkeleton />;
-  if (results.length < 2) return null;
-
-  const vals = results.map(r => r.avgWpm);
-  const min  = Math.min(...vals) - 6;
-  const max  = Math.max(...vals) + 6;
-  const best = Math.max(...vals);
   const w = 980, h = 200, pad = 14, base = h - 22;
+
+  if (loading) return <CardSkeleton height={260} />;
+
+  const hasData = results.length >= 2;
+  const vals = results.map(r => r.avgWpm);
+  const minV  = hasData ? Math.min(...vals) - 6 : 0;
+  const maxV  = hasData ? Math.max(...vals) + 6 : 100;
+  const best  = hasData ? Math.max(...vals) : 0;
   const xs = results.map((_, i) => (i / (results.length - 1)) * (w - 2 * pad) + pad);
-  const ys = vals.map(v => base - ((v - min) / (max - min || 1)) * (base - pad));
+  const ys = vals.map(v => base - ((v - minV) / (maxV - minV || 1)) * (base - pad));
   const line = results.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
-  const area = `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z`;
+  const area = hasData ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
 
   return (
     <div className="dt-card p-0 overflow-hidden">
@@ -723,44 +837,68 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
           <span className="dt-h3 m-0">{t('Monthly WPM')}</span>
           <span className="dt-caption">{t('Last 6 months · monthly average')}</span>
         </div>
-        <div className="flex items-baseline gap-[6px]">
-          <span className="dt-mono tabular-nums text-[16px] text-dt-primary">{best.toFixed(1)}</span>
-          <span className="dt-caption">{t('best')} WPM</span>
-        </div>
+        {hasData && (
+          <div className="flex items-baseline gap-[6px]">
+            <span className="dt-mono tabular-nums text-[16px] text-dt-primary">{best.toFixed(1)}</span>
+            <span className="dt-caption">{t('best')} WPM</span>
+          </div>
+        )}
       </div>
-      <div className="px-6 py-[18px] pb-[10px]">
-        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
-          <defs>
-            <linearGradient id="wpmTrendFade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.26" />
-              <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          {[0,1,2,3].map(i => (
-            <line key={i} x1={0} x2={w} y1={(i+1)*base/4} y2={(i+1)*base/4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />
-          ))}
-          <path d={area} fill="url(#wpmTrendFade)" />
-          <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
-          {results.map((r, i) => (
-            <g key={i}>
-              <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 6 : 3} fill="var(--dt-primary)" />
-              <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{r.month}</text>
-              <rect x={xs[i] - (w / results.length) / 2} y={0} width={w / results.length} height={base} fill="transparent"
-                onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
-            </g>
-          ))}
-          {hi !== null && (() => {
-            const tw = 120, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-60, 6);
-            return (
-              <g pointerEvents="none">
-                <rect x={tx} y={ty} width={tw} height={48} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
-                <text x={tx+12} y={ty+19} fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{results[hi].month}</text>
-                <text x={tx+12} y={ty+37} fontSize="15" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{results[hi].avgWpm.toFixed(1)} <tspan fontSize="9" fill="var(--dt-text-3)">WPM</tspan></text>
-              </g>
-            );
-          })()}
-        </svg>
+      <div className="px-6 py-[18px] pb-[10px]" style={{ minHeight: 220 }}>
+        <div className="relative">
+          <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block" style={!hasData ? { opacity: 0.12 } : {}}>
+            <defs>
+              <linearGradient id="wpmTrendFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.26" />
+                <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {[0,1,2,3].map(i => (
+              <line key={i} x1={0} x2={w} y1={(i+1)*base/4} y2={(i+1)*base/4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />
+            ))}
+            {/* 고스트 x축 레이블 */}
+            {!hasData && Array.from({ length: 6 }, (_, i) => (
+              <text key={i} x={pad + (i / 5) * (w - 2 * pad)} y={h - 4}
+                textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
+                {['Jan','Feb','Mar','Apr','May','Jun'][i]}
+              </text>
+            ))}
+            {hasData && (
+              <>
+                <path d={area} fill="url(#wpmTrendFade)" />
+                <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
+                {results.map((r, i) => (
+                  <g key={i}>
+                    <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 6 : 3} fill="var(--dt-primary)" />
+                    <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{r.month}</text>
+                    <rect x={xs[i] - (w / results.length) / 2} y={0} width={w / results.length} height={base} fill="transparent"
+                      onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
+                  </g>
+                ))}
+                {hi !== null && (() => {
+                  const tw = 120, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-60, 6);
+                  return (
+                    <g pointerEvents="none">
+                      <rect x={tx} y={ty} width={tw} height={48} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                      <text x={tx+12} y={ty+19} fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{results[hi].month}</text>
+                      <text x={tx+12} y={ty+37} fontSize="15" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{results[hi].avgWpm.toFixed(1)} <tspan fontSize="9" fill="var(--dt-text-3)">WPM</tspan></text>
+                    </g>
+                  );
+                })()}
+              </>
+            )}
+          </svg>
+          {!hasData && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
+              <span className="text-[28px] leading-none">⚡</span>
+              <div className="text-center">
+                <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">WPM 히스토리가 여기 표시됩니다</p>
+                <p className="text-[11px] text-dt-text-3">매달 평균 WPM으로 실력 향상을 트래킹합니다</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -783,9 +921,7 @@ const MyPage = () => {
 
   useEffect(() => {
     if (!userId) return;
-
     const currentYear = new Date().getUTCFullYear();
-
     Promise.all([
       getUserStreak(currentYear).then(setStreak).finally(() => setLoadingStreak(false)),
       getUserWpmHistory().then(setWpm).finally(() => setLoadingWpm(false)),

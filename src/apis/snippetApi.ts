@@ -28,7 +28,7 @@ export interface SnippetPage {
 }
 
 export interface SnippetListParams {
-  language?: SnippetLanguage;
+  language?: SnippetLanguage | SnippetLanguage[];
   difficulty?: SnippetDifficulty;
   keyword?: string;
   sort?: SnippetSort;

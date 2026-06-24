@@ -260,9 +260,9 @@ const Snippets = () => {
 
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [lang, setLang] = useState<BackendLang | 'ALL'>('ALL');
+  const [langs, setLangs] = useState<Set<BackendLang>>(new Set());
   const [sort, setSort] = useState<SnippetSort>('newest');
-  const [diffSet, setDiffSet] = useState<Set<SnippetDifficulty>>(new Set());
+  const [diff, setDiff] = useState<SnippetDifficulty | null>(null);
   const [likedOnly, setLikedOnly] = useState(false);
   const [playedByMe, setPlayedByMe] = useState(false);
 
@@ -279,13 +279,14 @@ const Snippets = () => {
   const fetchSnippets = useCallback(async (p: number, reset: boolean) => {
     setLoading(true);
     try {
+      const langArr = [...langs];
       const res = await getPublicSnippets({
-        language: lang === 'ALL' ? undefined : lang,
+        language: langArr.length > 0 ? langArr : undefined,
         sort,
         keyword: debouncedQuery || undefined,
         likedByMe: likedOnly ? true : undefined,
         playedByMe: playedByMe ? 'played' : undefined,
-        ...(diffSet.size === 1 ? { difficulty: [...diffSet][0] } : {}),
+        difficulty: diff ?? undefined,
         page: p,
         size: PAGE_SIZE,
       });
@@ -301,14 +302,14 @@ const Snippets = () => {
     } finally {
       setLoading(false);
     }
-  }, [lang, sort, debouncedQuery, likedOnly, playedByMe, diffSet]);
+  }, [langs, sort, debouncedQuery, likedOnly, playedByMe, diff]);
 
   // Reset and fetch on filter change
   useEffect(() => {
     setPage(1);
     setLikeOverrides(new Map());
     fetchSnippets(1, true);
-  }, [lang, sort, debouncedQuery, likedOnly, playedByMe, diffSet]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [langs, sort, debouncedQuery, likedOnly, playedByMe, diff]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadMore = () => {
     const next = page + 1;
@@ -316,13 +317,15 @@ const Snippets = () => {
     fetchSnippets(next, false);
   };
 
-  const toggleDiff = (d: SnippetDifficulty) => setDiffSet(p => {
-    const n = new Set(p); n.has(d) ? n.delete(d) : n.add(d); return n;
+  const toggleLang = (l: BackendLang) => setLangs(p => {
+    const n = new Set(p); n.has(l) ? n.delete(l) : n.add(l); return n;
   });
 
+  const toggleDiff = (d: SnippetDifficulty) => setDiff(p => p === d ? null : d);
+
   const clearFilters = () => {
-    setDiffSet(new Set()); setLikedOnly(false); setPlayedByMe(false);
-    setLang('ALL'); setQuery('');
+    setDiff(null); setLikedOnly(false); setPlayedByMe(false);
+    setLangs(new Set()); setQuery('');
   };
 
   const handleLike = async (snippet: Snippet) => {
@@ -353,8 +356,8 @@ const Snippets = () => {
   };
 
   const activeChips: { key: string; label: string; onClear: () => void }[] = [];
-  if (lang !== 'ALL') activeChips.push({ key: 'lang', label: LANG_LABEL[toLangKey(lang)] || lang, onClear: () => setLang('ALL') });
-  [...diffSet].forEach(d => activeChips.push({ key: 'd' + d, label: diffLabel(d), onClear: () => toggleDiff(d) }));
+  [...langs].forEach(l => activeChips.push({ key: 'lang-' + l, label: LANG_LABEL[toLangKey(l)] || l, onClear: () => toggleLang(l) }));
+  if (diff) activeChips.push({ key: 'diff', label: diffLabel(diff), onClear: () => setDiff(null) });
   if (likedOnly) activeChips.push({ key: 'liked', label: t('Liked only'), onClear: () => setLikedOnly(false) });
   if (playedByMe) activeChips.push({ key: 'played', label: t('Played'), onClear: () => setPlayedByMe(false) });
 
@@ -377,13 +380,10 @@ const Snippets = () => {
             </div>
 
             <FilterSection label={t('Language')}>
-              <LangFilterRow active={lang === 'ALL'} onClick={() => setLang('ALL')} iconImg={null}>
-                {t('All languages')}
-              </LangFilterRow>
               {BACKEND_LANGS.map(l => {
                 const key = toLangKey(l);
                 return (
-                  <LangFilterRow key={l} active={lang === l} onClick={() => setLang(l)}
+                  <LangFilterRow key={l} active={langs.has(l)} onClick={() => toggleLang(l)}
                     iconImg={LANG_ICON[key] || null}>
                     {LANG_LABEL[key] || key}
                   </LangFilterRow>
@@ -395,7 +395,7 @@ const Snippets = () => {
 
             <FilterSection label={t('Difficulty')}>
               {BACKEND_DIFFS.map(d => (
-                <CheckRow key={d} checked={diffSet.has(d)} onToggle={() => toggleDiff(d)}
+                <CheckRow key={d} checked={diff === d} onToggle={() => toggleDiff(d)}
                   accent={DIFF_COLOR[d.toLowerCase()]}>
                   {diffLabel(d)}
                 </CheckRow>

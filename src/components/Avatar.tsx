@@ -15,10 +15,11 @@ interface Props {
   hue?: number;
   size?: number;
   ring?: string;
+  src?: string | null;
 }
 
-const Avatar = ({ handle, hue = 170, size = 32, ring }: Props) => {
-  const src = avatarFor(handle);
+const Avatar = ({ handle, hue = 170, size = 32, ring, src }: Props) => {
+  const fallback = avatarFor(handle);
   return (
     <span
       className="dt-avatar"
@@ -30,7 +31,7 @@ const Avatar = ({ handle, hue = 170, size = 32, ring }: Props) => {
         boxShadow: ring ? `0 0 0 2px ${ring}` : 'none',
       }}
     >
-      <img src={src} alt="" className="w-full h-full object-cover block" />
+      <img src={src ?? fallback} alt="" className="w-full h-full object-cover block" />
     </span>
   );
 };

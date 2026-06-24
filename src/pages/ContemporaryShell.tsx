@@ -5,7 +5,7 @@ import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
 import Logo from '@/components/Logo';
 import { IconSun, IconMoon, IconArrowLeft, GithubMark } from '@/components/icons/Icons';
-import type { User } from '@/types';
+import { useUserStore } from '@/stores/userStore';
 
 interface TreeFile {
   name: string;
@@ -61,12 +61,17 @@ interface ExplorerProps {
   isAdmin: boolean;
   onLogin: () => void;
   onLogout: () => void;
-  me: User;
   onStargaze: () => void;
 }
 
-const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, onLogin, onLogout, me, onStargaze }: ExplorerProps) => {
+const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, onLogin, onLogout, onStargaze }: ExplorerProps) => {
   const t = useT();
+  const { profileUrl, username, totalCore, currentStreak } = useUserStore((s) => ({
+    profileUrl: s.profileUrl,
+    username: s.username,
+    totalCore: s.totalCore,
+    currentStreak: s.currentStreak,
+  }));
   const tree = isAdmin ? [...CONTEM_TREE, ADMIN_NODE] : CONTEM_TREE;
   return (
     <aside
@@ -108,10 +113,10 @@ const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, 
               onClick={() => navigate('mypage')}
               className="flex items-center gap-2.5 flex-1 min-w-0 py-2 px-2.5 bg-transparent border-0 rounded-xl cursor-default text-left text-inherit font-[inherit] transition-colors duration-100 hover:bg-dt-hover"
             >
-              <Avatar handle={me.handle} hue={me.avatarHue} size={30} ring="var(--dt-primary)" />
+              <Avatar handle={username ?? ''} size={30} ring="var(--dt-primary)" src={profileUrl} />
               <div className="dt-stack gap-0 min-w-0 flex-1">
-                <span className="text-[13px] text-dt-text whitespace-nowrap overflow-hidden text-ellipsis">{me.handle}</span>
-                <span className="text-[11px] text-dt-text-3">{me.totalCore.toLocaleString()} CORE · 🔥{me.currentStreak}</span>
+                <span className="text-[13px] text-dt-text whitespace-nowrap overflow-hidden text-ellipsis">{username}</span>
+                <span className="text-[11px] text-dt-text-3">{totalCore.toLocaleString()} CORE · 🔥{currentStreak}</span>
               </div>
             </button>
             <button
@@ -141,7 +146,6 @@ const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, 
 };
 
 interface Props {
-  me: User;
   isLoggedIn: boolean;
   isAdmin: boolean;
   onLogin: () => void;
@@ -151,7 +155,7 @@ interface Props {
   children: ReactNode;
 }
 
-const ContemporaryShell = ({ me, isLoggedIn, isAdmin, onLogin, onLogout, theme, onTheme, children }: Props) => {
+const ContemporaryShell = ({ isLoggedIn, isAdmin, onLogin, onLogout, theme, onTheme, children }: Props) => {
   const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
@@ -222,7 +226,6 @@ const ContemporaryShell = ({ me, isLoggedIn, isAdmin, onLogin, onLogout, theme, 
           route={route} navigate={goto}
           theme={theme} onTheme={onTheme}
           isLoggedIn={isLoggedIn} isAdmin={isAdmin} onLogin={onLogin} onLogout={onLogout}
-          me={me}
           onStargaze={() => setImmersive(true)}
         />
         <main className="min-w-0">{children}</main>

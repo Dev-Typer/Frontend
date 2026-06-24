@@ -11,8 +11,11 @@ const TypoHeatmap = ({ content, typos, replayData }: Props) => {
   const typoSet = useMemo(() => new Set(typos.map((t) => t.index)), [typos]);
 
   const [playing, setPlaying] = useState(false);
-  const [replayStep, setReplayStep] = useState(-1); // replayData 배열 인덱스
+  const [replayStep, setReplayStep] = useState(-1);
+  const [speed, setSpeed] = useState(1);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speedRef = useRef(speed);
+  useEffect(() => { speedRef.current = speed; }, [speed]);
 
   // replayStep 기준 현재 커서가 가리키는 스니펫 position
   const cursorPos = replayStep >= 0 ? replayData[replayStep]?.index ?? -1 : -1;
@@ -38,7 +41,7 @@ const TypoHeatmap = ({ content, typos, replayData }: Props) => {
       if (i >= replayData.length) { setPlaying(false); return; }
       setReplayStep(i);
       const delay = i + 1 < replayData.length
-        ? Math.max(replayData[i + 1].timestamp - replayData[i].timestamp, 8)
+        ? Math.max((replayData[i + 1].timestamp - replayData[i].timestamp) / speedRef.current, 8)
         : 300;
       timerRef.current = setTimeout(() => { i++; step(); }, delay);
     };
@@ -73,6 +76,19 @@ const TypoHeatmap = ({ content, typos, replayData }: Props) => {
             <div className="h-full bg-dt-primary rounded-full transition-[width] duration-[60ms] ease-linear" style={{ width: `${progress * 100}%` }} />
           </div>
         )}
+
+        <div className="flex items-center gap-1 ml-auto">
+          {[0.5, 1, 2, 3].map(s => (
+            <button key={s} onClick={() => setSpeed(s)}
+              style={{ padding: '2px 8px', borderRadius: 6, border: 0, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                background: speed === s ? 'color-mix(in oklab, var(--dt-primary) 18%, transparent)' : 'var(--dt-hover)',
+                color: speed === s ? 'var(--dt-primary)' : 'var(--dt-text-3)',
+                boxShadow: speed === s ? 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 40%, transparent)' : 'none',
+              }}>
+              {s}x
+            </button>
+          ))}
+        </div>
 
         <span className="dt-caption text-dt-text-3 font-dt-mono text-[11px] whitespace-nowrap">
           {isReplaying

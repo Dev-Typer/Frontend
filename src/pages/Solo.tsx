@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import TypoHeatmap from '@/components/TypoHeatmap';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
@@ -221,52 +222,87 @@ const StatCard = ({ label, value, unit, sub }: { label: string; value: string | 
 const SoloWpmGraph = ({ result, snippet }: { result: TypingResult; snippet: string }) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
-  const { samples } = soloDerived(result, snippet);
-  const vals = samples;
-  const min = Math.min(...vals) - 10, max = Math.max(...vals) + 10;
-  const w = 980, h = 220, pad = 14, base = h - 16;
-  const xs = vals.map((_, i) => (i / (vals.length - 1)) * (w - 2 * pad) + pad);
-  const ys = vals.map((v) => base - ((v - min) / (max - min || 1)) * (base - pad));
-  const line = vals.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
-  const area = `${line} L ${xs[xs.length - 1]} ${base} L ${xs[0]} ${base} Z`;
-  const dips = vals.map((v, i) => (i > 0 && i < vals.length - 1 && v < vals[i - 1] - 18 && v < vals[i + 1] - 6) ? i : -1).filter((i) => i >= 0);
+
+  const vals = useMemo(() => {
+    const rd = result.replayData;
+    if (rd && rd.length > 4) {
+      const N = Math.min(40, Math.floor(rd.length / 2));
+      const maxT = rd[rd.length - 1].timestamp || 1;
+      return Array.from({ length: N }, (_, i) => {
+        const tMs = ((i + 1) / N) * maxT;
+        const correct = rd.filter(e => e.timestamp <= tMs && e.correct).length;
+        return Math.max(0, Math.min(400, Math.round((correct / 5) / (tMs / 60000))));
+      });
+    }
+    return soloDerived(result, snippet).samples;
+  }, [result, snippet]);
+
+  const w = 860, h = 220, padL = 48, padR = 24, padT = 16, padB = 28;
+  const chartW = w - padL - padR, chartH = h - padT - padB;
+
+  const rawMax = Math.max(...vals, 1);
+  const rawMin = Math.min(...vals, 0);
+  const st = rawMax <= 50 ? 10 : rawMax <= 150 ? 20 : rawMax <= 300 ? 50 : 100;
+  const niceMax = Math.ceil(rawMax / st) * st + st;
+  const niceMin = Math.max(0, Math.floor(rawMin / st) * st - st);
+  const range = niceMax - niceMin || 1;
+
+  const toX = (i: number) => padL + (i / Math.max(vals.length - 1, 1)) * chartW;
+  const toY = (v: number) => padT + chartH - ((v - niceMin) / range) * chartH;
+
+  const GRID = 5;
+  const gridLines = Array.from({ length: GRID + 1 }, (_, i) => ({
+    value: Math.round(niceMin + (range * i) / GRID),
+    y: toY(niceMin + (range * i) / GRID),
+  }));
+
+  const linePath = vals.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(v)}`).join(' ');
+  const areaPath = `${linePath} L ${toX(vals.length - 1)} ${toY(niceMin)} L ${toX(0)} ${toY(niceMin)} Z`;
+  const dips = vals.map((v, i) => (i > 0 && i < vals.length - 1 && v < vals[i - 1] - 15 && v < vals[i + 1] - 8) ? i : -1).filter(i => i >= 0);
+
   return (
     <div className="dt-card p-0 overflow-hidden">
       <div className="py-[18px] px-6 flex items-center gap-3 border-b-[0.5px] border-dt-border">
         <span className="dt-h3 m-0">{t('WPM over time')}</span>
         <span className="inline-flex items-center gap-1.5 ml-auto">
-          <span className="w-[9px] h-[9px] rounded-full bg-dt-primary" />
+          <span className="w-2 h-2 rounded-full bg-dt-primary" />
           <span className="dt-caption">WPM</span>
-          <span className="w-[9px] h-[9px] rounded-full bg-dt-error ml-2.5" />
+          <span className="w-2 h-2 rounded-full bg-dt-error ml-2.5" />
           <span className="dt-caption">{t('error dip')}</span>
         </span>
       </div>
-      <div className="pt-4 px-6 pb-2">
+      <div className="px-4 pt-3 pb-2">
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
           <defs>
-            <linearGradient id="soloWpmFade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.28" />
-              <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
+            <linearGradient id="soloWpmFade2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0.02" />
             </linearGradient>
           </defs>
-          {[0, 1, 2, 3].map((i) => (
-            <line key={i} x1={0} x2={w} y1={(i + 1) * base / 4} y2={(i + 1) * base / 4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />
+          {gridLines.map(({ value, y }) => (
+            <g key={value}>
+              <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="var(--dt-border)" strokeWidth="1" />
+              <text x={padL - 6} y={y + 4} textAnchor="end" fontSize="10" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{value}</text>
+            </g>
           ))}
-          <path d={area} fill="url(#soloWpmFade)" />
-          <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          {dips.map((i) => <circle key={i} cx={xs[i]} cy={ys[i]} r={4} fill="var(--dt-error)" />)}
-          {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad - 6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
+          <path d={areaPath} fill="url(#soloWpmFade2)" />
+          <path d={linePath} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          {dips.map(i => <circle key={i} cx={toX(i)} cy={toY(vals[i])} r={4} fill="var(--dt-error)" />)}
+          {hi !== null && <line x1={toX(hi)} x2={toX(hi)} y1={padT} y2={padT + chartH} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />}
           {vals.map((_, i) => (
-            <rect key={i} x={xs[i] - (w / vals.length) / 2} y={0} width={w / vals.length} height={base} fill="transparent"
-              onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi((p) => p === i ? null : p)} />
+            <rect key={i} x={toX(i) - chartW / vals.length / 2} y={0} width={chartW / vals.length} height={h} fill="transparent"
+              onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(p => p === i ? null : p)} />
           ))}
           {hi !== null && (() => {
-            const tw = 86, tx = Math.min(Math.max(xs[hi] - tw / 2, 4), w - tw - 4), ty = Math.max(ys[hi] - 42, 4);
+            const tw = 90, tx = Math.min(Math.max(toX(hi) - tw / 2, padL), w - padR - tw);
+            const ty = Math.max(toY(vals[hi]) - 46, padT + 4);
             return (
               <g pointerEvents="none">
-                <circle cx={xs[hi]} cy={ys[hi]} r={4.5} fill="var(--dt-primary)" />
-                <rect x={tx} y={ty} width={tw} height={32} rx={7} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
-                <text x={tx + tw / 2} y={ty + 21} textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{vals[hi]} <tspan fontSize="9" fill="var(--dt-text-3)">WPM</tspan></text>
+                <circle cx={toX(hi)} cy={toY(vals[hi])} r={4.5} fill="var(--dt-primary)" />
+                <rect x={tx} y={ty} width={tw} height={32} rx={6} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                <text x={tx + tw / 2} y={ty + 21} textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">
+                  {vals[hi]} <tspan fontSize="9" fill="var(--dt-text-3)">WPM</tspan>
+                </text>
               </g>
             );
           })()}
@@ -435,9 +471,13 @@ interface SoloResultProps {
 
 const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, apiSnippetId }: SoloResultProps) => {
   const t = useT();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const rankRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const section0Ref = useRef<HTMLDivElement>(null);
+  const section1Ref = useRef<HTMLDivElement>(null);
+  const section2Ref = useRef<HTMLDivElement>(null);
+  const sectionIdxRef = useRef(0);
+  const wheelLockRef = useRef(false);
 
   const snipId = track?.id || 'unknown';
   const realDiff = track?.difficulty || diff;
@@ -449,29 +489,57 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
   const delta = isNewBest ? core - prevBest : 0;
   useEffect(() => { writeBest(snipId, core); }, [snipId, core]);
 
-  const scrollToRanking = () => {
-    rankRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const sectionRefs = useMemo(() =>
+    [section0Ref, section1Ref, ...(apiSnippetId ? [section2Ref] : [])],
+    [apiSnippetId]
+  );
+
+  const goToSection = (idx: number) => {
+    const el = sectionRefs[idx]?.current;
+    if (!el || !containerRef.current) return;
+    sectionIdxRef.current = idx;
+    containerRef.current.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
   };
-  const scrollToStats = () => {
-    statsRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const handler = (e: WheelEvent) => {
+      if (wheelLockRef.current) return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      const next = Math.max(0, Math.min(sectionRefs.length - 1, sectionIdxRef.current + dir));
+      if (next === sectionIdxRef.current) return;
+      e.preventDefault();
+      wheelLockRef.current = true;
+      goToSection(next);
+      setTimeout(() => { wheelLockRef.current = false; }, 750);
+    };
+    container.addEventListener('wheel', handler, { passive: false });
+    return () => container.removeEventListener('wheel', handler);
+  }, [sectionRefs.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sectionStyle: React.CSSProperties = {
+    height: '100vh', flexShrink: 0, display: 'flex', flexDirection: 'column',
+    padding: '0 max(24px, calc((100vw - 900px) / 2))',
   };
 
   return (
     <div
-      ref={scrollRef}
+      ref={containerRef}
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
         background: 'var(--dt-bg)',
-        overflowY: 'auto',
-        scrollBehavior: 'smooth',
+        overflowY: 'scroll',
+        scrollSnapType: 'y mandatory',
       }}
     >
-      {/* ── Stats section ── */}
-      <div ref={statsRef} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '32px max(24px, calc((100vw - 900px) / 2))' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      {/* ── Section 0: Stats ── */}
+      <div ref={section0Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 16, overflowY: 'hidden' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <div className="dt-label" style={{ marginBottom: 4 }}>Result</div>
-            <div className="dt-h2 m-0">{t('Run complete.')}</div>
+            <div className="dt-label" style={{ marginBottom: 2 }}>Result</div>
+            <div className="dt-h2 m-0" style={{ fontSize: 24 }}>{t('Run complete.')}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change settings')}</button>
@@ -480,26 +548,19 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         </div>
 
         {/* CORE hero */}
-        <div className="dt-card p-0 overflow-hidden mb-3">
+        <div className="dt-card p-0 overflow-hidden" style={{ marginBottom: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr' }}>
-            <div style={{ padding: '30px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div className="dt-label" style={{ marginBottom: 8 }}>{t('CORE this run')}</div>
+            <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="dt-label" style={{ marginBottom: 6 }}>{t('CORE this run')}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-                <span className="dt-mono dt-tabular" style={{ fontSize: 64, fontWeight: 700, lineHeight: 0.9, color: 'var(--dt-primary)' }}>{core}</span>
+                <span className="dt-mono dt-tabular" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: 'var(--dt-primary)' }}>{core}</span>
                 {isNewBest ? (
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 999,
-                    fontSize: 13, fontWeight: 700, color: 'var(--dt-primary)',
-                    background: 'color-mix(in oklab, var(--dt-primary) 16%, transparent)',
-                    boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 45%, transparent)',
-                  }}>🎉 {t('New best!')}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, color: 'var(--dt-primary)', background: 'color-mix(in oklab, var(--dt-primary) 16%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 45%, transparent)' }}>🎉 {t('New best!')}</span>
                 ) : (
-                  <span className="dt-caption" style={{ maxWidth: 180 }}>
-                    {t('Best on this snippet')}: <span className="dt-mono" style={{ color: 'var(--dt-text)' }}>{prevBest}</span>
-                  </span>
+                  <span className="dt-caption">{t('Best on this snippet')}: <span className="dt-mono" style={{ color: 'var(--dt-text)' }}>{prevBest}</span></span>
                 )}
               </div>
-              <div className="dt-mono" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18, flexWrap: 'wrap', color: 'var(--dt-text-2)' }}>
+              <div className="dt-mono" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, color: 'var(--dt-text-2)' }}>
                 <CoreFactor label="nWPM" value={nWpm} />
                 <span style={{ color: 'var(--dt-text-3)' }}>×</span>
                 <CoreFactor label={t(realDiff.toLowerCase() === 'easy' ? 'Easy' : realDiff.toLowerCase() === 'hard' ? 'Hard' : 'Medium')} value={diffW.toFixed(1)} />
@@ -508,31 +569,23 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
               </div>
             </div>
             <div style={{ background: 'var(--dt-border)' }} />
-            <div style={{ padding: '30px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+            <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
               <div className="dt-label">{t('Total CORE')}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span className="dt-mono dt-tabular" style={{ fontSize: 32, fontWeight: 700, color: 'var(--dt-text)' }}>
-                  {(prevTotal + delta).toLocaleString()}
-                </span>
-                {isNewBest ? (
-                  <span className="dt-mono" style={{ fontSize: 15, fontWeight: 700, color: 'var(--dt-success)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <IconArrowUp size={15} /> +{delta}
-                  </span>
-                ) : (
-                  <span className="dt-caption">+0</span>
-                )}
-              </div>
-              <p className="dt-caption" style={{ marginTop: 6, lineHeight: 1.5, maxWidth: 280 }}>
+                <span className="dt-mono dt-tabular" style={{ fontSize: 28, fontWeight: 700, color: 'var(--dt-text)' }}>{(prevTotal + delta).toLocaleString()}</span>
                 {isNewBest
-                  ? t('This beat your previous best on this snippet, so it lifted your Total CORE.')
-                  : t('Only your best run per snippet counts. This run is saved to history but did not change Total CORE.')}
+                  ? <span className="dt-mono" style={{ fontSize: 14, fontWeight: 700, color: 'var(--dt-success)', display: 'flex', alignItems: 'center', gap: 2 }}><IconArrowUp size={13} /> +{delta}</span>
+                  : <span className="dt-caption">+0</span>}
+              </div>
+              <p className="dt-caption" style={{ marginTop: 4, lineHeight: 1.5, maxWidth: 280 }}>
+                {isNewBest ? t('This beat your previous best on this snippet, so it lifted your Total CORE.') : t('Only your best run per snippet counts. This run is saved to history but did not change Total CORE.')}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Secondary stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
+        {/* 5 stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 10 }}>
           <StatCard label={t('WPM')} value={result.wpm} />
           <StatCard label={t('Raw WPM')} value={Math.round(result.wpm / Math.max(0.5, result.acc / 100))} />
           <StatCard label={t('Accuracy')} value={result.acc.toFixed(1)} unit="%" sub={`${result.errors} ${t('mistakes corrected')}`} />
@@ -540,40 +593,69 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
           <StatCard label={t('Time')} value={(result.elapsed / 1000).toFixed(1)} unit="s" sub={`${snippet.length} ${t('chars typed')}`} />
         </div>
 
+        {/* WPM graph */}
         <SoloWpmGraph result={result} snippet={snippet} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-          <MistypedLetters result={result} snippet={snippet} />
-          <WordChips result={result} snippet={snippet} />
+        {/* Bottom actions + scroll hint */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 8 }}>
+          <button className="dt-btn dt-btn-secondary" onClick={() => navigate(-1)}>✕ {t('Exit')}</button>
+          <button onClick={() => goToSection(1)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--dt-text-3)', padding: '6px 20px', transition: 'color 140ms' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--dt-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--dt-text-3)')}>
+            <span style={{ fontSize: 12, fontWeight: 500 }}>{t('Replay & Analysis')}</span>
+            <IconArrowDown size={18} />
+          </button>
+          <div style={{ width: 80 }} />
         </div>
-
-        {/* Scroll hint to ranking */}
-        {apiSnippetId && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
-            <button onClick={scrollToRanking} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-              background: 'transparent', border: 0, cursor: 'default', color: 'var(--dt-text-3)',
-              padding: '8px 20px', borderRadius: 12,
-              transition: 'color 140ms',
-            }} onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--dt-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--dt-text-3)')}>
-              <span style={{ fontSize: 13, fontWeight: 500 }}>{t('Snippet ranking')}</span>
-              <IconArrowDown size={20} />
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* ── Ranking section ── */}
-      {apiSnippetId && (
-        <div ref={rankRef} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '0 max(24px, calc((100vw - 900px) / 2)) 32px' }}>
-          <SnippetRankingSection snippetId={apiSnippetId} myCore={core} />
+      {/* ── Section 1: Replay + Analysis ── */}
+      <div ref={section1Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 16, gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div>
+            <div className="dt-label" style={{ marginBottom: 2 }}>Analysis</div>
+            <div className="dt-h2 m-0" style={{ fontSize: 22 }}>{t('Replay & Breakdown')}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => goToSection(0)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--dt-text-3)', fontSize: 13 }}>
+              <IconArrowUp size={14} /> {t('Back to stats')}
+            </button>
+            {apiSnippetId && (
+              <button onClick={() => goToSection(2)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--dt-text-3)', fontSize: 13 }}>
+                {t('Ranking')} <IconArrowDown size={14} />
+              </button>
+            )}
+          </div>
+        </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto', paddingTop: 32 }}>
-            <button onClick={scrollToStats} style={{
-              display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 0,
-              cursor: 'default', color: 'var(--dt-text-3)', padding: '8px 16px',
-            }}>
+        {/* Replay (TypoHeatmap) */}
+        <div className="dt-card p-0 overflow-hidden" style={{ flex: '0 0 auto' }}>
+          <div className="py-[14px] px-5 border-b-[0.5px] border-dt-border">
+            <span className="dt-h3 m-0">{t('Replay')}</span>
+          </div>
+          <div className="p-5" style={{ maxHeight: 260, overflowY: 'auto' }}>
+            <TypoHeatmap content={snippet} typos={result.typos} replayData={result.replayData} />
+          </div>
+        </div>
+
+        {/* Mistyped + Word breakdown */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <div style={{ overflow: 'hidden' }}><MistypedLetters result={result} snippet={snippet} /></div>
+          <div style={{ overflow: 'hidden' }}><WordChips result={result} snippet={snippet} /></div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
+          <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change settings')}</button>
+          <button className="dt-btn dt-btn-primary" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
+        </div>
+      </div>
+
+      {/* ── Section 2: Ranking ── */}
+      {apiSnippetId && (
+        <div ref={section2Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 16, overflowY: 'auto' }}>
+          <SnippetRankingSection snippetId={apiSnippetId} myCore={core} />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto', paddingTop: 20 }}>
+            <button onClick={() => goToSection(1)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--dt-text-3)', padding: '8px 16px' }}>
               <IconArrowUp size={16} /> {t('Back to stats')}
             </button>
             <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change settings')}</button>
@@ -583,18 +665,9 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
           </div>
         </div>
       )}
-
-      {/* No ranking (local track) — just action buttons at bottom */}
-      {!apiSnippetId && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, padding: '0 24px 48px' }}>
-          <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change language / difficulty')}</button>
-          <button className="dt-btn dt-btn-primary dt-btn-lg" onClick={onNext}>
-            <IconArrowRight size={16} /> {t('Try another snippet')}
-          </button>
-        </div>
-      )}
     </div>
   );
+
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -683,15 +756,15 @@ const Solo = () => {
       try {
         await saveSnippetResult({
           snippetId: apiSnippetId,
-          wpm: Math.max(0.1, r.wpm),
-          rawWpm: Math.max(0.1, r.rawWpm),
-          accuracy: r.acc,
-          durationSec: Math.max(3, Math.round(r.elapsed / 1000)),
+          wpm: Math.min(299, Math.max(0.1, r.wpm)),
+          rawWpm: Math.min(299, Math.max(0.1, r.rawWpm)),
+          accuracy: Math.min(100, Math.max(0, r.acc)),
+          durationSec: Math.min(599, Math.max(3, Math.round(r.elapsed / 1000))),
           typos: r.typos ?? [],
           replayData: r.replayData ?? [],
         });
-      } catch {
-        // save failed silently
+      } catch (err) {
+        console.error('[Solo] saveSnippetResult failed:', err);
       }
     }
   };

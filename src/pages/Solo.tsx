@@ -533,24 +533,6 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         scrollSnapType: 'y mandatory',
       }}
     >
-      {/* ── Exit button (fixed) ── */}
-      <button
-        onClick={() => navigate(-1)}
-        style={{
-          position: 'fixed', top: 16, right: 20, zIndex: 100,
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: 'var(--dt-card)', border: 0, cursor: 'pointer',
-          color: 'var(--dt-text-2)', fontSize: 13, fontWeight: 500,
-          padding: '7px 14px', borderRadius: 10,
-          boxShadow: 'inset 0 0 0 1px var(--dt-border)',
-          transition: 'color 120ms, box-shadow 120ms',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.color = 'var(--dt-text)'; e.currentTarget.style.boxShadow = 'inset 0 0 0 1px var(--dt-text-2)'; }}
-        onMouseLeave={e => { e.currentTarget.style.color = 'var(--dt-text-2)'; e.currentTarget.style.boxShadow = 'inset 0 0 0 1px var(--dt-border)'; }}
-      >
-        ✕ {t('Exit')}
-      </button>
-
       {/* ── Section 0: Stats ── */}
       <div ref={section0Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 16, overflowY: 'hidden' }}>
         {/* Header */}
@@ -614,13 +596,15 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         {/* WPM graph */}
         <SoloWpmGraph result={result} snippet={snippet} />
 
-        {/* Scroll hint */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'auto', paddingTop: 8 }}>
+        {/* Bottom actions + scroll hint */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 8 }}>
+          <button className="dt-btn dt-btn-secondary" onClick={() => navigate(-1)}>✕ {t('Exit')}</button>
           <button onClick={() => goToSection(1)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--dt-text-3)', padding: '6px 20px', transition: 'color 140ms' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--dt-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--dt-text-3)')}>
             <span style={{ fontSize: 12, fontWeight: 500 }}>{t('Replay & Analysis')}</span>
             <IconArrowDown size={18} />
           </button>
+          <div style={{ width: 80 }} />
         </div>
       </div>
 
@@ -772,15 +756,15 @@ const Solo = () => {
       try {
         await saveSnippetResult({
           snippetId: apiSnippetId,
-          wpm: Math.max(0.1, r.wpm),
-          rawWpm: Math.max(0.1, r.rawWpm),
-          accuracy: r.acc,
-          durationSec: Math.max(3, Math.round(r.elapsed / 1000)),
+          wpm: Math.min(299, Math.max(0.1, r.wpm)),
+          rawWpm: Math.min(299, Math.max(0.1, r.rawWpm)),
+          accuracy: Math.min(100, Math.max(0, r.acc)),
+          durationSec: Math.min(599, Math.max(3, Math.round(r.elapsed / 1000))),
           typos: r.typos ?? [],
           replayData: r.replayData ?? [],
         });
-      } catch {
-        // save failed silently
+      } catch (err) {
+        console.error('[Solo] saveSnippetResult failed:', err);
       }
     }
   };

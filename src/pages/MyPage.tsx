@@ -128,7 +128,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
   };
 
   return (
-    <div className="relative rounded-dt-md overflow-hidden" style={{ minHeight: 300 }}>
+    <div className="relative overflow-hidden" style={{ minHeight: 300, marginLeft: 'calc(-44px)', marginRight: 'calc(-44px)', marginTop: -48 }}>
       {/* Banner */}
       {bannerUrl
         ? <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -141,7 +141,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
         style={{ background: 'linear-gradient(90deg, rgba(7,12,31,0.6) 0%, transparent 50%)' }} />
 
       {/* 배너 변경 버튼 */}
-      <div className="absolute top-4 right-4 z-[5] flex gap-2">
+      <div className="absolute top-4 z-[5] flex gap-2" style={{ right: 44 }}>
         <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
         <button
           onClick={() => bannerInput.current?.click()}
@@ -164,7 +164,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
       </div>
 
       {/* CORE 수치 */}
-      <div className="absolute right-8 bottom-[26px] text-right z-[3]">
+      <div className="absolute bottom-[26px] text-right z-[3]" style={{ right: 44 }}>
         <div className="dt-mono tabular-nums font-bold text-[76px] leading-[0.9] text-white"
           style={{ textShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
           {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
@@ -173,7 +173,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
       </div>
 
       {/* 아이덴티티 */}
-      <div className="absolute left-8 bottom-[26px] flex items-end gap-[18px] z-[3]">
+      <div className="absolute bottom-[26px] flex items-end gap-[18px] z-[3]" style={{ left: 44 }}>
         <input ref={profileInput} type="file" accept="image/*" className="hidden" onChange={handleProfileUpload} />
         <div
           className="relative w-[84px] h-[84px] rounded-[18px] shrink-0 flex items-center justify-center overflow-hidden cursor-default"
@@ -331,11 +331,13 @@ interface StreakCardProps {
   onYearChange: (year: number) => void;
 }
 
+type StreakView = number | 'recent';
+
 const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   const t = useT();
-  const YEARS = [new Date().getUTCFullYear(), new Date().getUTCFullYear() - 1, new Date().getUTCFullYear() - 2];
-  const [year, setYear] = useState(YEARS[0]);
-  const cell = 15, gap = 3, col = cell + gap;
+  const CUR_YEAR = new Date().getUTCFullYear();
+  const [view, setView] = useState<StreakView>(CUR_YEAR);
+  const cell = 14, gap = 3, col = cell + gap;
   const MONTHS = [t('Jan'),t('Feb'),t('Mar'),t('Apr'),t('May'),t('Jun'),t('Jul'),t('Aug'),t('Sep'),t('Oct'),t('Nov'),t('Dec')];
 
   const { weeks, monthSpans, submittedCount, dayCount } = useMemo(
@@ -343,78 +345,108 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
     [data],
   );
 
-  const handleYear = (y: number) => { setYear(y); onYearChange(y); };
+  const handleView = (v: StreakView) => {
+    setView(v);
+    if (v === 'recent') onYearChange(-1);
+    else onYearChange(v as number);
+  };
   const isEmpty = !loading && weeks.length === 0;
 
-  if (loading) return <CardSkeleton height={280} />;
+  if (loading) return <CardSkeleton height={220} />;
 
   return (
-    <div className="dt-card mt-5 px-[22px] py-[18px] overflow-hidden relative">
+    <div className="dt-card mt-5 overflow-hidden relative" style={{ padding: '20px 22px 18px' }}>
       <div className="absolute top-[-40px] left-[-40px] w-[280px] h-[280px] pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,184,108,0.10), transparent 70%)' }} />
-      <div className="relative flex items-center gap-3 mb-[14px]">
-        <span className="text-[26px] leading-none">🔥</span>
-        <span className="dt-mono tabular-nums text-[30px] font-bold leading-none"
-          style={{ color: 'var(--dt-warning)' }}>{data?.current ?? 0}</span>
-        <span className="dt-label text-dt-text-2">{t('day streak')}</span>
-        <span className="dt-caption ml-[14px]">{submittedCount} / {dayCount} {t('days')}</span>
-        <span className="dt-caption ml-2 text-dt-text-3">
-          {t('Longest')} <span className="dt-mono text-dt-text">{data?.longest ?? 0}</span>
-        </span>
-        <div className="ml-auto relative inline-flex items-center">
-          <select value={year} onChange={e => handleYear(Number(e.target.value))} className="dt-input dt-mono cursor-default"
-            style={{ height: 22, minHeight: 22, lineHeight: '20px', padding: '0 20px 0 7px', borderRadius: 5, fontSize: 11, appearance: 'none', WebkitAppearance: 'none' }}>
-            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <span className="absolute right-2 pointer-events-none text-dt-text-3 flex">
-            <IconChevronDown size={13} />
-          </span>
-        </div>
-      </div>
-      <div className="font-dt-mono">
-        <div className="relative h-4 mb-1">
-          {!isEmpty && monthSpans.map((m, i) => (
-            <span key={i} className="absolute text-[10px] text-dt-text-3 whitespace-nowrap"
-              style={{ left: m.week * col }}>{MONTHS[m.month]}</span>
-          ))}
+
+      <div className="relative flex gap-5">
+        {/* 좌: 스트릭 통계 */}
+        <div className="shrink-0 flex flex-col justify-center gap-4" style={{ width: 160 }}>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[22px] leading-none">🔥</span>
+              <span className="dt-mono tabular-nums font-bold leading-none" style={{ fontSize: 42, color: 'var(--dt-warning)' }}>
+                {data?.current ?? 0}
+              </span>
+            </div>
+            <div className="dt-label text-dt-text-2 mt-1">{t('day streak')}</div>
+          </div>
+          <div className="flex flex-col gap-[6px]">
+            <div className="flex items-center justify-between">
+              <span className="dt-caption text-dt-text-3">{t('Longest')}</span>
+              <span className="dt-mono tabular-nums text-[13px] font-semibold text-dt-text">{data?.longest ?? 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="dt-caption text-dt-text-3">{t('days')}</span>
+              <span className="dt-mono tabular-nums text-[13px] font-semibold text-dt-text">{submittedCount} / {dayCount}</span>
+            </div>
+          </div>
         </div>
 
-        {isEmpty ? (
-          /* 고스트 그리드 + 빈 상태 오버레이 */
-          <div className="relative">
-            <div className="flex pointer-events-none" style={{ gap, opacity: 0.35 }}>
-              {Array.from({ length: GHOST_WEEKS }, (_, wi) => (
+        <div className="w-px self-stretch bg-dt-border/50 shrink-0" />
+
+        {/* 우: 그리드 */}
+        <div className="flex-1 min-w-0 overflow-x-auto">
+          {/* 헤더: 월 라벨 + 연도 선택 */}
+          <div className="flex items-end justify-between mb-1">
+            <div className="relative h-4 flex-1">
+              {!isEmpty && monthSpans.map((m, i) => (
+                <span key={i} className="absolute text-[10px] text-dt-text-3 whitespace-nowrap"
+                  style={{ left: m.week * col }}>{MONTHS[m.month]}</span>
+              ))}
+            </div>
+            <div className="relative inline-flex items-center shrink-0 ml-3">
+              <select
+                value={String(view)}
+                onChange={e => handleView(e.target.value === 'recent' ? 'recent' : Number(e.target.value))}
+                className="dt-input dt-mono cursor-default"
+                style={{ height: 22, minHeight: 22, lineHeight: '20px', padding: '0 20px 0 7px', borderRadius: 5, fontSize: 11, appearance: 'none', WebkitAppearance: 'none' }}
+              >
+                <option value="recent">최근 365일</option>
+                {[CUR_YEAR, CUR_YEAR - 1, CUR_YEAR - 2].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <span className="absolute right-2 pointer-events-none text-dt-text-3 flex">
+                <IconChevronDown size={13} />
+              </span>
+            </div>
+          </div>
+
+          {isEmpty ? (
+            <div className="relative">
+              <div className="flex pointer-events-none" style={{ gap, opacity: 0.35 }}>
+                {Array.from({ length: GHOST_WEEKS }, (_, wi) => (
+                  <div key={wi} className="flex flex-col" style={{ gap }}>
+                    {Array.from({ length: 7 }, (_, di) => (
+                      <div key={di} style={{ width: cell, height: cell, background: levelBg(0), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.06)' }} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
+                <span className="text-[24px] leading-none">🔥</span>
+                <div className="text-center">
+                  <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">오늘 첫 기록을 남겨보세요</p>
+                  <p className="text-[11px] text-dt-text-3">데일리 챌린지를 완료하면 스트릭이 쌓입니다</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex" style={{ gap }}>
+              {weeks.map((week, wi) => (
                 <div key={wi} className="flex flex-col" style={{ gap }}>
-                  {Array.from({ length: 7 }, (_, di) => (
-                    <div key={di} style={{ width: cell, height: cell, background: levelBg(0), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.06)' }} />
-                  ))}
+                  {week.map((cellData, di) => <ContributionCell key={di} cell={cellData} size={cell} />)}
                 </div>
               ))}
             </div>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
-              <span className="text-[28px] leading-none">🔥</span>
-              <div className="text-center">
-                <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">오늘 첫 기록을 남겨보세요</p>
-                <p className="text-[11px] text-dt-text-3">데일리 챌린지를 완료하면 스트릭이 쌓입니다</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex" style={{ gap }}>
-            {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col" style={{ gap }}>
-                {week.map((cellData, di) => <ContributionCell key={di} cell={cellData} size={cell} />)}
-              </div>
-            ))}
-          </div>
-        )}
+          )}
 
-        <div className="flex items-center gap-[6px] mt-3 text-[10px] text-dt-text-3">
-          <span>{t('Less')}</span>
-          {[0,1,2,3,4].map(lv => (
-            <div key={lv} style={{ width: cell-1, height: cell-1, background: levelBg(lv), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.05)' }} />
-          ))}
-          <span>{t('More')}</span>
+          <div className="flex items-center gap-[6px] mt-2 text-[10px] text-dt-text-3">
+            <span>{t('Less')}</span>
+            {[0,1,2,3,4].map(lv => (
+              <div key={lv} style={{ width: cell-1, height: cell-1, background: levelBg(lv), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.05)' }} />
+            ))}
+            <span>{t('More')}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -651,34 +683,60 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
         <div className="px-6 py-[18px] pb-[10px]">
           <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
             <defs>
+              {/* 영역 fill: primary → cyan 수직 그라디언트 */}
               <linearGradient id="coreFade" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.28" />
+                <stop offset="0%" stopColor="#57E5FF" stopOpacity="0.32" />
+                <stop offset="55%" stopColor="var(--dt-primary)" stopOpacity="0.14" />
                 <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
               </linearGradient>
+              {/* 선 그라디언트: cyan → primary */}
+              <linearGradient id="coreLineGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#57E5FF" />
+                <stop offset="60%" stopColor="var(--dt-primary)" />
+                <stop offset="100%" stopColor="#FFD060" />
+              </linearGradient>
+              {/* dot glow filter */}
+              <filter id="dotGlow">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
             </defs>
             {[0,1,2,3].map(i => (
-              <line key={i} x1={0} x2={w} y1={(i+1)*base/4} y2={(i+1)*base/4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />
+              <line key={i} x1={0} x2={w} y1={(i+1)*base/4} y2={(i+1)*base/4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.4" strokeDasharray="4 4" />
             ))}
             <path d={area} fill="url(#coreFade)" />
-            <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
-            {points.map((p, i) => (
-              <g key={i}>
-                <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 6 : i === points.length-1 ? 5 : 3} fill="var(--dt-primary)" />
-                <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(p.date)}</text>
-                <rect x={xs[i]-22} y={0} width={44} height={base} fill="transparent"
-                  onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
-              </g>
-            ))}
+            <path d={line} fill="none" stroke="url(#coreLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="#57E5FF" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />}
+            {points.map((p, i) => {
+              const ratio = max > 0 ? vals[i] / max : 0;
+              const dotColor = ratio > 0.75 ? '#57E5FF' : ratio > 0.4 ? 'var(--dt-primary)' : '#FFD060';
+              const r = hi === i ? 6 : i === points.length - 1 ? 5 : 3.5;
+              return (
+                <g key={i}>
+                  {(hi === i || i === points.length - 1) && (
+                    <circle cx={xs[i]} cy={ys[i]} r={r + 5} fill={dotColor} opacity="0.18" filter="url(#dotGlow)" />
+                  )}
+                  <circle cx={xs[i]} cy={ys[i]} r={r} fill={dotColor} />
+                  <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(p.date)}</text>
+                  <rect x={xs[i]-22} y={0} width={44} height={base} fill="transparent"
+                    onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
+                </g>
+              );
+            })}
             {hi !== null && (() => {
               const prev = hi > 0 ? vals[hi] - vals[hi-1] : null;
-              const tw = 116, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-64, 6);
+              const tw = 130, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-68, 6);
+              const deltaColor = prev !== null ? (prev >= 0 ? '#3DD68C' : '#FF6B6B') : null;
               return (
                 <g pointerEvents="none">
-                  <rect x={tx} y={ty} width={tw} height={52} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                  <rect x={tx} y={ty} width={tw} height={56} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
                   <text x={tx+12} y={ty+20} fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(points[hi].date)}</text>
-                  <text x={tx+12} y={ty+40} fontSize="15" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{vals[hi].toLocaleString()} <tspan fontSize="9" fill="var(--dt-text-3)">CORE</tspan></text>
-                  {prev !== null && <text x={tx+tw-12} y={ty+40} textAnchor="end" fontSize="11" fill="#3DD68C" fontFamily="var(--dt-font-mono)">+{prev}</text>}
+                  <text x={tx+12} y={ty+42} fontSize="16" fontWeight="700" fill="#57E5FF" fontFamily="var(--dt-font-mono)">{vals[hi].toLocaleString()} <tspan fontSize="9" fill="var(--dt-text-3)">CORE</tspan></text>
+                  {prev !== null && (
+                    <text x={tx+tw-10} y={ty+42} textAnchor="end" fontSize="12" fontWeight="600" fill={deltaColor!} fontFamily="var(--dt-font-mono)">
+                      {prev >= 0 ? `+${prev}` : String(prev)}
+                    </text>
+                  )}
                 </g>
               );
             })()}
@@ -889,7 +947,10 @@ const MyPage = () => {
 
   const handleYearChange = (year: number) => {
     setLoadingStreak(true);
-    getUserStreak(year).then(setStreak).finally(() => setLoadingStreak(false));
+    const p = year === -1
+      ? getUserStreak(undefined, 'recent')
+      : getUserStreak(year);
+    p.then(setStreak).finally(() => setLoadingStreak(false));
   };
 
   return (

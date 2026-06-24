@@ -351,7 +351,7 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
     <section style={{ marginTop: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '0 4px' }}>
         <h2 style={{ margin: 0, fontFamily: 'var(--dt-font-display)', fontWeight: 600, fontSize: 20, color: 'var(--dt-text)' }}>
-          {t("Today's Challenge")}
+          {t("Today's challenge")}
         </h2>
         <span className="dt-caption" style={{ marginLeft: 'auto' }}>{daily.date}</span>
       </div>
@@ -392,7 +392,7 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
               {t(diffLabel)}
             </span>
             <p className="dt-caption" style={{ margin: '0 0 16px' }}>
-              4,218{t('명 중')} · {t('One snippet, one attempt.')}
+              {t('One snippet, one attempt.')}
             </p>
             <span className="dt-btn dt-btn-primary" style={{ pointerEvents: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <IconPlay size={14} /> {t('Take the challenge')}

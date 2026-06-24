@@ -58,8 +58,7 @@ function formatJoined(iso: string): string {
 }
 
 function monthLabel(iso: string): string {
-  const d = new Date(iso + '-01');
-  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()];
+  return iso.replace('-', '.');
 }
 
 // ─── 카드 스켈레톤 ─────────────────────────────────────────────────────────────
@@ -548,7 +547,19 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
     <div className="dt-card p-0 overflow-hidden">
       <div className="flex justify-between items-center px-6 py-5 border-b border-dt-border/50">
         <div className="flex flex-col gap-1">
-          <span className="dt-h3 m-0">CORE</span>
+          <div className="flex items-center gap-[6px]">
+            <span className="dt-h3 m-0">CORE</span>
+            <div className="relative group">
+              <span className="text-[11px] font-semibold leading-none cursor-default select-none"
+                style={{ color: 'var(--dt-text-3)', border: '1px solid var(--dt-border)', borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>?</span>
+              <div className="absolute left-0 top-[22px] z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                style={{ width: 260, background: 'var(--dt-card)', border: '1px solid var(--dt-border)', borderRadius: 10, padding: '12px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+                <p className="text-[12px] font-semibold mb-[6px]" style={{ color: 'var(--dt-text)' }}>CORE 계산 방식</p>
+                <p className="text-[11px] leading-[1.6]" style={{ color: 'var(--dt-text-3)' }}>스니펫별 최고 기록만 반영됩니다. 같은 스니펫을 재플레이해도 히스토리에는 쌓이지만 CORE는 베스트 기록만 집계됩니다.</p>
+                <p className="text-[11px] leading-[1.6] mt-[6px]" style={{ color: 'var(--dt-text-3)' }}>상위 100개 스니펫 기록의 합산으로 최종 CORE가 결정됩니다.</p>
+              </div>
+            </div>
+          </div>
           <span className="dt-caption">{t('Sum of your best CORE per snippet')}</span>
         </div>
         <div className="flex items-baseline gap-[6px]">
@@ -590,13 +601,6 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
             </span>
           </button>
         )}
-      </div>
-      <div className="flex gap-7 px-6 py-[14px] border-t border-dt-border/50">
-        <div className="flex flex-col gap-[2px] ml-auto items-end justify-center">
-          <span className="dt-caption text-right max-w-[300px] leading-[1.45]">
-            {t('Only your best run per snippet counts — replay anytime, it stays in history.')}
-          </span>
-        </div>
       </div>
     </div>
   );
@@ -681,15 +685,22 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   const points = data?.points ?? [];
   const vals   = points.map(p => p.totalCore);
   const max    = vals.length ? Math.max(...vals) : 1;
-  const w = 640, h = 160, pad = 10, base = h - 20;
+  const w = 640, h = 160, padL = 46, padR = 12, padT = 10, base = h - 20;
   const gain = vals.length >= 2 ? vals[vals.length-1] - vals[0] : 0;
 
   const xs = vals.length > 0
-    ? vals.map((_, i) => (i / Math.max(vals.length - 1, 1)) * (w - 2 * pad) + pad)
+    ? vals.map((_, i) => (i / Math.max(vals.length - 1, 1)) * (w - padL - padR) + padL)
     : [];
-  const ys = vals.map(v => base - (v / (max || 1)) * (base - pad));
+  const ys = vals.map(v => base - (v / (max || 1)) * (base - padT));
   const line = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
   const area = points.length > 1 ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
+
+  const coreTicks = (() => {
+    const step = max <= 50 ? 10 : max <= 200 ? 50 : max <= 1000 ? 200 : 500;
+    const niceMax = Math.ceil(max / step) * step;
+    return [1, 2, 3, 4].map(i => Math.round(niceMax * i / 4));
+  })();
+  const coreTickY = (v: number) => base - (v / (max || 1)) * (base - padT);
 
   if (loading) return <CardSkeleton height={280} />;
 
@@ -735,12 +746,18 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
                 <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
             </defs>
-            {[0,1,2,3].map(i => (
-              <line key={i} x1={0} x2={w} y1={(i+1)*base/4} y2={(i+1)*base/4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.4" strokeDasharray="4 4" />
-            ))}
+            {coreTicks.map((v, i) => {
+              const ty = coreTickY(v);
+              return (
+                <g key={i}>
+                  <line x1={padL} x2={w - padR} y1={ty} y2={ty} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" strokeDasharray="4 3" />
+                  <text x={padL - 4} y={ty + 4} textAnchor="end" fontSize="9" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)" opacity="0.8">{v}</text>
+                </g>
+              );
+            })}
             <path d={area} fill="url(#coreFade)" />
             <path d={line} fill="none" stroke="url(#coreLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="#57E5FF" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />}
+            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={padT - 4} y2={base} stroke="#57E5FF" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />}
             {points.map((p, i) => {
               const ratio = max > 0 ? vals[i] / max : 0;
               const dotColor = ratio > 0.75 ? '#57E5FF' : ratio > 0.4 ? 'var(--dt-primary)' : '#FFD060';
@@ -939,17 +956,23 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
   const results = data?.results ?? [];
-  const w = 980, h = 160, pad = 10, base = h - 20;
+  const w = 980, h = 160, padL = 46, padR = 12, padT = 10, base = h - 20;
 
   if (loading) return <CardSkeleton height={260} />;
 
   const hasData = results.length >= 2 && results.some(r => r.avgWpm > 0);
   const vals = results.map(r => r.avgWpm);
-  const minV  = hasData ? Math.min(...vals) - 6 : 0;
-  const maxV  = hasData ? Math.max(...vals) + 6 : 100;
+  const minV  = hasData ? Math.max(0, Math.min(...vals) - 10) : 0;
+  const maxV  = hasData ? Math.max(...vals) + 10 : 100;
   const best  = hasData ? Math.max(...vals) : 0;
-  const xs = results.map((_, i) => (i / (results.length - 1)) * (w - 2 * pad) + pad);
-  const ys = vals.map(v => base - ((v - minV) / (maxV - minV || 1)) * (base - pad));
+  const xs = results.map((_, i) => (i / (results.length - 1)) * (w - padL - padR) + padL);
+  const ys = vals.map(v => base - ((v - minV) / (maxV - minV || 1)) * (base - padT));
+
+  const wpmTicks = hasData ? [1, 2, 3, 4].map(i => {
+    const v = minV + (maxV - minV) * i / 4;
+    return Math.round(v);
+  }) : [];
+  const wpmTickY = (v: number) => base - ((v - minV) / (maxV - minV || 1)) * (base - padT);
   const line = results.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
   const area = hasData ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
 
@@ -984,12 +1007,18 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
                 <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
               </linearGradient>
             </defs>
-            {[0,1,2,3].map(i => (
-              <line key={i} x1={0} x2={w} y1={(i+1)*base/4} y2={(i+1)*base/4} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />
-            ))}
+            {wpmTicks.map((v, i) => {
+              const ty = wpmTickY(v);
+              return (
+                <g key={i}>
+                  <line x1={padL} x2={w - padR} y1={ty} y2={ty} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" strokeDasharray="4 3" />
+                  <text x={padL - 4} y={ty + 4} textAnchor="end" fontSize="9" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)" opacity="0.8">{v}</text>
+                </g>
+              );
+            })}
             <path d={area} fill="url(#wpmTrendFade)" />
             <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={pad-6} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
+            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={padT - 4} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
             {results.map((r, i) => (
               <g key={i}>
                 <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 6 : 3} fill="var(--dt-primary)" />

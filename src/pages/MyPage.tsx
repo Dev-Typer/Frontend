@@ -167,7 +167,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
       <div className="absolute right-8 bottom-[26px] text-right z-[3]">
         <div className="dt-mono tabular-nums font-bold text-[76px] leading-[0.9] text-white"
           style={{ textShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
-          {(coreData?.totalCore ?? 0).toLocaleString()}
+          {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
         </div>
         <div className="dt-label mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>CORE</div>
       </div>
@@ -454,7 +454,7 @@ const CoreChip = ({ title, language, core }: CoreChipProps) => {
           </div>
           <div className="p-[13px_15px]">
             <span className="dt-mono tabular-nums text-[14px] font-semibold text-dt-primary">
-              {core} <span className="text-[10px] text-dt-text-3">CORE</span>
+              {Math.round(core)} <span className="text-[10px] text-dt-text-3">CORE</span>
             </span>
           </div>
         </div>

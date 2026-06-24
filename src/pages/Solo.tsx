@@ -409,7 +409,7 @@ const SnippetRankingSection = ({ snippetId, myCore }: { snippetId: number; myCor
                   </span>
                 </div>
                 <span className="dt-mono tabular-nums" style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: 'var(--dt-primary)' }}>
-                  {item.core} <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontWeight: 400 }}>CORE</span>
+                  {Math.round(item.core)} <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontWeight: 400 }}>CORE</span>
                 </span>
                 <span className="dt-mono tabular-nums" style={{ textAlign: 'right', fontSize: 13, color: 'var(--dt-text-2)' }}>
                   {item.wpm} <span style={{ fontSize: 10 }}>WPM</span>

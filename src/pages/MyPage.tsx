@@ -67,168 +67,166 @@ const CardSkeleton = ({ height = 240 }: { height?: number }) => (
   <div className="dt-card animate-pulse" style={{ minHeight: height }} />
 );
 
-// ─── ProfileHeader ────────────────────────────────────────────────────────────
-interface ProfileHeaderProps {
-  coreData: UserCoreResponse | null;
-}
-
-const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
-  const t = useT();
-  const { username, profileUrl, bannerUrl, createdAt, setProfileUrl, setBannerUrl } = useUserStore();
+// ─── BannerSection ────────────────────────────────────────────────────────────
+const BannerSection = () => {
+  const { bannerUrl, username, setBannerUrl } = useUserStore();
   const hue = avatarHueFromName(username ?? '');
-  const profileInput = useRef<HTMLInputElement>(null);
-  const bannerInput  = useRef<HTMLInputElement>(null);
-  const [profileHover, setProfileHover] = useState(false);
-  const [uploading, setUploading] = useState<'profile' | 'banner' | null>(null);
-
-  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading('profile');
-    try {
-      const { profileUrl: url } = await uploadProfileImage(file);
-      setProfileUrl(url);
-    } finally {
-      setUploading(null);
-      e.target.value = '';
-    }
-  };
-
-  const handleProfileDelete = async () => {
-    setUploading('profile');
-    try {
-      await deleteProfileImage();
-      setProfileUrl(null);
-    } finally {
-      setUploading(null);
-    }
-  };
+  const bannerInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading('banner');
+    setUploading(true);
     try {
       const { bannerUrl: url } = await uploadBannerImage(file);
       setBannerUrl(url);
-    } finally {
-      setUploading(null);
-      e.target.value = '';
-    }
+    } finally { setUploading(false); e.target.value = ''; }
   };
 
   const handleBannerDelete = async () => {
-    setUploading('banner');
-    try {
-      await deleteBannerImage();
-      setBannerUrl(null);
-    } finally {
-      setUploading(null);
-    }
+    setUploading(true);
+    try { await deleteBannerImage(); setBannerUrl(null); }
+    finally { setUploading(false); }
   };
 
   return (
-    <div className="relative overflow-hidden w-full" style={{ minHeight: 300 }}>
-      {/* Banner */}
+    <div className="relative w-full overflow-hidden" style={{ height: 200 }}>
       {bannerUrl
         ? <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
         : <div className="absolute inset-0"
-            style={{ background: `linear-gradient(135deg, color-mix(in oklab, hsl(${hue}deg 60% 30%) 40%, #0B0E16) 0%, #0B0E16 100%)` }} />
+            style={{ background: `linear-gradient(135deg, color-mix(in oklab, hsl(${hue}deg 55% 28%) 50%, #070C1F) 0%, #070C1F 100%)` }} />
       }
+      {/* 하단 페이드 — 페이지 배경과 자연스럽게 이어지게 */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'linear-gradient(180deg, rgba(7,12,31,0.15) 0%, rgba(7,12,31,0.05) 35%, rgba(7,12,31,0.9) 100%)' }} />
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'linear-gradient(90deg, rgba(7,12,31,0.6) 0%, transparent 50%)' }} />
+        style={{ background: 'linear-gradient(180deg, transparent 40%, rgba(7,12,31,0.85) 100%)' }} />
 
       {/* 배너 변경 버튼 */}
-      <div className="absolute top-4 right-[44px] z-[5] flex gap-2">
+      <div className="absolute top-3 right-[44px] z-10 flex gap-2">
         <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
-        <button
-          onClick={() => bannerInput.current?.click()}
-          disabled={!!uploading}
-          className="px-3 py-[6px] text-[11.5px] font-medium rounded-[6px] border-0 cursor-default"
-          style={{ background: 'rgba(0,0,0,0.5)', color: '#fff', backdropFilter: 'blur(8px)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)' }}
-        >
-          {uploading === 'banner' ? '업로드 중…' : t('Change banner')}
+        <button onClick={() => bannerInput.current?.click()} disabled={uploading}
+          className="px-3 py-[5px] text-[11px] font-medium rounded-[6px] border-0 cursor-default"
+          style={{ background: 'rgba(0,0,0,0.45)', color: '#fff', backdropFilter: 'blur(8px)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)' }}>
+          {uploading ? '업로드 중…' : '배너 변경'}
         </button>
         {bannerUrl && (
-          <button
-            onClick={handleBannerDelete}
-            disabled={!!uploading}
-            className="px-3 py-[6px] text-[11.5px] font-medium rounded-[6px] border-0 cursor-default"
-            style={{ background: 'rgba(0,0,0,0.5)', color: 'rgba(255,100,100,0.9)', backdropFilter: 'blur(8px)', boxShadow: 'inset 0 0 0 1px rgba(255,100,100,0.3)' }}
-          >
-            {t('Remove')}
+          <button onClick={handleBannerDelete} disabled={uploading}
+            className="px-3 py-[5px] text-[11px] font-medium rounded-[6px] border-0 cursor-default"
+            style={{ background: 'rgba(0,0,0,0.45)', color: 'rgba(255,100,100,0.9)', backdropFilter: 'blur(8px)', boxShadow: 'inset 0 0 0 1px rgba(255,100,100,0.3)' }}>
+            삭제
           </button>
         )}
       </div>
+    </div>
+  );
+};
 
-      {/* CORE 수치 */}
-      <div className="absolute bottom-[26px] right-[44px] text-right z-[3]">
-        <div className="dt-mono tabular-nums font-bold text-[76px] leading-[0.9] text-white"
-          style={{ textShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
-          {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
-        </div>
-        <div className="dt-label mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>CORE</div>
-      </div>
+// ─── ProfileInfoSection ────────────────────────────────────────────────────────
+interface ProfileInfoSectionProps { coreData: UserCoreResponse | null; }
 
-      {/* 아이덴티티 */}
-      <div className="absolute bottom-[26px] flex items-end gap-[18px] z-[3]" style={{ left: 44, right: 44 }}>
+const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
+  const t = useT();
+  const { username, profileUrl, createdAt, setProfileUrl } = useUserStore();
+  const hue = avatarHueFromName(username ?? '');
+  const profileInput = useRef<HTMLInputElement>(null);
+  const [profileHover, setProfileHover] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const earned = BADGES.filter(b => b.earned).length;
+
+  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try { const { profileUrl: url } = await uploadProfileImage(file); setProfileUrl(url); }
+    finally { setUploading(false); e.target.value = ''; }
+  };
+
+  const handleProfileDelete = async () => {
+    setUploading(true);
+    try { await deleteProfileImage(); setProfileUrl(null); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div style={{ marginTop: -56 }}>
+      {/* 아바타 + 유저명 + CORE 한 줄 */}
+      <div className="flex items-end gap-5">
+        {/* 아바타 */}
         <input ref={profileInput} type="file" accept="image/*" className="hidden" onChange={handleProfileUpload} />
         <div
-          className="relative w-[84px] h-[84px] rounded-[18px] shrink-0 flex items-center justify-center overflow-hidden cursor-default"
-          style={{ background: 'rgba(16,26,45,0.6)', backdropFilter: 'blur(8px)', boxShadow: 'inset 0 0 0 2px var(--dt-primary), 0 8px 24px -8px rgba(0,0,0,0.6)' }}
+          className="relative shrink-0 rounded-[20px] overflow-hidden cursor-default"
+          style={{
+            width: 100, height: 100,
+            boxShadow: 'inset 0 0 0 2.5px var(--dt-primary), 0 8px 32px -8px rgba(0,0,0,0.7)',
+            background: 'var(--dt-card)',
+            zIndex: 2,
+          }}
           onMouseEnter={() => setProfileHover(true)}
           onMouseLeave={() => setProfileHover(false)}
           onClick={() => profileInput.current?.click()}
         >
           {profileUrl
             ? <img src={profileUrl} alt={username ?? ''} className="w-full h-full object-cover" />
-            : <Avatar handle={username ?? ''} hue={hue} size={72} />
+            : <Avatar handle={username ?? ''} hue={hue} size={88} />
           }
           {profileHover && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1"
               style={{ background: 'rgba(0,0,0,0.6)' }}>
-              <span className="text-[20px]">📷</span>
-              <span className="text-[10px] text-white font-medium">{uploading === 'profile' ? '…' : t('Change')}</span>
+              <span className="text-[22px]">📷</span>
+              <span className="text-[10px] text-white font-medium">{uploading ? '…' : t('Change')}</span>
             </div>
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <h1 className="m-0 dt-mono font-bold text-[38px] leading-none text-white"
-            style={{ textShadow: '0 2px 16px rgba(0,0,0,0.7)' }}>
+        {/* 유저명 + 가입일 */}
+        <div className="flex-1 pb-2" style={{ zIndex: 2 }}>
+          <h1 className="m-0 dt-mono font-bold leading-none" style={{ fontSize: 34, color: 'var(--dt-text)' }}>
             {username}
           </h1>
-          <div className="flex items-center gap-3">
-            <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.85)' }}>
+          <div className="flex items-center gap-3 mt-2">
+            <span className="dt-caption text-dt-text-3">
               {t('Joined')} {createdAt ? formatJoined(createdAt) : '—'}
             </span>
             {profileUrl && (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleProfileDelete(); }}
-                disabled={!!uploading}
-                className="text-[11px] border-0 bg-transparent cursor-default"
-                style={{ color: 'rgba(255,100,100,0.8)' }}
-              >
+              <button onClick={(e) => { e.stopPropagation(); handleProfileDelete(); }} disabled={uploading}
+                className="text-[11px] border-0 bg-transparent cursor-default" style={{ color: 'var(--dt-error)' }}>
                 {t('Remove photo')}
               </button>
             )}
           </div>
+        </div>
+
+        {/* CORE 수치 */}
+        <div className="pb-2 text-right shrink-0" style={{ zIndex: 2 }}>
+          <div className="dt-mono tabular-nums font-bold leading-none" style={{ fontSize: 58, color: 'var(--dt-primary)' }}>
+            {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
+          </div>
+          <div className="dt-label text-dt-text-3 mt-1">CORE</div>
+        </div>
+      </div>
+
+      {/* 뱃지 (박스 없음) */}
+      <div className="flex items-center gap-3 mt-5 flex-wrap">
+        <span className="dt-caption text-dt-text-3">
+          🎖️ <span className="dt-mono text-dt-primary">{earned}</span>/{BADGES.length}
+        </span>
+        <div className="w-px h-4 bg-dt-border" />
+        <div className="flex gap-[8px] flex-wrap">
+          {BADGES.map((b, i) => <BadgeMedal key={i} badge={b} />)}
         </div>
       </div>
     </div>
   );
 };
 
-// ─── BadgesCard ───────────────────────────────────────────────────────────────
+// ─── BadgeMedal ───────────────────────────────────────────────────────────────
 const BadgeMedal = ({ badge }: { badge: typeof BADGES[0] }) => {
   const [show, setShow] = useState(false);
   return (
     <span className="relative inline-flex"
       onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
       <span
-        className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-[19px] cursor-default"
+        className="w-[36px] h-[36px] rounded-full flex items-center justify-center text-[18px] cursor-default"
         style={{
           background: badge.earned ? `color-mix(in oklab, ${badge.color} 18%, transparent)` : 'var(--dt-hover)',
           boxShadow: badge.earned ? `inset 0 0 0 1.5px color-mix(in oklab, ${badge.color} 55%, transparent)` : 'inset 0 0 0 1px var(--dt-border)',
@@ -245,24 +243,6 @@ const BadgeMedal = ({ badge }: { badge: typeof BADGES[0] }) => {
         </span>
       )}
     </span>
-  );
-};
-
-const BadgesCard = () => {
-  const t = useT();
-  const earned = BADGES.filter(b => b.earned).length;
-  return (
-    <div className="dt-card flex items-center gap-4 px-[18px] py-3 mt-4">
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[15px]">🎖️</span>
-        <span className="font-semibold text-[14px]">{t('Badges')}</span>
-        <span className="dt-caption"><span className="dt-mono text-dt-primary">{earned}</span>/{BADGES.length}</span>
-      </div>
-      <div className="w-px self-stretch bg-dt-border" />
-      <div className="flex gap-[10px] flex-wrap">
-        {BADGES.map((b, i) => <BadgeMedal key={i} badge={b} />)}
-      </div>
-    </div>
   );
 };
 
@@ -345,7 +325,7 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   const t = useT();
   const CUR_YEAR = new Date().getUTCFullYear();
   const [view, setView] = useState<StreakView>(CUR_YEAR);
-  const cell = 12, gap = 3, col = cell + gap;
+  const cell = 15, gap = 3, col = cell + gap;
   const MONTHS = [t('Jan'),t('Feb'),t('Mar'),t('Apr'),t('May'),t('Jun'),t('Jul'),t('Aug'),t('Sep'),t('Oct'),t('Nov'),t('Dec')];
 
   const { weeks, monthSpans, submittedCount, dayCount } = useMemo(
@@ -363,15 +343,15 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   const longest = data?.longest ?? 0;
   const status = streakStatus(current);
 
-  if (loading) return <CardSkeleton height={180} />;
+  if (loading) return <CardSkeleton height={220} />;
 
   return (
-    <div className="dt-card mt-5 overflow-hidden relative" style={{ padding: '22px 22px 18px' }}>
+    <div className="dt-card mt-5 overflow-hidden relative" style={{ padding: '28px 32px 24px' }}>
       {/* 배경 glow */}
       <div className="absolute top-[-50px] left-[-30px] w-[260px] h-[260px] pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,184,108,0.12), transparent 65%)' }} />
 
-      <div className="relative flex gap-6">
+      <div className="relative flex gap-8 justify-center">
         {/* ── 좌: 스트릭 통계 ── */}
         <div className="shrink-0 flex flex-col justify-between py-1" style={{ width: 200 }}>
           {/* 현재 스트릭 */}
@@ -992,9 +972,9 @@ const MyPage = () => {
 
   return (
     <>
-      <ProfileHeader coreData={core} />
-      <div className="dt-page" style={{ paddingTop: 28 }}>
-      <BadgesCard />
+      <BannerSection />
+      <div className="dt-page" style={{ paddingTop: 0 }}>
+      <ProfileInfoSection coreData={core} />
       <StreakCard data={streak} loading={loadingStreak} onYearChange={handleYearChange} />
 
       <div className="grid gap-5 mt-5 items-start" style={{ gridTemplateColumns: '2fr 1.2fr' }}>

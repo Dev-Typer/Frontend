@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSnippets, deactivateSnippet, type Snippet, type SnippetLanguage, type SnippetDifficulty } from '@/apis/snippetApi';
+import { getAdminSnippets as getSnippets, deactivateSnippet, type Snippet, type SnippetLanguage, type SnippetDifficulty } from '@/apis/snippetApi';
 import SnippetFormModal from './SnippetFormModal';
 
 const diffColor: Record<SnippetDifficulty, string> = {

@@ -1,58 +1,49 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
-import { SOLO_TRACKS, GLOBAL_RANKING, LANG_ICON } from '@/data';
-import Avatar from '@/components/Avatar';
-import UserHover from '@/components/UserHover';
+import { LANG_ICON } from '@/data';
 import {
   IconCode, IconPlay, IconX, IconSearch, IconTrash,
   IconArrowsSort, IconChevronDown, IconCheck, IconHeart,
 } from '@/components/icons/Icons';
-import type { SoloTrack } from '@/types';
+import {
+  getPublicSnippets, likeSnippet, unlikeSnippet,
+} from '@/apis/snippetApi';
+import type { Snippet, SnippetLanguage, SnippetDifficulty, SnippetSort } from '@/apis/snippetApi';
+import { useUserStore } from '@/stores/userStore';
 
-// ─── Static maps ──────────────────────────────────────────────────────────────
-const LANG_COLOR: Record<string, string> = {
-  javascript: '#F7DF1E', typescript: '#3178C6', python: '#3776AB',
-  go: '#00ADD8', java: '#F89820', kotlin: '#7F52FF',
-  'c++': '#00599C', cpp: '#00599C', 'c#': '#9B4F96', csharp: '#9B4F96',
-  c: '#5C6BC0', rust: '#DEA584',
+// ─── Language / difficulty helpers ────────────────────────────────────────────
+type BackendLang = SnippetLanguage;
+
+function toLangKey(lang: BackendLang): string {
+  if (lang === 'CPP') return 'c++';
+  return lang.toLowerCase();
+}
+
+const LANG_LABEL: Record<string, string> = {
+  javascript: 'JavaScript', python: 'Python', java: 'Java', 'c++': 'C++',
 };
-const SNIP_SOURCE: Record<string, string> = {
-  javascript: 'MDN Web Docs', typescript: 'TS Handbook', python: 'Python Docs',
-  go: 'Go by Example', java: 'Java SE Docs', kotlin: 'Kotlin Docs',
-  'c++': 'cppreference', 'c#': '.NET Docs', c: 'cppreference', rust: 'The Rust Book',
+const LANG_COLOR: Record<string, string> = {
+  javascript: '#F7DF1E', python: '#3776AB', java: '#F89820', 'c++': '#00599C',
 };
 const DIFF_COLOR: Record<string, string> = {
   easy: '#3DD68C', medium: '#57E5FF', hard: '#B93CFF',
 };
 
-function langLabel(lang: string): string {
-  return ({ javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python',
-    go: 'Go', java: 'Java', kotlin: 'Kotlin', 'c++': 'C++', cpp: 'C++',
-    'c#': 'C#', csharp: 'C#', c: 'C', rust: 'Rust' } as Record<string, string>)[lang] || lang;
-}
-function fileExt(lang: string): string {
-  return ({ javascript: '.js', typescript: '.ts', python: '.py', go: '.go',
-    java: '.java', kotlin: '.kt', 'c++': '.cpp', cpp: '.cpp',
-    'c#': '.cs', csharp: '.cs', c: '.c', rust: '.rs' } as Record<string, string>)[lang] || '';
-}
 function diffLabel(d: string): string {
-  return ({ easy: 'Easy', medium: 'Medium', hard: 'Hard' } as Record<string, string>)[d] || d;
+  return ({ EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' } as Record<string, string>)[d] || d;
 }
 
-// ─── Deterministic synthetic metadata per snippet ─────────────────────────────
-function snipMeta(s: SoloTrack) {
-  const seed = s.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const core = 80 + (seed * 7) % 380;
-  const races = 1 + (seed * 3) % 60;
-  const users = 1 + (seed * 5) % 24;
-  const myRank = 1 + (seed % 40);
-  const likes = (seed * 11) % 90;
-  const dd = 1 + (seed % 27);
-  const date = `06/${String(dd).padStart(2, '0')}/2026`;
-  const handle = GLOBAL_RANKING[seed % GLOBAL_RANKING.length].handle;
-  return { core, races, users, myRank, likes, date, handle };
-}
+const BACKEND_LANGS: BackendLang[] = ['JAVASCRIPT', 'PYTHON', 'JAVA', 'CPP'];
+const BACKEND_DIFFS: SnippetDifficulty[] = ['EASY', 'MEDIUM', 'HARD'];
+const SORT_OPTIONS: { value: SnippetSort; label: string }[] = [
+  { value: 'newest',     label: 'Newest'     },
+  { value: 'oldest',     label: 'Oldest'     },
+  { value: 'most-liked', label: 'Most liked' },
+  { value: 'least-liked', label: 'Least liked' },
+];
+
+const PAGE_SIZE = 20;
 
 // ─── Sidebar helpers ───────────────────────────────────────────────────────────
 function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
@@ -117,7 +108,7 @@ function SelectBox({ value, onChange, options, sortIcon }: {
       <select value={value} onChange={(e) => onChange(e.target.value)} className="dt-input dt-mono"
         style={{
           height: 46, paddingLeft: 16, paddingRight: 34, borderRadius: 12,
-          fontSize: 14, cursor: 'default', appearance: 'none', WebkitAppearance: 'none', minWidth: 130,
+          fontSize: 14, cursor: 'default', appearance: 'none', WebkitAppearance: 'none', minWidth: 140,
         }}>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -128,7 +119,6 @@ function SelectBox({ value, onChange, options, sortIcon }: {
   );
 }
 
-// ─── MetaPill ─────────────────────────────────────────────────────────────────
 function MetaPill({ children, mono, style }: { children: React.ReactNode; mono?: boolean; style?: React.CSSProperties }) {
   return (
     <span className={mono ? 'dt-mono tabular-nums' : ''} style={{
@@ -143,66 +133,24 @@ function MetaPill({ children, mono, style }: { children: React.ReactNode; mono?:
   );
 }
 
-// ─── Snippet leaderboard (expanded view) ──────────────────────────────────────
-function SnippetLeaderboard({ snippet }: { snippet: SoloTrack }) {
-  const t = useT();
-  const seedBase = snippet.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const rows = GLOBAL_RANKING.slice(0, 6).map((r, i) => {
-    const seed = seedBase + r.handle.charCodeAt(0) * 3 + i * 7;
-    const nWpm = Math.round((snippet.avgWpm + 30 - i * 3 + (seed % 7)) * 10) / 10;
-    const acc = Math.round((90 + (seed % 9)) * 10) / 10;
-    return { ...r, nWpm, acc };
-  }).sort((a, b) => b.nWpm - a.nWpm).map((r, i) => ({ ...r, rank: i + 1 }));
-
-  return (
-    <div style={{ borderRadius: 12, boxShadow: 'inset 0 0 0 1px var(--dt-border)', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px', boxShadow: 'inset 0 -1px 0 var(--dt-border)' }}>
-        <span style={{ fontSize: 14 }}>🏆</span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--dt-text)' }}>{t('Snippet leaderboard')}</span>
-        <span className="dt-caption" style={{ marginLeft: 'auto' }}>{t('by nWPM')}</span>
-      </div>
-      {rows.map((r, i) => (
-        <div key={r.handle} style={{
-          display: 'grid', gridTemplateColumns: '28px 1fr 86px', gap: 10, alignItems: 'center',
-          padding: '8px 14px',
-          background: r.me ? 'color-mix(in oklab, var(--dt-primary) 8%, transparent)' : 'transparent',
-          boxShadow: i > 0 ? 'inset 0 1px 0 var(--dt-border)' : 'none',
-        }}>
-          <span className="dt-mono tabular-nums" style={{ fontSize: 13, fontWeight: r.rank <= 3 ? 700 : 500, color: r.rank === 1 ? 'var(--dt-primary)' : 'var(--dt-text-2)' }}>
-            {r.rank}
-          </span>
-          <UserHover handle={r.handle} tier={r.tier}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <Avatar handle={r.handle} hue={(r.handle.charCodeAt(0) * 7) % 360} size={20} />
-              <span className="dt-mono" style={{ fontSize: 12.5, color: r.me ? 'var(--dt-primary)' : 'var(--dt-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {r.handle}{r.me && ' (you)'}
-              </span>
-            </div>
-          </UserHover>
-          <span className="dt-mono tabular-nums" style={{ textAlign: 'right', fontSize: 13, fontWeight: 600, color: 'var(--dt-primary)' }}>
-            {r.nWpm}<span style={{ fontSize: 9, color: 'var(--dt-text-3)' }}> nWPM</span>
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ─── Snippet card ─────────────────────────────────────────────────────────────
 function SnippetCard({
-  snippet, open, onToggle, liked, onLike, onPractice,
+  snippet, likeCount, isLiked, onLike, onPractice,
 }: {
-  snippet: SoloTrack; open: boolean; onToggle: () => void;
-  liked: boolean; onLike: () => void; onPractice: () => void;
+  snippet: Snippet;
+  likeCount: number;
+  isLiked: boolean;
+  onLike: () => void;
+  onPractice: () => void;
 }) {
   const t = useT();
   const [hover, setHover] = useState(false);
-  const meta = snipMeta(snippet);
-  const lc = LANG_COLOR[snippet.lang] || 'var(--dt-primary)';
-  const diffColor = DIFF_COLOR[snippet.difficulty] || 'var(--dt-text-2)';
-  const previewLines = snippet.code.split('\n').slice(0, 2);
-  const lines = snippet.code.split('\n');
-  const icon = LANG_ICON[snippet.lang];
+  const langKey = toLangKey(snippet.language);
+  const lc = LANG_COLOR[langKey] || 'var(--dt-primary)';
+  const diffColor = DIFF_COLOR[snippet.difficulty.toLowerCase()] || 'var(--dt-text-2)';
+  const previewLines = snippet.content.split('\n').slice(0, 2);
+  const icon = LANG_ICON[langKey];
+  const addedAt = new Date(snippet.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
   return (
     <div id={`snip-${snippet.id}`} className="dt-card" style={{
@@ -213,7 +161,7 @@ function SnippetCard({
       transition: 'box-shadow 140ms',
     }}>
       <div
-        onClick={onToggle}
+        onClick={onPractice}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
         style={{ display: 'flex', gap: 18, padding: 16, cursor: 'default' }}>
@@ -232,55 +180,49 @@ function SnippetCard({
             position: 'absolute', bottom: 8, left: 8, fontSize: 10, fontWeight: 600,
             padding: '3px 8px', borderRadius: 999, color: diffColor,
             background: 'rgba(8,12,22,0.7)', backdropFilter: 'blur(4px)',
-          }}>{t(diffLabel(snippet.difficulty))}</span>
+          }}>{diffLabel(snippet.difficulty)}</span>
         </div>
 
         {/* Middle */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span className="dt-mono" style={{ fontSize: 16, fontWeight: 700, color: 'var(--dt-text)' }}>{snippet.title}</span>
-            <span style={{ fontSize: 13, color: 'var(--dt-text-3)', fontStyle: 'italic' }}>{langLabel(snippet.lang)}</span>
-            <span style={{
-              fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-              color: 'var(--dt-text-2)', background: 'var(--dt-hover)',
-            }} className="dt-mono">#{meta.myRank}</span>
+            <span style={{ fontSize: 13, color: 'var(--dt-text-3)', fontStyle: 'italic' }}>{LANG_LABEL[langKey] || langKey}</span>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--dt-text-2)' }}>
-            {t('from')} {SNIP_SOURCE[snippet.lang] || 'Open source'}
-          </div>
+          {snippet.source && (
+            <div style={{ fontSize: 13, color: 'var(--dt-text-2)' }}>
+              {t('from')} {snippet.source}
+            </div>
+          )}
           <div className="dt-mono" style={{
             fontSize: 12.5, color: 'var(--dt-text-3)', lineHeight: 1.55,
             whiteSpace: 'pre', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
           }}>
             {previewLines.map((ln, i) => (
               <div key={i} style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {ln || ' '}{i === 1 && lines.length > 2 ? ' …' : ''}
+                {ln || ' '}
               </div>
             ))}
           </div>
           <div className="dt-caption" style={{ marginTop: 2 }}>
-            {t('Added by')} {meta.handle} · {meta.date}
+            {addedAt}
           </div>
         </div>
 
         {/* Right meta */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 7 }}>
-            <MetaPill mono style={{ color: 'var(--dt-primary)', boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 40%, transparent)' }}>
-              {meta.core} <span style={{ fontSize: 10, opacity: 0.7 }}>CORE</span>
-            </MetaPill>
             <MetaPill mono>
               {snippet.avgWpm} <span style={{ fontSize: 10, opacity: 0.7 }}>WPM</span>
             </MetaPill>
           </div>
           <div style={{ display: 'flex', gap: 7 }}>
             <MetaPill style={{ color: lc, boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${lc} 38%, transparent)` }}>
-              {langLabel(snippet.lang)}
+              {LANG_LABEL[langKey] || langKey}
             </MetaPill>
           </div>
           <div style={{ display: 'flex', gap: 7 }}>
-            <MetaPill mono>{meta.races} {t('Races')}</MetaPill>
-            <MetaPill mono>{meta.users} {t('Users')}</MetaPill>
+            <MetaPill mono>{snippet.playCount} {t('Plays')}</MetaPill>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 2 }}>
             <button onClick={(e) => { e.stopPropagation(); onPractice(); }} title={t('Practice')} style={{
@@ -290,47 +232,14 @@ function SnippetCard({
             </button>
             <button onClick={(e) => { e.stopPropagation(); onLike(); }} title={t('Like')} style={{
               background: 'transparent', border: 0, cursor: 'default', display: 'flex', alignItems: 'center', gap: 5,
-              color: liked ? '#FF5F8F' : 'var(--dt-text-3)',
+              color: isLiked ? '#FF5F8F' : 'var(--dt-text-3)',
             }}>
-              <IconHeart size={17} filled={liked} />
-              <span className="dt-mono" style={{ fontSize: 12 }}>{meta.likes + (liked ? 1 : 0)}</span>
+              <IconHeart size={17} filled={isLiked} />
+              <span className="dt-mono" style={{ fontSize: 12 }}>{likeCount}</span>
             </button>
           </div>
         </div>
       </div>
-
-      {/* Expanded: code preview + leaderboard */}
-      {open && (
-        <div style={{ padding: '0 16px 18px', display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
-          {/* Code viewer */}
-          <div style={{
-            borderRadius: 12, overflow: 'hidden', background: '#0B0E16',
-            boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.16)', fontFamily: 'var(--dt-font-mono)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', boxShadow: 'inset 0 -1px 0 rgba(120,150,255,0.14)' }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FF5F57' }} />
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFBD2E' }} />
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#28C840' }} />
-              <span style={{ marginLeft: 8, fontSize: 12, color: '#7A8195' }}>
-                {snippet.title}{fileExt(snippet.lang)}
-              </span>
-              <button className="dt-btn dt-btn-primary dt-btn-sm" style={{ marginLeft: 'auto' }}
-                onClick={(e) => { e.stopPropagation(); onPractice(); }}>
-                <IconPlay size={13} /> {t('Practice')}
-              </button>
-            </div>
-            <div style={{ padding: '14px 0', display: 'grid', gridTemplateColumns: '46px 1fr', fontSize: 13.5, lineHeight: 1.7, maxHeight: 320, overflowY: 'auto' }}>
-              <div style={{ textAlign: 'right', paddingRight: 14, color: '#3A4660', userSelect: 'none', boxShadow: 'inset -1px 0 0 rgba(120,150,255,0.1)' }}>
-                {lines.map((_, i) => <div key={i}>{i + 1}</div>)}
-              </div>
-              <div style={{ paddingLeft: 16, whiteSpace: 'pre', overflowX: 'auto', color: '#A9B1C6' }}>
-                {lines.map((ln, i) => <div key={i}>{ln || ' '}</div>)}
-              </div>
-            </div>
-          </div>
-          <SnippetLeaderboard snippet={snippet} />
-        </div>
-      )}
     </div>
   );
 }
@@ -339,54 +248,113 @@ function SnippetCard({
 const Snippets = () => {
   const t = useT();
   const navigate = useNavigate();
-  const all = SOLO_TRACKS;
+  const isLoggedIn = useUserStore((s) => s.isLoggedIn);
+
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   const [query, setQuery] = useState('');
-  const [lang, setLang] = useState('all');
-  const [sort, setSort] = useState('created');
-  const [diffSet, setDiffSet] = useState<Set<string>>(new Set());
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [lang, setLang] = useState<BackendLang | 'ALL'>('ALL');
+  const [sort, setSort] = useState<SnippetSort>('newest');
+  const [diffSet, setDiffSet] = useState<Set<SnippetDifficulty>>(new Set());
   const [likedOnly, setLikedOnly] = useState(false);
-  const [maxLen, setMaxLen] = useState(1000);
-  const [liked, setLiked] = useState<Set<string>>(() => new Set());
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [playedByMe, setPlayedByMe] = useState(false);
 
-  const LANGS = ['all', ...Array.from(new Set(all.map(s => s.lang)))];
-  const longest = useMemo(() => Math.max(...all.map(s => s.code.length)), [all]);
+  // Optimistic like state: override per snippet id
+  const [likeOverrides, setLikeOverrides] = useState<Map<number, { isLiked: boolean; likeCount: number }>>(new Map());
+  const pendingLike = useRef<Set<number>>(new Set());
 
-  const toggleDiff = (d: string) => setDiffSet(p => {
-    const n = new Set(p); n.has(d) ? n.delete(d) : n.add(d); return n;
-  });
-  const toggleLike = (id: string) => setLiked(p => {
-    const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n;
-  });
-  const clearFilters = () => {
-    setDiffSet(new Set()); setLikedOnly(false); setMaxLen(1000); setLang('all'); setQuery('');
+  // Debounce search query
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 400);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const fetchSnippets = useCallback(async (p: number, reset: boolean) => {
+    setLoading(true);
+    try {
+      const res = await getPublicSnippets({
+        language: lang === 'ALL' ? undefined : lang,
+        sort,
+        keyword: debouncedQuery || undefined,
+        likedByMe: likedOnly ? true : undefined,
+        playedByMe: playedByMe ? 'played' : undefined,
+        ...(diffSet.size === 1 ? { difficulty: [...diffSet][0] } : {}),
+        page: p,
+        size: PAGE_SIZE,
+      });
+      if (reset) {
+        setSnippets(res.data);
+      } else {
+        setSnippets(prev => [...prev, ...res.data]);
+      }
+      setTotal(res.total);
+      setHasMore(p * PAGE_SIZE < res.total);
+    } catch {
+      // network error — keep current list
+    } finally {
+      setLoading(false);
+    }
+  }, [lang, sort, debouncedQuery, likedOnly, playedByMe, diffSet]);
+
+  // Reset and fetch on filter change
+  useEffect(() => {
+    setPage(1);
+    setLikeOverrides(new Map());
+    fetchSnippets(1, true);
+  }, [lang, sort, debouncedQuery, likedOnly, playedByMe, diffSet]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadMore = () => {
+    const next = page + 1;
+    setPage(next);
+    fetchSnippets(next, false);
   };
 
-  const filtered = useMemo(() => {
-    let r = all.filter(s => {
-      const q = query.trim().toLowerCase();
-      const okQ = !q || s.title.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || s.lang.includes(q);
-      const okL = lang === 'all' || s.lang === lang;
-      const okD = diffSet.size === 0 || diffSet.has(s.difficulty);
-      const okLen = s.code.length <= maxLen;
-      const okLk = !likedOnly || liked.has(s.id);
-      return okQ && okL && okD && okLen && okLk;
-    });
-    r = [...r].sort((a, b) => {
-      if (sort === 'wpm') return b.avgWpm - a.avgWpm;
-      if (sort === 'length') return b.code.length - a.code.length;
-      if (sort === 'title') return a.title.localeCompare(b.title);
-      return all.indexOf(b) - all.indexOf(a);
-    });
-    return r;
-  }, [all, query, lang, sort, diffSet, maxLen, likedOnly, liked]);
+  const toggleDiff = (d: SnippetDifficulty) => setDiffSet(p => {
+    const n = new Set(p); n.has(d) ? n.delete(d) : n.add(d); return n;
+  });
+
+  const clearFilters = () => {
+    setDiffSet(new Set()); setLikedOnly(false); setPlayedByMe(false);
+    setLang('ALL'); setQuery('');
+  };
+
+  const handleLike = async (snippet: Snippet) => {
+    if (!isLoggedIn) return;
+    if (pendingLike.current.has(snippet.id)) return;
+
+    const override = likeOverrides.get(snippet.id);
+    const curIsLiked = override !== undefined ? override.isLiked : snippet.isLiked;
+    const curCount = override !== undefined ? override.likeCount : snippet.likeCount;
+
+    // Optimistic update
+    const nextIsLiked = !curIsLiked;
+    const nextCount = curIsLiked ? curCount - 1 : curCount + 1;
+    setLikeOverrides(m => new Map(m).set(snippet.id, { isLiked: nextIsLiked, likeCount: nextCount }));
+    pendingLike.current.add(snippet.id);
+
+    try {
+      const res = curIsLiked
+        ? await unlikeSnippet(snippet.id)
+        : await likeSnippet(snippet.id);
+      setLikeOverrides(m => new Map(m).set(snippet.id, { isLiked: res.isLiked, likeCount: res.likeCount }));
+    } catch {
+      // revert
+      setLikeOverrides(m => new Map(m).set(snippet.id, { isLiked: curIsLiked, likeCount: curCount }));
+    } finally {
+      pendingLike.current.delete(snippet.id);
+    }
+  };
 
   const activeChips: { key: string; label: string; onClear: () => void }[] = [];
-  if (lang !== 'all') activeChips.push({ key: 'lang', label: langLabel(lang), onClear: () => setLang('all') });
-  [...diffSet].forEach(d => activeChips.push({ key: 'd' + d, label: t(diffLabel(d)), onClear: () => toggleDiff(d) }));
-  if (likedOnly) activeChips.push({ key: 'liked', label: t('Liked'), onClear: () => setLikedOnly(false) });
-  if (maxLen < 1000) activeChips.push({ key: 'len', label: `≤ ${maxLen} ${t('chars')}`, onClear: () => setMaxLen(1000) });
+  if (lang !== 'ALL') activeChips.push({ key: 'lang', label: LANG_LABEL[toLangKey(lang)] || lang, onClear: () => setLang('ALL') });
+  [...diffSet].forEach(d => activeChips.push({ key: 'd' + d, label: diffLabel(d), onClear: () => toggleDiff(d) }));
+  if (likedOnly) activeChips.push({ key: 'liked', label: t('Liked only'), onClear: () => setLikedOnly(false) });
+  if (playedByMe) activeChips.push({ key: 'played', label: t('Played'), onClear: () => setPlayedByMe(false) });
 
   return (
     <div className="dt-page" style={{ paddingTop: 8 }}>
@@ -407,21 +375,27 @@ const Snippets = () => {
             </div>
 
             <FilterSection label={t('Language')}>
-              {LANGS.map(l => (
-                <LangFilterRow key={l} active={lang === l} onClick={() => setLang(l)}
-                  iconImg={l !== 'all' ? LANG_ICON[l] : null}>
-                  {l === 'all' ? t('All languages') : langLabel(l)}
-                </LangFilterRow>
-              ))}
+              <LangFilterRow active={lang === 'ALL'} onClick={() => setLang('ALL')} iconImg={null}>
+                {t('All languages')}
+              </LangFilterRow>
+              {BACKEND_LANGS.map(l => {
+                const key = toLangKey(l);
+                return (
+                  <LangFilterRow key={l} active={lang === l} onClick={() => setLang(l)}
+                    iconImg={LANG_ICON[key] || null}>
+                    {LANG_LABEL[key] || key}
+                  </LangFilterRow>
+                );
+              })}
             </FilterSection>
 
             <div style={{ height: 1, background: 'var(--dt-border)', margin: '16px 0' }} />
 
             <FilterSection label={t('Difficulty')}>
-              {(['easy', 'medium', 'hard'] as const).map(d => (
+              {BACKEND_DIFFS.map(d => (
                 <CheckRow key={d} checked={diffSet.has(d)} onToggle={() => toggleDiff(d)}
-                  accent={DIFF_COLOR[d]}>
-                  {t(diffLabel(d))}
+                  accent={DIFF_COLOR[d.toLowerCase()]}>
+                  {diffLabel(d)}
                 </CheckRow>
               ))}
             </FilterSection>
@@ -432,18 +406,11 @@ const Snippets = () => {
               <CheckRow checked={likedOnly} onToggle={() => setLikedOnly(v => !v)} accent="#FF5F8F">
                 {t('Liked only')}
               </CheckRow>
-            </FilterSection>
-
-            <div style={{ height: 1, background: 'var(--dt-border)', margin: '16px 0' }} />
-
-            <FilterSection label={`${t('Max length')} (${maxLen})`}>
-              <input type="range" min={120} max={longest || 1000} step={20} value={maxLen}
-                onChange={(e) => setMaxLen(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--dt-primary)' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                <span className="dt-caption">120</span>
-                <span className="dt-caption">{longest || 1000} {t('chars')}</span>
-              </div>
+              {isLoggedIn && (
+                <CheckRow checked={playedByMe} onToggle={() => setPlayedByMe(v => !v)}>
+                  {t('Played')}
+                </CheckRow>
+              )}
             </FilterSection>
           </div>
 
@@ -451,7 +418,7 @@ const Snippets = () => {
             <span className="dt-caption" style={{ marginBottom: 2 }}>{t('Library')}</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span className="dt-mono tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: 'var(--dt-primary)' }}>
-                {all.length}
+                {total}
               </span>
               <span className="dt-caption">{t('snippets')}</span>
             </div>
@@ -475,7 +442,7 @@ const Snippets = () => {
             <div className="dt-card" style={{ padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
               <div style={{ position: 'relative', flex: 1 }}>
                 <input className="dt-input" value={query} onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t('Search snippets, code, language…')}
+                  placeholder={t('Search snippets, title, language…')}
                   style={{ width: '100%', paddingLeft: 16, paddingRight: query ? 40 : 16, height: 46, fontSize: 15, borderRadius: 12 }} />
                 {query && (
                   <button onClick={() => setQuery('')} style={{
@@ -494,13 +461,8 @@ const Snippets = () => {
               }}>
                 <IconSearch size={19} />
               </button>
-              <SelectBox value={sort} onChange={setSort} sortIcon
-                options={[
-                  { value: 'created', label: t('Newest') },
-                  { value: 'wpm',     label: t('Avg WPM') },
-                  { value: 'length',  label: t('Longest') },
-                  { value: 'title',   label: t('Name') },
-                ]} />
+              <SelectBox value={sort} onChange={(v) => setSort(v as SnippetSort)} sortIcon
+                options={SORT_OPTIONS.map(o => ({ ...o, label: t(o.label) }))} />
             </div>
 
             {/* Active filter chips + count */}
@@ -516,30 +478,50 @@ const Snippets = () => {
                 </button>
               ))}
               <span className="dt-caption" style={{ marginLeft: 'auto' }}>
-                <span className="dt-mono" style={{ color: 'var(--dt-text)' }}>{filtered.length}</span> {t('snippets found')}
+                <span className="dt-mono" style={{ color: 'var(--dt-text)' }}>{total}</span> {t('snippets found')}
               </span>
             </div>
           </div>
 
           {/* Card list */}
-          {filtered.length === 0 ? (
+          {snippets.length === 0 && !loading ? (
             <div className="dt-card" style={{ padding: 48, textAlign: 'center', color: 'var(--dt-text-2)' }}>
               <div style={{ fontSize: 32, marginBottom: 10 }}>🔍</div>
               {t('No snippets match your filters.')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {filtered.map(s => (
-                <SnippetCard
-                  key={s.id}
-                  snippet={s}
-                  open={openId === s.id}
-                  onToggle={() => setOpenId(p => p === s.id ? null : s.id)}
-                  liked={liked.has(s.id)}
-                  onLike={() => toggleLike(s.id)}
-                  onPractice={() => navigate('/solo')}
-                />
+              {snippets.map(s => {
+                const ov = likeOverrides.get(s.id);
+                return (
+                  <SnippetCard
+                    key={s.id}
+                    snippet={s}
+                    likeCount={ov !== undefined ? ov.likeCount : s.likeCount}
+                    isLiked={ov !== undefined ? ov.isLiked : s.isLiked}
+                    onLike={() => handleLike(s)}
+                    onPractice={() => navigate(`/solo?snippetId=${s.id}`)}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Loading skeleton */}
+          {loading && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="dt-card" style={{ height: 120, opacity: 0.4, animation: 'pulse 1.5s ease-in-out infinite' }} />
               ))}
+            </div>
+          )}
+
+          {/* Load more */}
+          {hasMore && !loading && snippets.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 32 }}>
+              <button className="dt-btn dt-btn-secondary" onClick={loadMore}>
+                {t('Load more')}
+              </button>
             </div>
           )}
         </div>

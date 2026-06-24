@@ -82,12 +82,17 @@ api.interceptors.response.use(
       await api.post('/api/auth/refresh');
       processQueue(null);
       return api(original);
-    } catch (err) {
+    } catch (err: unknown) {
       processQueue(err);
-      useUserStore.getState().clearUser();
-      // C: skip redirect if already on /login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      const axiosErr = err as { response?: { status?: number }; config?: { url?: string } };
+      const status = axiosErr?.response?.status;
+      const fromRefresh = axiosErr?.config?.url?.includes('/api/auth/refresh');
+      // 401이고 refresh 자체의 에러가 아닐 때만 처리 (refresh 401은 inner interceptor에서 이미 처리)
+      if (status === 401 && !fromRefresh) {
+        useUserStore.getState().clearUser();
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
       return Promise.reject(err);
     } finally {
@@ -105,10 +110,6 @@ export const getMe = async (): Promise<MeResponse> => {
 
 export const logout = async (): Promise<void> => {
   await api.post('/api/auth/logout');
-};
-
-export const refreshToken = async (): Promise<void> => {
-  await api.post('/api/auth/refresh');
 };
 
 export default api;

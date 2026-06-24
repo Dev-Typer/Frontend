@@ -692,7 +692,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   const niceMax = Math.ceil(max / step) * step || step;
 
   // SVG 치수 — 레퍼런스 스타일: 넓고 충분한 높이
-  const w = 640, h = 240, padL = 44, padR = 14, padT = 16, padB = 28;
+  const w = 640, h = 240, padL = 44, padR = 36, padT = 16, padB = 28;
   const chartH = h - padT - padB;
   const chartW = w - padL - padR;
 
@@ -1005,7 +1005,7 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
   const vals = results.map(r => r.avgWpm);
   const best = hasData ? Math.max(...vals) : 0;
 
-  const w = 980, h = 240, padL = 44, padR = 14, padT = 16, padB = 28;
+  const w = 980, h = 240, padL = 44, padR = 36, padT = 16, padB = 28;
   const chartH = h - padT - padB;
   const chartW = w - padL - padR;
 
@@ -1097,7 +1097,7 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
                 <g key={i}>
                   <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 5.5 : 3.5} fill="var(--dt-primary)" />
                   <text x={xs[i]} y={h - 8} textAnchor="middle" fontSize="10"
-                    fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{r.month}</text>
+                    fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(r.month)}</text>
                   <rect x={xs[i] - colW / 2} y={padT} width={colW} height={chartH + padB}
                     fill="transparent"
                     onMouseEnter={() => setHi(i)}
@@ -1115,7 +1115,7 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
                   <rect x={tx} y={ty} width={tw} height={th2} rx={8}
                     fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
                   <text x={tx + 12} y={ty + 20} fontSize="11" fill="var(--dt-text-3)"
-                    fontFamily="var(--dt-font-mono)">{results[hi].month}</text>
+                    fontFamily="var(--dt-font-mono)">{monthLabel(results[hi].month)}</text>
                   <text x={tx + 12} y={ty + 38} fontSize="15" fontWeight="600"
                     fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">
                     {results[hi].avgWpm.toFixed(1)}

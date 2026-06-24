@@ -894,6 +894,7 @@ const ALL_RADAR_LANGS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'C+
 const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
+  const [metric, setMetric] = useState<'core' | 'count'>('core');
 
   // 항상 10개 언어 고정 — 플레이 안한 언어는 totalCore: 0
   const langMap = new Map((data?.byLanguage ?? []).map(l => [l.language, l]));
@@ -904,9 +905,10 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
     played: langMap.has(lang),
   }));
 
-  const maxCore = Math.max(...langs.map(l => l.totalCore), 1);
-  const allEmpty = langs.every(l => l.totalCore === 0);
-  const top = !allEmpty ? langs.reduce((a, b) => b.totalCore > a.totalCore ? b : a) : null;
+  const getValue = (l: typeof langs[0]) => metric === 'core' ? l.totalCore : l.snippetCount;
+  const maxVal = Math.max(...langs.map(getValue), 1);
+  const allEmpty = langs.every(l => !l.played);
+  const top = !allEmpty ? langs.reduce((a, b) => getValue(b) > getValue(a) ? b : a) : null;
 
   const cx = 150, cy = 150, R = 100;
   const n = 10;
@@ -914,7 +916,7 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
   const pt = (i: number, r: number): [number, number] => [cx + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r];
   const rings = [0.25, 0.5, 0.75, 1];
   const polygon = (r: number) => langs.map((_, i) => pt(i, r * R).join(',')).join(' ');
-  const dataPoly = langs.map((l, i) => pt(i, Math.max(0, (l.totalCore / maxCore)) * R).join(',')).join(' ');
+  const dataPoly = langs.map((l, i) => pt(i, Math.max(0, (getValue(l) / maxVal)) * R).join(',')).join(' ');
 
   if (loading) return <CardSkeleton height={380} />;
 
@@ -923,14 +925,30 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
       <div className="flex justify-between items-center px-6 py-5 border-b border-dt-border/50">
         <div className="flex flex-col gap-1">
           <span className="dt-h3 m-0">{t('Language focus')}</span>
-          <span className="dt-caption">{t('CORE distribution')}</span>
+          <span className="dt-caption">{metric === 'core' ? t('CORE distribution') : t('Plays')}</span>
         </div>
-        {top && (
-          <span className="inline-flex items-center gap-[7px] text-[12.5px] text-dt-text-2">
-            {LANG_ICON[top.language.toLowerCase()] && <img src={LANG_ICON[top.language.toLowerCase()]} alt="" className="w-4 h-4 object-contain" />}
-            {LANG_DISPLAY[top.language] ?? top.language}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {/* metric 토글 */}
+          <div style={{ display: 'flex', gap: 4, background: 'var(--dt-hover)', borderRadius: 8, padding: 3 }}>
+            {(['core', 'count'] as const).map(m => (
+              <button key={m} onClick={() => setMetric(m)} style={{
+                padding: '3px 10px', borderRadius: 6, border: 0, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                background: metric === m ? 'color-mix(in oklab, var(--dt-primary) 18%, transparent)' : 'transparent',
+                color: metric === m ? 'var(--dt-primary)' : 'var(--dt-text-3)',
+                boxShadow: metric === m ? 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 40%, transparent)' : 'none',
+                transition: 'all 120ms',
+              }}>
+                {m === 'core' ? 'CORE' : t('Plays')}
+              </button>
+            ))}
+          </div>
+          {top && (
+            <span className="inline-flex items-center gap-[7px] text-[12.5px] text-dt-text-2">
+              {LANG_ICON[top.language.toLowerCase()] && <img src={LANG_ICON[top.language.toLowerCase()]} alt="" className="w-4 h-4 object-contain" />}
+              {LANG_DISPLAY[top.language] ?? top.language}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="p-4 flex justify-center relative" style={{ minHeight: 300 }}>
@@ -953,7 +971,7 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
                 stroke="var(--dt-primary)" strokeWidth="2" strokeLinejoin="round" />
               {langs.map((l, i) => {
                 if (!l.played) return null;
-                const [x, y] = pt(i, (l.totalCore / maxCore) * R);
+                const [x, y] = pt(i, (getValue(l) / maxVal) * R);
                 return (
                   <circle key={i} cx={x} cy={y}
                     r={hi === i ? 5.5 : 3.5}
@@ -1013,12 +1031,13 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
                   <>
                     <text x={tx + 12} y={ty + 37} fontSize="14" fontWeight="700"
                       fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">
-                      {Math.round(l.totalCore).toLocaleString()}
-                      <tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan>
+                      {metric === 'core'
+                        ? <>{Math.round(l.totalCore).toLocaleString()}<tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan></>
+                        : <>{l.snippetCount}<tspan fontSize="9" fill="var(--dt-text-3)"> {t('Plays')}</tspan></>}
                     </text>
                     <text x={tx + tw - 12} y={ty + 37} textAnchor="end" fontSize="11"
                       fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
-                      {l.snippetCount} {t('snippets')}
+                      {metric === 'core' ? `${l.snippetCount} ${t('snippets')}` : `${Math.round(l.totalCore).toLocaleString()} CORE`}
                     </text>
                   </>
                 ) : (

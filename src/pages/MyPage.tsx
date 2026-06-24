@@ -180,7 +180,7 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
           {profileHover && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1"
               style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(2px)' }}>
-              <span className="text-[24px]">✏️</span>
+              <span className="text-[24px]">➕</span>
               <span className="text-[10px] text-white font-semibold tracking-wide">{uploading ? '…' : t('Change')}</span>
             </div>
           )}

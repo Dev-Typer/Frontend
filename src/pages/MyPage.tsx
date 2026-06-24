@@ -79,7 +79,7 @@ const BannerSection = () => {
     setUploading(true);
     try {
       const { bannerUrl: url } = await uploadBannerImage(file);
-      setBannerUrl(url);
+      setBannerUrl(url + '?t=' + Date.now());
     } finally { setUploading(false); e.target.value = ''; }
   };
 
@@ -143,7 +143,7 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    try { const { profileUrl: url } = await uploadProfileImage(file); setProfileUrl(url); }
+    try { const { profileUrl: url } = await uploadProfileImage(file); setProfileUrl(url + '?t=' + Date.now()); }
     finally { setUploading(false); e.target.value = ''; }
   };
 

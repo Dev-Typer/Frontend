@@ -128,7 +128,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
   };
 
   return (
-    <div className="relative overflow-hidden" style={{ minHeight: 300, marginLeft: 'calc(-44px)', marginRight: 'calc(-44px)', marginTop: -48 }}>
+    <div className="relative overflow-hidden w-full" style={{ minHeight: 300 }}>
       {/* Banner */}
       {bannerUrl
         ? <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -141,7 +141,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
         style={{ background: 'linear-gradient(90deg, rgba(7,12,31,0.6) 0%, transparent 50%)' }} />
 
       {/* 배너 변경 버튼 */}
-      <div className="absolute top-4 z-[5] flex gap-2" style={{ right: 44 }}>
+      <div className="absolute top-4 right-[44px] z-[5] flex gap-2">
         <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
         <button
           onClick={() => bannerInput.current?.click()}
@@ -164,7 +164,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
       </div>
 
       {/* CORE 수치 */}
-      <div className="absolute bottom-[26px] text-right z-[3]" style={{ right: 44 }}>
+      <div className="absolute bottom-[26px] right-[44px] text-right z-[3]">
         <div className="dt-mono tabular-nums font-bold text-[76px] leading-[0.9] text-white"
           style={{ textShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
           {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
@@ -173,7 +173,7 @@ const ProfileHeader = ({ coreData }: ProfileHeaderProps) => {
       </div>
 
       {/* 아이덴티티 */}
-      <div className="absolute bottom-[26px] flex items-end gap-[18px] z-[3]" style={{ left: 44 }}>
+      <div className="absolute bottom-[26px] flex items-end gap-[18px] z-[3]" style={{ left: 44, right: 44 }}>
         <input ref={profileInput} type="file" accept="image/*" className="hidden" onChange={handleProfileUpload} />
         <div
           className="relative w-[84px] h-[84px] rounded-[18px] shrink-0 flex items-center justify-center overflow-hidden cursor-default"
@@ -333,11 +333,19 @@ interface StreakCardProps {
 
 type StreakView = number | 'recent';
 
+function streakStatus(n: number): { label: string; color: string } {
+  if (n === 0) return { label: '오늘 시작해봐요', color: 'var(--dt-text-3)' };
+  if (n < 3)   return { label: '스트릭 시작!', color: '#FFD060' };
+  if (n < 7)   return { label: '달리는 중 🔥', color: '#FF9A3C' };
+  if (n < 30)  return { label: '일주일+ 연속!', color: '#FF7A3C' };
+  return       { label: '불꽃 스트릭 🏆', color: '#FF4D00' };
+}
+
 const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   const t = useT();
   const CUR_YEAR = new Date().getUTCFullYear();
   const [view, setView] = useState<StreakView>(CUR_YEAR);
-  const cell = 14, gap = 3, col = cell + gap;
+  const cell = 12, gap = 3, col = cell + gap;
   const MONTHS = [t('Jan'),t('Feb'),t('Mar'),t('Apr'),t('May'),t('Jun'),t('Jul'),t('Aug'),t('Sep'),t('Oct'),t('Nov'),t('Dec')];
 
   const { weeks, monthSpans, submittedCount, dayCount } = useMemo(
@@ -351,45 +359,72 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
     else onYearChange(v as number);
   };
   const isEmpty = !loading && weeks.length === 0;
+  const current = data?.current ?? 0;
+  const longest = data?.longest ?? 0;
+  const status = streakStatus(current);
 
-  if (loading) return <CardSkeleton height={220} />;
+  if (loading) return <CardSkeleton height={180} />;
 
   return (
-    <div className="dt-card mt-5 overflow-hidden relative" style={{ padding: '20px 22px 18px' }}>
-      <div className="absolute top-[-40px] left-[-40px] w-[280px] h-[280px] pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(255,184,108,0.10), transparent 70%)' }} />
+    <div className="dt-card mt-5 overflow-hidden relative" style={{ padding: '22px 22px 18px' }}>
+      {/* 배경 glow */}
+      <div className="absolute top-[-50px] left-[-30px] w-[260px] h-[260px] pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(255,184,108,0.12), transparent 65%)' }} />
 
-      <div className="relative flex gap-5">
-        {/* 좌: 스트릭 통계 */}
-        <div className="shrink-0 flex flex-col justify-center gap-4" style={{ width: 160 }}>
+      <div className="relative flex gap-6">
+        {/* ── 좌: 스트릭 통계 ── */}
+        <div className="shrink-0 flex flex-col justify-between py-1" style={{ width: 200 }}>
+          {/* 현재 스트릭 */}
           <div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-[22px] leading-none">🔥</span>
-              <span className="dt-mono tabular-nums font-bold leading-none" style={{ fontSize: 42, color: 'var(--dt-warning)' }}>
-                {data?.current ?? 0}
+            <div className="flex items-end gap-3 mb-2">
+              <span className="dt-mono tabular-nums font-bold leading-none"
+                style={{ fontSize: 64, color: current > 0 ? 'var(--dt-warning)' : 'var(--dt-text-3)', lineHeight: 1 }}>
+                {current}
+              </span>
+              <div className="flex flex-col pb-[6px]">
+                <span className="text-[26px] leading-none mb-[2px]">{current > 0 ? '🔥' : '💤'}</span>
+                <span className="dt-label text-dt-text-2 whitespace-nowrap">day streak</span>
+              </div>
+            </div>
+            <span className="text-[12px] font-semibold" style={{ color: status.color }}>{status.label}</span>
+          </div>
+
+          {/* 구분선 */}
+          <div className="my-4 h-px bg-dt-border/40" />
+
+          {/* 보조 통계 */}
+          <div className="flex flex-col gap-[10px]">
+            <div className="flex items-center justify-between">
+              <span className="dt-caption text-dt-text-3">최장 스트릭</span>
+              <span className="dt-mono tabular-nums font-semibold text-[14px]" style={{ color: longest > 0 ? '#FFD060' : 'var(--dt-text-3)' }}>
+                {longest}<span className="text-[10px] font-normal text-dt-text-3 ml-1">days</span>
               </span>
             </div>
-            <div className="dt-label text-dt-text-2 mt-1">{t('day streak')}</div>
-          </div>
-          <div className="flex flex-col gap-[6px]">
             <div className="flex items-center justify-between">
-              <span className="dt-caption text-dt-text-3">{t('Longest')}</span>
-              <span className="dt-mono tabular-nums text-[13px] font-semibold text-dt-text">{data?.longest ?? 0}</span>
+              <span className="dt-caption text-dt-text-3">참여일</span>
+              <span className="dt-mono tabular-nums font-semibold text-[13px] text-dt-text">
+                {submittedCount}<span className="text-dt-text-3 font-normal"> / {dayCount}</span>
+              </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="dt-caption text-dt-text-3">{t('days')}</span>
-              <span className="dt-mono tabular-nums text-[13px] font-semibold text-dt-text">{submittedCount} / {dayCount}</span>
+            {/* 참여율 바 */}
+            <div className="h-[4px] rounded-full overflow-hidden bg-dt-hover">
+              <div style={{
+                width: dayCount > 0 ? `${(submittedCount / dayCount) * 100}%` : '0%',
+                height: '100%',
+                background: 'linear-gradient(90deg, var(--dt-warning), var(--dt-primary))',
+                borderRadius: 999,
+              }} />
             </div>
           </div>
         </div>
 
-        <div className="w-px self-stretch bg-dt-border/50 shrink-0" />
+        <div className="w-px self-stretch bg-dt-border/40 shrink-0" />
 
-        {/* 우: 그리드 */}
-        <div className="flex-1 min-w-0 overflow-x-auto">
-          {/* 헤더: 월 라벨 + 연도 선택 */}
-          <div className="flex items-end justify-between mb-1">
-            <div className="relative h-4 flex-1">
+        {/* ── 우: contribution 그리드 ── */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* 상단: 연도 선택 */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="relative h-4 flex-1 overflow-hidden">
               {!isEmpty && monthSpans.map((m, i) => (
                 <span key={i} className="absolute text-[10px] text-dt-text-3 whitespace-nowrap"
                   style={{ left: m.week * col }}>{MONTHS[m.month]}</span>
@@ -411,39 +446,41 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
             </div>
           </div>
 
-          {isEmpty ? (
-            <div className="relative">
-              <div className="flex pointer-events-none" style={{ gap, opacity: 0.35 }}>
-                {Array.from({ length: GHOST_WEEKS }, (_, wi) => (
-                  <div key={wi} className="flex flex-col" style={{ gap }}>
-                    {Array.from({ length: 7 }, (_, di) => (
-                      <div key={di} style={{ width: cell, height: cell, background: levelBg(0), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.06)' }} />
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-[10px]">
-                <span className="text-[24px] leading-none">🔥</span>
-                <div className="text-center">
-                  <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">오늘 첫 기록을 남겨보세요</p>
+          {/* 그리드 */}
+          <div className="overflow-x-auto flex-1">
+            {isEmpty ? (
+              <div className="relative">
+                <div className="flex pointer-events-none" style={{ gap, opacity: 0.3 }}>
+                  {Array.from({ length: GHOST_WEEKS }, (_, wi) => (
+                    <div key={wi} className="flex flex-col" style={{ gap }}>
+                      {Array.from({ length: 7 }, (_, di) => (
+                        <div key={di} style={{ width: cell, height: cell, background: levelBg(0), borderRadius: 2 }} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                  <span className="text-[22px]">🔥</span>
+                  <p className="text-[12px] font-semibold text-dt-text-2">오늘 첫 기록을 남겨보세요</p>
                   <p className="text-[11px] text-dt-text-3">데일리 챌린지를 완료하면 스트릭이 쌓입니다</p>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex" style={{ gap }}>
-              {weeks.map((week, wi) => (
-                <div key={wi} className="flex flex-col" style={{ gap }}>
-                  {week.map((cellData, di) => <ContributionCell key={di} cell={cellData} size={cell} />)}
-                </div>
-              ))}
-            </div>
-          )}
+            ) : (
+              <div className="flex" style={{ gap }}>
+                {weeks.map((week, wi) => (
+                  <div key={wi} className="flex flex-col" style={{ gap }}>
+                    {week.map((cellData, di) => <ContributionCell key={di} cell={cellData} size={cell} />)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-          <div className="flex items-center gap-[6px] mt-2 text-[10px] text-dt-text-3">
+          {/* 범례 */}
+          <div className="flex items-center gap-[5px] mt-2 text-[10px] text-dt-text-3">
             <span>{t('Less')}</span>
             {[0,1,2,3,4].map(lv => (
-              <div key={lv} style={{ width: cell-1, height: cell-1, background: levelBg(lv), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.05)' }} />
+              <div key={lv} style={{ width: cell, height: cell, background: levelBg(lv), borderRadius: 2, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.05)' }} />
             ))}
             <span>{t('More')}</span>
           </div>
@@ -954,8 +991,9 @@ const MyPage = () => {
   };
 
   return (
-    <div className="dt-page">
+    <>
       <ProfileHeader coreData={core} />
+      <div className="dt-page" style={{ paddingTop: 28 }}>
       <BadgesCard />
       <StreakCard data={streak} loading={loadingStreak} onYearChange={handleYearChange} />
 
@@ -973,6 +1011,7 @@ const MyPage = () => {
         <WpmTrendCard data={wpm} loading={loadingWpm} />
       </div>
     </div>
+    </>
   );
 };
 

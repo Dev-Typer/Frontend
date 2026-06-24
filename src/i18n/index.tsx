@@ -228,7 +228,7 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
     'Player': '플레이어',
     'Plays': '플레이',
     'Date': '날짜',
-    'Day': '요일',
+    'Day': '일',
     'GO': '시작',
     'Length': '길이',
     'from': '~부터',

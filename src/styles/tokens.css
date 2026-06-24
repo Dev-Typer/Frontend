@@ -337,6 +337,8 @@ button { font-family: inherit; }
   font-family: var(--dt-font-mono);
   font-size: 18px;
   line-height: 1.85;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
   color: var(--dt-type-pending);
   position: relative;
   white-space: pre;

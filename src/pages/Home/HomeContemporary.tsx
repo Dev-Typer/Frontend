@@ -4,7 +4,7 @@ import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
 import UserHover from '@/components/UserHover';
 import { IconPlay, IconUser, IconCode } from '@/components/icons/Icons';
-import { GLOBAL_RANKING, TODAYS_CHALLENGE } from '@/data';
+import { GLOBAL_RANKING, TODAYS_CHALLENGE, LANG_ICON } from '@/data';
 import type { User } from '@/types';
 
 interface Props {
@@ -327,6 +327,8 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
   const ch = TODAYS_CHALLENGE;
   const diffColor = DIFF_COLOR[ch.difficulty] || '#57E5FF';
   const diffLabel = ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
+  const langKey = ch.language.toLowerCase();
+  const langIcon = LANG_ICON[langKey];
 
   return (
     <section style={{ marginTop: 28 }}>
@@ -349,7 +351,9 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <IconCode size={48} style={{ color: diffColor }} />
+            {langIcon
+              ? <img src={langIcon} alt={ch.language} style={{ width: 48, height: 48, objectFit: 'contain' }} />
+              : <IconCode size={48} style={{ color: diffColor }} />}
             <div className="dt-stack" style={{ gap: 2 }}>
               <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--dt-text)', lineHeight: 1 }}>
                 {ch.language}

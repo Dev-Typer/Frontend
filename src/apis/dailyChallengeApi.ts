@@ -54,6 +54,7 @@ export interface SubmitDailyChallengeResponseDto {
   rankDelta?: number;
   rankChange: RankChangeStatus;
   bestStatus: BestStatus;
+  core: number;
   nearbyUsers: NearbyUserItem[];
 }
 

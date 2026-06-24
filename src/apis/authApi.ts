@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 import { useUserStore } from '@/stores/userStore';
 
@@ -47,17 +47,17 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // A: skipAuthRetry ?뚮옒洹멸? ?덉쑝硫?retry ?놁씠 諛붾줈 reject
+    // A: _skipAuthRetry flag set — reject immediately without retry
     if (original._skipAuthRetry) {
       return Promise.reject(error);
     }
 
-    // B: 濡쒓렇???곹깭媛 ?꾨땲硫?retry ?섏? ?딆쓬
+    // B: not logged in — skip retry
     if (!useUserStore.getState().isLoggedIn) {
       return Promise.reject(error);
     }
 
-    // refresh ?붾뱶?ъ씤???먯껜媛 401?대㈃ ?몄뀡 醫낅즺
+    // refresh endpoint returned 401 — session is gone, clear and redirect
     if (original.url?.includes('/api/auth/refresh')) {
       useUserStore.getState().clearUser();
       if (window.location.pathname !== '/login') {
@@ -86,7 +86,7 @@ api.interceptors.response.use(
     } catch (err) {
       processQueue(err);
       useUserStore.getState().clearUser();
-      // C: ?대? /login?대㈃ 由щ떎?대젆??????
+      // C: skip redirect if already on /login
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }

@@ -341,7 +341,7 @@ function streakStatus(n: number): { label: string; color: string } {
 const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   const t = useT();
   const CUR_YEAR = new Date().getUTCFullYear();
-  const [view, setView] = useState<StreakView>(CUR_YEAR);
+  const [view, setView] = useState<StreakView>('recent');
   const cell = 15, gap = 3, col = cell + gap;
   const MONTHS = [t('Jan'),t('Feb'),t('Mar'),t('Apr'),t('May'),t('Jun'),t('Jul'),t('Aug'),t('Sep'),t('Oct'),t('Nov'),t('Dec')];
 
@@ -432,9 +432,9 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
                 value={String(view)}
                 onChange={e => handleView(e.target.value === 'recent' ? 'recent' : Number(e.target.value))}
                 className="dt-input dt-mono cursor-default"
-                style={{ height: 22, minHeight: 22, lineHeight: '20px', padding: '0 20px 0 7px', borderRadius: 5, fontSize: 11, appearance: 'none', WebkitAppearance: 'none' }}
+                style={{ height: 28, minHeight: 28, lineHeight: '26px', padding: '0 24px 0 10px', borderRadius: 6, fontSize: 12, appearance: 'none', WebkitAppearance: 'none' }}
               >
-                <option value="recent">최근 365일</option>
+                <option value="recent">최근</option>
                 {[CUR_YEAR, CUR_YEAR - 1, CUR_YEAR - 2].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
               <span className="absolute right-2 pointer-events-none text-dt-text-3 flex">
@@ -681,7 +681,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   const points = data?.points ?? [];
   const vals   = points.map(p => p.totalCore);
   const max    = vals.length ? Math.max(...vals) : 1;
-  const w = 640, h = 200, pad = 12, base = h - 22;
+  const w = 640, h = 160, pad = 10, base = h - 20;
   const gain = vals.length >= 2 ? vals[vals.length-1] - vals[0] : 0;
 
   const xs = vals.length > 0
@@ -714,7 +714,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="px-6 py-[18px] pb-[10px]">
+        <div className="px-6 pt-4 pb-0 flex items-end">
           <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
             <defs>
               {/* 영역 fill: primary → cyan 수직 그라디언트 */}
@@ -782,20 +782,32 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
 };
 
 // ─── LanguageRadarCard ────────────────────────────────────────────────────────
+const ALL_RADAR_LANGS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'C++', 'C#', 'C', 'Rust', 'Kotlin'] as const;
+
 const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
-  const langs = (data?.byLanguage ?? []).filter(l => l.totalCore > 0).slice(0, 10);
-  const maxCore = langs.length ? Math.max(...langs.map(l => l.totalCore)) : 1;
-  const cx = 150, cy = 150, R = 110;
-  const isEmpty = langs.length < 2;
-  const n = langs.length;
+
+  // 항상 10개 언어 고정 — 플레이 안한 언어는 totalCore: 0
+  const langMap = new Map((data?.byLanguage ?? []).map(l => [l.language, l]));
+  const langs = ALL_RADAR_LANGS.map(lang => ({
+    language: lang,
+    totalCore: langMap.get(lang)?.totalCore ?? 0,
+    snippetCount: langMap.get(lang)?.snippetCount ?? 0,
+    played: langMap.has(lang),
+  }));
+
+  const maxCore = Math.max(...langs.map(l => l.totalCore), 1);
+  const allEmpty = langs.every(l => l.totalCore === 0);
+  const top = !allEmpty ? langs.reduce((a, b) => b.totalCore > a.totalCore ? b : a) : null;
+
+  const cx = 150, cy = 150, R = 100;
+  const n = 10;
   const angle = (i: number) => -Math.PI / 2 + (i / n) * Math.PI * 2;
   const pt = (i: number, r: number): [number, number] => [cx + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r];
   const rings = [0.25, 0.5, 0.75, 1];
   const polygon = (r: number) => langs.map((_, i) => pt(i, r * R).join(',')).join(' ');
-  const dataPoly = langs.map((l, i) => pt(i, (l.totalCore / maxCore) * R).join(',')).join(' ');
-  const top = langs.length ? langs.reduce((a, b) => b.totalCore > a.totalCore ? b : a, langs[0]) : null;
+  const dataPoly = langs.map((l, i) => pt(i, Math.max(0, (l.totalCore / maxCore)) * R).join(',')).join(' ');
 
   if (loading) return <CardSkeleton height={380} />;
 
@@ -814,54 +826,105 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
         )}
       </div>
 
-      {isEmpty ? (
-        <div className="flex flex-col items-center justify-center gap-[10px]" style={{ minHeight: 300 }}>
-          <span className="text-[28px] leading-none">🕸️</span>
-          <div className="text-center">
-            <p className="text-[13px] font-semibold text-dt-text-2 mb-[3px]">2개 이상의 언어를 플레이하면 활성화됩니다</p>
-            <p className="text-[11px] text-dt-text-3">언어별 CORE 분포를 레이더 차트로 확인하세요</p>
-          </div>
-        </div>
-      ) : (
-        <div className="p-4 flex justify-center" style={{ minHeight: 300 }}>
-          <svg viewBox="0 0 300 300" className="w-full max-w-[320px] h-auto">
-            {rings.map((r, i) => <polygon key={i} points={polygon(r)} fill="none" stroke="var(--dt-border)" strokeWidth="0.75" opacity="0.7" />)}
-            {langs.map((_, i) => {
-              const [x, y] = pt(i, R);
-              return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.6" />;
-            })}
-            <polygon points={dataPoly} fill="color-mix(in oklab, var(--dt-primary) 22%, transparent)" stroke="var(--dt-primary)" strokeWidth="2" strokeLinejoin="round" />
-            {langs.map((l, i) => {
-              const [x, y] = pt(i, (l.totalCore / maxCore) * R);
-              return <circle key={i} cx={x} cy={y} r={hi === i ? 5 : 3} fill="var(--dt-primary)" />;
-            })}
-            {langs.map((l, i) => {
-              const [lx, ly] = pt(i, R + 18);
-              const icon = LANG_ICON[l.language.toLowerCase()];
-              return icon
-                ? <image key={i} href={icon} x={lx-9} y={ly-9} width="18" height="18" opacity={hi === null || hi === i ? 1 : 0.4} />
-                : <text key={i} x={lx} y={ly+4} textAnchor="middle" fontSize="10" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{l.language.slice(0, 2)}</text>;
-            })}
-            {langs.map((l, i) => {
-              const [x, y] = pt(i, (l.totalCore / maxCore) * R);
-              return <circle key={i} cx={x} cy={y} r="14" fill="transparent"
-                onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />;
-            })}
-            {hi !== null && (() => {
-              const l = langs[hi];
-              const tw = 132, tx = Math.min(Math.max(cx-tw/2, 4), 300-tw-4), ty = 8;
-              return (
-                <g pointerEvents="none">
-                  <rect x={tx} y={ty} width={tw} height={46} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
-                  <text x={tx+12} y={ty+19} fontSize="12" fill="var(--dt-text)" fontFamily="var(--dt-font-mono)">{LANG_DISPLAY[l.language] ?? l.language}</text>
-                  <text x={tx+12} y={ty+36} fontSize="14" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{l.totalCore.toLocaleString()} <tspan fontSize="9" fill="var(--dt-text-3)">CORE</tspan></text>
-                  <text x={tx+tw-12} y={ty+36} textAnchor="end" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{l.snippetCount} {t('snippets')}</text>
-                </g>
-              );
-            })()}
-          </svg>
-        </div>
-      )}
+      <div className="p-4 flex justify-center relative" style={{ minHeight: 300 }}>
+        <svg viewBox="0 0 300 300" className="w-full max-w-[320px] h-auto">
+          {/* 배경 링 */}
+          {rings.map((r, i) => (
+            <polygon key={i} points={polygon(r)} fill="none" stroke="var(--dt-border)" strokeWidth="0.75" opacity="0.6" />
+          ))}
+          {/* 축선 */}
+          {langs.map((_, i) => {
+            const [x, y] = pt(i, R);
+            return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" />;
+          })}
+
+          {/* 데이터 영역 (플레이 데이터 있을 때만) */}
+          {!allEmpty && (
+            <>
+              <polygon points={dataPoly}
+                fill="color-mix(in oklab, var(--dt-primary) 20%, transparent)"
+                stroke="var(--dt-primary)" strokeWidth="2" strokeLinejoin="round" />
+              {langs.map((l, i) => {
+                if (!l.played) return null;
+                const [x, y] = pt(i, (l.totalCore / maxCore) * R);
+                return (
+                  <circle key={i} cx={x} cy={y}
+                    r={hi === i ? 5.5 : 3.5}
+                    fill="var(--dt-primary)"
+                    style={{ filter: hi === i ? 'drop-shadow(0 0 4px var(--dt-primary))' : 'none' }} />
+                );
+              })}
+            </>
+          )}
+
+          {/* 언어 로고 라벨 (항상 표시) */}
+          {langs.map((l, i) => {
+            const [lx, ly] = pt(i, R + 22);
+            const icon = LANG_ICON[l.language.toLowerCase()];
+            const dimmed = !l.played;
+            return icon
+              ? <image key={i} href={icon} x={lx - 10} y={ly - 10} width="20" height="20"
+                  opacity={dimmed ? 0.25 : (hi === null || hi === i ? 1 : 0.35)}
+                  style={{ transition: 'opacity 150ms' }} />
+              : <text key={i} x={lx} y={ly + 4} textAnchor="middle" fontSize="10"
+                  fill={dimmed ? 'var(--dt-text-3)' : 'var(--dt-text-2)'}
+                  opacity={hi === null || hi === i ? 1 : 0.35}
+                  fontFamily="var(--dt-font-mono)">{l.language.slice(0, 2)}</text>;
+          })}
+
+          {/* hover 인터랙션 영역 */}
+          {langs.map((_, i) => {
+            const [ax, ay] = pt(i, R + 22);
+            return (
+              <circle key={i} cx={ax} cy={ay} r="16" fill="transparent"
+                onMouseEnter={() => setHi(i)}
+                onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
+            );
+          })}
+
+          {/* 빈 상태 중앙 텍스트 */}
+          {allEmpty && (
+            <text x={cx} y={cy + 5} textAnchor="middle" fontSize="11"
+              fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
+              플레이 기록 없음
+            </text>
+          )}
+
+          {/* hover 툴팁 */}
+          {hi !== null && (() => {
+            const l = langs[hi];
+            const tw = 148, tx = Math.min(Math.max(cx - tw / 2, 4), 300 - tw - 4), ty = 6;
+            return (
+              <g pointerEvents="none">
+                <rect x={tx} y={ty} width={tw} height={l.played ? 50 : 38} rx={8}
+                  fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                <text x={tx + 12} y={ty + 18} fontSize="12" fill="var(--dt-text)"
+                  fontFamily="var(--dt-font-mono)" fontWeight="600">
+                  {LANG_DISPLAY[l.language] ?? l.language}
+                </text>
+                {l.played ? (
+                  <>
+                    <text x={tx + 12} y={ty + 37} fontSize="14" fontWeight="700"
+                      fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">
+                      {Math.round(l.totalCore).toLocaleString()}
+                      <tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan>
+                    </text>
+                    <text x={tx + tw - 12} y={ty + 37} textAnchor="end" fontSize="11"
+                      fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
+                      {l.snippetCount} {t('snippets')}
+                    </text>
+                  </>
+                ) : (
+                  <text x={tx + 12} y={ty + 30} fontSize="11"
+                    fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
+                    플레이 기록 없음
+                  </text>
+                )}
+              </g>
+            );
+          })()}
+        </svg>
+      </div>
     </div>
   );
 };
@@ -876,7 +939,7 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
   const results = data?.results ?? [];
-  const w = 980, h = 200, pad = 14, base = h - 22;
+  const w = 980, h = 160, pad = 10, base = h - 20;
 
   if (loading) return <CardSkeleton height={260} />;
 
@@ -913,7 +976,7 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="px-6 py-[18px] pb-[10px]">
+        <div className="px-6 pt-4 pb-0 flex items-end">
           <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
             <defs>
               <linearGradient id="wpmTrendFade" x1="0" y1="0" x2="0" y2="1">
@@ -969,9 +1032,9 @@ const MyPage = () => {
 
   useEffect(() => {
     if (!userId) return;
-    const currentYear = new Date().getUTCFullYear();
+
     Promise.all([
-      getUserStreak(currentYear).then(setStreak).finally(() => setLoadingStreak(false)),
+      getUserStreak(undefined, 'recent').then(setStreak).finally(() => setLoadingStreak(false)),
       getUserWpmHistory().then(setWpm).finally(() => setLoadingWpm(false)),
       getUserCore().then(setCore).finally(() => setLoadingCore(false)),
       getUserCoreByLanguage().then(setByLang).finally(() => setLoadingByLang(false)),

@@ -1,6 +1,6 @@
 import api from './authApi';
 
-export type SnippetLanguage = 'JAVASCRIPT' | 'PYTHON' | 'JAVA' | 'CPP';
+export type SnippetLanguage = 'JavaScript' | 'TypeScript' | 'Python' | 'Java' | 'Go' | 'C++' | 'C#' | 'C' | 'Rust' | 'Kotlin';
 export type SnippetDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 export type SnippetSort = 'newest' | 'oldest' | 'most-liked' | 'least-liked';
 export type PlayedByMe = 'played' | 'not-played';

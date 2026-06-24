@@ -53,7 +53,7 @@ const AdminSnippets = () => {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <select style={sel} value={lang} onChange={(e) => { setLang(e.target.value as SnippetLanguage | ''); setPage(1); }}>
           <option value="">전체 언어</option>
-          {(['JAVASCRIPT','PYTHON','JAVA','CPP'] as SnippetLanguage[]).map((l) => <option key={l} value={l}>{l}</option>)}
+          {(['JavaScript','TypeScript','Python','Java','Go','C++','C#','C','Rust','Kotlin'] as SnippetLanguage[]).map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
         <select style={sel} value={diff} onChange={(e) => { setDiff(e.target.value as SnippetDifficulty | ''); setPage(1); }}>
           <option value="">전체 난이도</option>

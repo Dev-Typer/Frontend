@@ -16,15 +16,17 @@ import { useUserStore } from '@/stores/userStore';
 type BackendLang = SnippetLanguage;
 
 function toLangKey(lang: BackendLang): string {
-  if (lang === 'CPP') return 'c++';
   return lang.toLowerCase();
 }
 
 const LANG_LABEL: Record<string, string> = {
-  javascript: 'JavaScript', python: 'Python', java: 'Java', 'c++': 'C++',
+  javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python',
+  java: 'Java', go: 'Go', 'c++': 'C++', 'c#': 'C#', c: 'C', rust: 'Rust', kotlin: 'Kotlin',
 };
 const LANG_COLOR: Record<string, string> = {
-  javascript: '#F7DF1E', python: '#3776AB', java: '#F89820', 'c++': '#00599C',
+  javascript: '#F7DF1E', typescript: '#3178C6', python: '#3776AB',
+  java: '#F89820', go: '#00ADD8', 'c++': '#00599C', 'c#': '#9B4F96',
+  c: '#5C6BC0', rust: '#DEA584', kotlin: '#7F52FF',
 };
 const DIFF_COLOR: Record<string, string> = {
   easy: '#3DD68C', medium: '#57E5FF', hard: '#B93CFF',
@@ -34,7 +36,7 @@ function diffLabel(d: string): string {
   return ({ EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' } as Record<string, string>)[d] || d;
 }
 
-const BACKEND_LANGS: BackendLang[] = ['JAVASCRIPT', 'PYTHON', 'JAVA', 'CPP'];
+const BACKEND_LANGS: BackendLang[] = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'C++', 'C#', 'C', 'Rust', 'Kotlin'];
 const BACKEND_DIFFS: SnippetDifficulty[] = ['EASY', 'MEDIUM', 'HARD'];
 const SORT_OPTIONS: { value: SnippetSort; label: string }[] = [
   { value: 'newest',     label: 'Newest'     },

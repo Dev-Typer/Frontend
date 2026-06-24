@@ -26,8 +26,6 @@ export interface MeResponse {
   userId: number;
   username: string;
   role: 'USER' | 'ADMIN';
-  profileUrl: string | null;
-  bannerUrl: string | null;
   createdAt: string;
 }
 
@@ -99,7 +97,7 @@ api.interceptors.response.use(
 );
 
 export const getMe = async (): Promise<MeResponse> => {
-  const { data } = await api.get<ApiResponse<MeResponse>>('/api/user/me', {
+  const { data } = await api.get<ApiResponse<MeResponse>>('/api/auth/me', {
     _skipAuthRetry: true,
   } as AxiosRequestConfigWithRetry);
   return data.data!;

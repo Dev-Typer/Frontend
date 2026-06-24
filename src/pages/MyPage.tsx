@@ -58,7 +58,7 @@ function formatJoined(iso: string): string {
 }
 
 function monthLabel(iso: string): string {
-  return iso.replace('-', '.');
+  return iso.slice(0, 7);
 }
 
 // ─── 카드 스켈레톤 ─────────────────────────────────────────────────────────────
@@ -685,22 +685,35 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   const points = data?.points ?? [];
   const vals   = points.map(p => p.totalCore);
   const max    = vals.length ? Math.max(...vals) : 1;
-  const w = 640, h = 160, padL = 46, padR = 12, padT = 10, base = h - 20;
-  const gain = vals.length >= 2 ? vals[vals.length-1] - vals[0] : 0;
+  const gain   = vals.length >= 2 ? vals[vals.length-1] - vals[0] : 0;
 
-  const xs = vals.length > 0
-    ? vals.map((_, i) => (i / Math.max(vals.length - 1, 1)) * (w - padL - padR) + padL)
-    : [];
+  // 스케일 — niceMax 기준, 0부터 시작
   const step = max <= 50 ? 10 : max <= 200 ? 50 : max <= 1000 ? 200 : 500;
-  const niceMax = Math.ceil(max / step) * step || 1;
-  const coreTicks = [1, 2, 3, 4].map(i => Math.round(niceMax * i / 4));
-  const coreTickY = (v: number) => base - (v / niceMax) * (base - padT);
+  const niceMax = Math.ceil(max / step) * step || step;
 
-  const ys = vals.map(v => coreTickY(v));
-  const line = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
-  const area = points.length > 1 ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
+  // SVG 치수 — 레퍼런스 스타일: 넓고 충분한 높이
+  const w = 640, h = 240, padL = 44, padR = 14, padT = 16, padB = 28;
+  const chartH = h - padT - padB;
+  const chartW = w - padL - padR;
 
-  if (loading) return <CardSkeleton height={280} />;
+  const toX = (i: number) => padL + (i / Math.max(vals.length - 1, 1)) * chartW;
+  const toY = (v: number) => padT + chartH - (v / niceMax) * chartH;
+
+  const xs = vals.map((_, i) => toX(i));
+  const ys = vals.map(v => toY(v));
+  const linePath = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i].toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
+  const areaPath = points.length > 1
+    ? `${linePath} L ${xs[xs.length-1].toFixed(1)} ${(padT+chartH).toFixed(1)} L ${xs[0].toFixed(1)} ${(padT+chartH).toFixed(1)} Z`
+    : '';
+
+  // 격자 — 5개 수평선 (niceMax의 0~100% 균등 분할)
+  const GRID_COUNT = 5;
+  const gridLines = Array.from({ length: GRID_COUNT + 1 }, (_, i) => {
+    const frac = i / GRID_COUNT;
+    return { value: Math.round(niceMax * frac), y: toY(niceMax * frac) };
+  });
+
+  if (loading) return <CardSkeleton height={300} />;
 
   return (
     <div className="dt-card p-0 overflow-hidden flex flex-col">
@@ -723,66 +736,97 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="px-6 pt-4 pb-0 flex-1 flex flex-col justify-end">
+        <div className="px-0 pt-0 pb-0 flex-1">
           <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
             <defs>
-              {/* 영역 fill: primary → cyan 수직 그라디언트 */}
               <linearGradient id="coreFade" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#57E5FF" stopOpacity="0.32" />
-                <stop offset="55%" stopColor="var(--dt-primary)" stopOpacity="0.14" />
+                <stop offset="0%" stopColor="#57E5FF" stopOpacity="0.28" />
+                <stop offset="60%" stopColor="var(--dt-primary)" stopOpacity="0.10" />
                 <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
               </linearGradient>
-              {/* 선 그라디언트: cyan → primary */}
               <linearGradient id="coreLineGrad" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#57E5FF" />
-                <stop offset="60%" stopColor="var(--dt-primary)" />
+                <stop offset="55%" stopColor="var(--dt-primary)" />
                 <stop offset="100%" stopColor="#FFD060" />
               </linearGradient>
-              {/* dot glow filter */}
-              <filter id="dotGlow">
-                <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <filter id="dotGlow2">
+                <feGaussianBlur stdDeviation="2" result="blur" />
                 <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
             </defs>
-            {coreTicks.map((v, i) => {
-              const ty = coreTickY(v);
-              return (
-                <g key={i}>
-                  <line x1={padL} x2={w - padR} y1={ty} y2={ty} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" strokeDasharray="4 3" />
-                  <text x={padL - 4} y={ty + 4} textAnchor="end" fontSize="9" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)" opacity="0.8">{v}</text>
-                </g>
-              );
-            })}
-            <path d={area} fill="url(#coreFade)" />
-            <path d={line} fill="none" stroke="url(#coreLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={padT - 4} y2={base} stroke="#57E5FF" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />}
+
+            {/* 수평 격자선 + y축 라벨 */}
+            {gridLines.map(({ value, y }) => (
+              <g key={value}>
+                <line x1={padL} x2={w - padR} y1={y} y2={y}
+                  stroke="var(--dt-border)" strokeWidth="0.6" opacity="0.55" />
+                <text x={padL - 6} y={y + 4} textAnchor="end" fontSize="10"
+                  fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{value}</text>
+              </g>
+            ))}
+
+            {/* 수직 격자선 (x축 데이터 지점마다) */}
+            {xs.map((x, i) => (
+              <line key={i} x1={x} x2={x} y1={padT} y2={padT + chartH}
+                stroke="var(--dt-border)" strokeWidth="0.4" opacity="0.35" />
+            ))}
+
+            {/* 영역 fill */}
+            <path d={areaPath} fill="url(#coreFade)" />
+
+            {/* 선 */}
+            <path d={linePath} fill="none" stroke="url(#coreLineGrad)"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* hover 세로선 */}
+            {hi !== null && (
+              <line x1={xs[hi]} x2={xs[hi]} y1={padT} y2={padT + chartH}
+                stroke="#57E5FF" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+            )}
+
+            {/* 데이터 점 + x축 라벨 + hover 영역 */}
             {points.map((p, i) => {
-              const ratio = niceMax > 0 ? vals[i] / niceMax : 0;
+              const ratio = vals[i] / niceMax;
               const dotColor = ratio > 0.75 ? '#57E5FF' : ratio > 0.4 ? 'var(--dt-primary)' : '#FFD060';
-              const r = hi === i ? 6 : i === points.length - 1 ? 5 : 3.5;
+              const isLast = i === points.length - 1;
+              const r = hi === i ? 5.5 : isLast ? 4.5 : 3;
+              const colW = chartW / Math.max(vals.length - 1, 1);
               return (
                 <g key={i}>
-                  {(hi === i || i === points.length - 1) && (
-                    <circle cx={xs[i]} cy={ys[i]} r={r + 5} fill={dotColor} opacity="0.18" filter="url(#dotGlow)" />
+                  {(hi === i || isLast) && (
+                    <circle cx={xs[i]} cy={ys[i]} r={r + 4} fill={dotColor} opacity="0.15" filter="url(#dotGlow2)" />
                   )}
                   <circle cx={xs[i]} cy={ys[i]} r={r} fill={dotColor} />
-                  <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(p.date)}</text>
-                  <rect x={xs[i]-22} y={0} width={44} height={base} fill="transparent"
-                    onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
+                  <text x={xs[i]} y={h - 8} textAnchor="middle" fontSize="10"
+                    fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(p.date)}</text>
+                  <rect x={xs[i] - colW / 2} y={padT} width={colW} height={chartH + padB}
+                    fill="transparent"
+                    onMouseEnter={() => setHi(i)}
+                    onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
                 </g>
               );
             })}
+
+            {/* hover 툴팁 */}
             {hi !== null && (() => {
-              const prev = hi > 0 ? vals[hi] - vals[hi-1] : null;
-              const tw = 130, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-68, 6);
+              const prev = hi > 0 ? vals[hi] - vals[hi - 1] : null;
+              const tw = 138, th2 = 58;
+              const tx = Math.min(Math.max(xs[hi] - tw / 2, padL), w - padR - tw);
+              const ty = Math.max(ys[hi] - th2 - 10, padT + 4);
               const deltaColor = prev !== null ? (prev >= 0 ? '#3DD68C' : '#FF6B6B') : null;
               return (
                 <g pointerEvents="none">
-                  <rect x={tx} y={ty} width={tw} height={56} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
-                  <text x={tx+12} y={ty+20} fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{monthLabel(points[hi].date)}</text>
-                  <text x={tx+12} y={ty+42} fontSize="16" fontWeight="700" fill="#57E5FF" fontFamily="var(--dt-font-mono)">{vals[hi].toLocaleString()} <tspan fontSize="9" fill="var(--dt-text-3)">CORE</tspan></text>
+                  <rect x={tx} y={ty} width={tw} height={th2} rx={8}
+                    fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                  <text x={tx + 12} y={ty + 20} fontSize="11" fill="var(--dt-text-3)"
+                    fontFamily="var(--dt-font-mono)">{monthLabel(points[hi].date)}</text>
+                  <text x={tx + 12} y={ty + 42} fontSize="15" fontWeight="700" fill="#57E5FF"
+                    fontFamily="var(--dt-font-mono)">{vals[hi].toLocaleString()}
+                    <tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan>
+                  </text>
                   {prev !== null && (
-                    <text x={tx+tw-10} y={ty+42} textAnchor="end" fontSize="12" fontWeight="600" fill={deltaColor!} fontFamily="var(--dt-font-mono)">
+                    <text x={tx + tw - 10} y={ty + 42} textAnchor="end" fontSize="11"
+                      fontWeight="600" fill={deltaColor!} fontFamily="var(--dt-font-mono)">
                       {prev >= 0 ? `+${prev}` : String(prev)}
                     </text>
                   )}
@@ -954,25 +998,41 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
   const results = data?.results ?? [];
-  const w = 980, h = 160, padL = 46, padR = 12, padT = 10, base = h - 20;
 
-  if (loading) return <CardSkeleton height={260} />;
+  if (loading) return <CardSkeleton height={300} />;
 
   const hasData = results.length >= 2 && results.some(r => r.avgWpm > 0);
   const vals = results.map(r => r.avgWpm);
-  const minV  = hasData ? Math.max(0, Math.min(...vals) - 10) : 0;
-  const maxV  = hasData ? Math.max(...vals) + 10 : 100;
-  const best  = hasData ? Math.max(...vals) : 0;
-  const xs = results.map((_, i) => (i / (results.length - 1)) * (w - padL - padR) + padL);
-  const ys = vals.map(v => base - ((v - minV) / (maxV - minV || 1)) * (base - padT));
+  const best = hasData ? Math.max(...vals) : 0;
 
-  const wpmTicks = hasData ? [1, 2, 3, 4].map(i => {
-    const v = minV + (maxV - minV) * i / 4;
-    return Math.round(v);
-  }) : [];
-  const wpmTickY = (v: number) => base - ((v - minV) / (maxV - minV || 1)) * (base - padT);
-  const line = results.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
-  const area = hasData ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
+  const w = 980, h = 240, padL = 44, padR = 14, padT = 16, padB = 28;
+  const chartH = h - padT - padB;
+  const chartW = w - padL - padR;
+
+  // WPM: min을 살짝 아래로, max를 살짝 위로 여유
+  const wpmStep = (v: number) => v <= 30 ? 5 : v <= 100 ? 10 : 20;
+  const rawMin = hasData ? Math.min(...vals) : 0;
+  const rawMax = hasData ? Math.max(...vals) : 100;
+  const st = wpmStep(rawMax - rawMin || rawMax);
+  const niceMin = Math.floor(rawMin / st) * st;
+  const niceMax = Math.ceil(rawMax / st) * st + st;
+  const range = niceMax - niceMin || 1;
+
+  const toX = (i: number) => padL + (i / Math.max(results.length - 1, 1)) * chartW;
+  const toY = (v: number) => padT + chartH - ((v - niceMin) / range) * chartH;
+
+  const xs = results.map((_, i) => toX(i));
+  const ys = vals.map(v => toY(v));
+  const linePath = results.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i].toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
+  const areaPath = hasData
+    ? `${linePath} L ${xs[xs.length-1].toFixed(1)} ${(padT+chartH).toFixed(1)} L ${xs[0].toFixed(1)} ${(padT+chartH).toFixed(1)} Z`
+    : '';
+
+  const GRID_COUNT = 5;
+  const gridLines = Array.from({ length: GRID_COUNT + 1 }, (_, i) => {
+    const v = niceMin + (range * i) / GRID_COUNT;
+    return { value: Math.round(v), y: toY(v) };
+  });
 
   return (
     <div className="dt-card p-0 overflow-hidden flex flex-col">
@@ -997,41 +1057,70 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="px-6 pt-4 pb-0 flex-1 flex flex-col justify-end">
+        <div className="flex-1">
           <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
             <defs>
               <linearGradient id="wpmTrendFade" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.26" />
+                <stop offset="0%" stopColor="var(--dt-primary)" stopOpacity="0.22" />
                 <stop offset="100%" stopColor="var(--dt-primary)" stopOpacity="0" />
               </linearGradient>
             </defs>
-            {wpmTicks.map((v, i) => {
-              const ty = wpmTickY(v);
+
+            {/* 수평 격자선 + y축 라벨 */}
+            {gridLines.map(({ value, y }) => (
+              <g key={value}>
+                <line x1={padL} x2={w - padR} y1={y} y2={y}
+                  stroke="var(--dt-border)" strokeWidth="0.6" opacity="0.55" />
+                <text x={padL - 6} y={y + 4} textAnchor="end" fontSize="10"
+                  fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{value}</text>
+              </g>
+            ))}
+
+            {/* 수직 격자선 */}
+            {xs.map((x, i) => (
+              <line key={i} x1={x} x2={x} y1={padT} y2={padT + chartH}
+                stroke="var(--dt-border)" strokeWidth="0.4" opacity="0.35" />
+            ))}
+
+            <path d={areaPath} fill="url(#wpmTrendFade)" />
+            <path d={linePath} fill="none" stroke="var(--dt-primary)"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+            {hi !== null && (
+              <line x1={xs[hi]} x2={xs[hi]} y1={padT} y2={padT + chartH}
+                stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+            )}
+
+            {results.map((r, i) => {
+              const colW = chartW / Math.max(results.length - 1, 1);
               return (
                 <g key={i}>
-                  <line x1={padL} x2={w - padR} y1={ty} y2={ty} stroke="var(--dt-border)" strokeWidth="0.5" opacity="0.5" strokeDasharray="4 3" />
-                  <text x={padL - 4} y={ty + 4} textAnchor="end" fontSize="9" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)" opacity="0.8">{v}</text>
+                  <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 5.5 : 3.5} fill="var(--dt-primary)" />
+                  <text x={xs[i]} y={h - 8} textAnchor="middle" fontSize="10"
+                    fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{r.month}</text>
+                  <rect x={xs[i] - colW / 2} y={padT} width={colW} height={chartH + padB}
+                    fill="transparent"
+                    onMouseEnter={() => setHi(i)}
+                    onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
                 </g>
               );
             })}
-            <path d={area} fill="url(#wpmTrendFade)" />
-            <path d={line} fill="none" stroke="var(--dt-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={padT - 4} y2={base} stroke="var(--dt-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />}
-            {results.map((r, i) => (
-              <g key={i}>
-                <circle cx={xs[i]} cy={ys[i]} r={hi === i ? 6 : 3} fill="var(--dt-primary)" />
-                <text x={xs[i]} y={h-4} textAnchor="middle" fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{r.month}</text>
-                <rect x={xs[i] - (w / results.length) / 2} y={0} width={w / results.length} height={base} fill="transparent"
-                  onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(prev => prev === i ? null : prev)} />
-              </g>
-            ))}
+
             {hi !== null && (() => {
-              const tw = 120, tx = Math.min(Math.max(xs[hi]-tw/2, 4), w-tw-4), ty = Math.max(ys[hi]-60, 6);
+              const tw = 128, th2 = 50;
+              const tx = Math.min(Math.max(xs[hi] - tw / 2, padL), w - padR - tw);
+              const ty = Math.max(ys[hi] - th2 - 10, padT + 4);
               return (
                 <g pointerEvents="none">
-                  <rect x={tx} y={ty} width={tw} height={48} rx={8} fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
-                  <text x={tx+12} y={ty+19} fontSize="11" fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">{results[hi].month}</text>
-                  <text x={tx+12} y={ty+37} fontSize="15" fontWeight="600" fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">{results[hi].avgWpm.toFixed(1)} <tspan fontSize="9" fill="var(--dt-text-3)">WPM</tspan></text>
+                  <rect x={tx} y={ty} width={tw} height={th2} rx={8}
+                    fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
+                  <text x={tx + 12} y={ty + 20} fontSize="11" fill="var(--dt-text-3)"
+                    fontFamily="var(--dt-font-mono)">{results[hi].month}</text>
+                  <text x={tx + 12} y={ty + 38} fontSize="15" fontWeight="600"
+                    fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">
+                    {results[hi].avgWpm.toFixed(1)}
+                    <tspan fontSize="9" fill="var(--dt-text-3)"> WPM</tspan>
+                  </text>
                 </g>
               );
             })()}

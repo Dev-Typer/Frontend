@@ -49,7 +49,7 @@ function avatarHueFromName(name: string): number {
 }
 
 function levelBg(lv: number): string {
-  return ['rgba(255,255,255,0.04)', 'rgba(80,250,123,0.22)', 'rgba(80,250,123,0.40)', 'rgba(80,250,123,0.62)', 'rgba(80,250,123,0.85)'][lv];
+  return ['var(--dt-hover)', 'rgba(80,250,123,0.22)', 'rgba(80,250,123,0.40)', 'rgba(80,250,123,0.62)', 'rgba(80,250,123,0.85)'][lv];
 }
 
 function formatJoined(iso: string): string {
@@ -106,7 +106,7 @@ const BannerSection = () => {
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 60% at 20% 50%, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
       {/* 하단 페이드 */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(7,12,31,0.95) 100%)' }} />
+        style={{ background: 'linear-gradient(180deg, transparent 30%, var(--dt-bg) 100%)' }} />
 
       {/* 배너 변경 버튼 */}
       <div className="absolute top-3 right-[44px] z-10 flex gap-2">
@@ -180,7 +180,7 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
           {profileHover && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1"
               style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(2px)' }}>
-              <span className="text-[24px]">📷</span>
+              <span className="text-[24px]">✏️</span>
               <span className="text-[10px] text-white font-semibold tracking-wide">{uploading ? '…' : t('Change')}</span>
             </div>
           )}
@@ -275,7 +275,7 @@ const ContributionCell = ({ cell, size }: { cell: StreakEntry | null; size: numb
       title={`${cell.date}${cell.wpm ? ` · ${cell.wpm} wpm` : ' · 미제출'}`}
       style={{
         width: size, height: size, background: levelBg(lv), borderRadius: 2, cursor: 'default',
-        boxShadow: today ? 'inset 0 0 0 1px var(--dt-primary), 0 0 8px rgba(80,250,123,0.5)' : 'inset 0 0 0 0.5px rgba(255,255,255,0.06)',
+        boxShadow: today ? 'inset 0 0 0 1px var(--dt-primary), 0 0 8px rgba(80,250,123,0.5)' : 'inset 0 0 0 1px var(--dt-border)',
         transition: 'transform 100ms',
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.4)'; }}
@@ -360,7 +360,7 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   const longest = data?.longest ?? 0;
   const status = streakStatus(current);
 
-  if (loading) return <CardSkeleton height={220} />;
+  if (loading && !data) return <CardSkeleton height={220} />;
 
   return (
     <div className="dt-card mt-5 overflow-hidden relative" style={{ padding: '28px 32px 24px' }}>
@@ -444,7 +444,7 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
           </div>
 
           {/* 그리드 */}
-          <div className="overflow-x-auto flex-1">
+          <div className="overflow-x-auto flex-1" style={{ opacity: loading ? 0.45 : 1, transition: 'opacity 200ms ease' }}>
             {isEmpty ? (
               <div className="relative">
                 <div className="flex pointer-events-none" style={{ gap, opacity: 0.3 }}>

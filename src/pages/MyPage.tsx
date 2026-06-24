@@ -368,7 +368,7 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
       <div className="absolute top-[-50px] left-[-30px] w-[260px] h-[260px] pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,184,108,0.12), transparent 65%)' }} />
 
-      <div className="relative flex gap-8 justify-center">
+      <div className="relative flex gap-8 justify-center" style={{ paddingLeft: 48 }}>
         {/* ── 좌: 스트릭 통계 ── */}
         <div className="shrink-0 flex flex-col justify-between py-1" style={{ width: 200 }}>
           {/* 현재 스트릭 */}
@@ -694,8 +694,8 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   if (loading) return <CardSkeleton height={280} />;
 
   return (
-    <div className="dt-card p-0 overflow-hidden">
-      <div className="flex justify-between items-center px-6 py-5 border-b border-dt-border/50">
+    <div className="dt-card p-0 overflow-hidden flex flex-col">
+      <div className="flex justify-between items-center px-6 py-5 border-b border-dt-border/50 shrink-0">
         <div className="flex flex-col gap-1">
           <span className="dt-h3 m-0">{t('CORE growth')}</span>
           <span className="dt-caption">{t('Last 6 months')}</span>
@@ -714,7 +714,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="px-6 pt-4 pb-0 flex items-end">
+        <div className="px-6 pt-4 pb-0 flex-1 flex flex-col justify-end">
           <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
             <defs>
               {/* 영역 fill: primary → cyan 수직 그라디언트 */}
@@ -954,8 +954,8 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
   const area = hasData ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
 
   return (
-    <div className="dt-card p-0 overflow-hidden">
-      <div className="flex justify-between items-center px-6 py-5 border-b border-dt-border/50">
+    <div className="dt-card p-0 overflow-hidden flex flex-col">
+      <div className="flex justify-between items-center px-6 py-5 border-b border-dt-border/50 shrink-0">
         <div className="flex flex-col gap-1">
           <span className="dt-h3 m-0">{t('Monthly WPM')}</span>
           <span className="dt-caption">{t('Last 6 months · monthly average')}</span>
@@ -976,7 +976,7 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="px-6 pt-4 pb-0 flex items-end">
+        <div className="px-6 pt-4 pb-0 flex-1 flex flex-col justify-end">
           <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto block">
             <defs>
               <linearGradient id="wpmTrendFade" x1="0" y1="0" x2="0" y2="1">

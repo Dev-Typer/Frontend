@@ -61,10 +61,20 @@ export interface RankingItem {
   rank: number;
   userId: number;
   username: string;
+  profileUrl: string | null;
   core: number;
   wpm: number;
+  rawWpm: number;
   accuracy: number;
+  durationSec: number;
   createdAt: string;
+}
+
+export interface SnippetRankingResponse {
+  items: RankingItem[];
+  total: number;
+  page: number;
+  size: number;
 }
 
 export const saveSnippetResult = async (
@@ -94,9 +104,11 @@ export const getSnippetReplay = async (resultId: number) => {
 
 export const getSnippetRanking = async (
   snippetId: number,
-): Promise<{ items: RankingItem[]; total: number }> => {
-  const { data } = await api.get<ApiResponse<{ items: RankingItem[]; total: number }>>(
-    `/api/snippets/${snippetId}/ranking`,
+  page = 1,
+  size = 20,
+): Promise<SnippetRankingResponse> => {
+  const { data } = await api.get<ApiResponse<SnippetRankingResponse>>(
+    `/api/snippets/${snippetId}/ranking?page=${page}&size=${size}`,
   );
   return data.data!;
 };

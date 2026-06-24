@@ -66,12 +66,10 @@ interface ExplorerProps {
 
 const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, onLogin, onLogout, onStargaze }: ExplorerProps) => {
   const t = useT();
-  const { profileUrl, username, totalCore, currentStreak } = useUserStore((s) => ({
-    profileUrl: s.profileUrl,
-    username: s.username,
-    totalCore: s.totalCore,
-    currentStreak: s.currentStreak,
-  }));
+  const profileUrl = useUserStore((s) => s.profileUrl);
+  const username = useUserStore((s) => s.username);
+  const totalCore = useUserStore((s) => s.totalCore);
+  const currentStreak = useUserStore((s) => s.currentStreak);
   const tree = isAdmin ? [...CONTEM_TREE, ADMIN_NODE] : CONTEM_TREE;
   return (
     <aside

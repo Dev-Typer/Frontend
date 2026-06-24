@@ -13,7 +13,11 @@ import { useUserStore } from '@/stores/userStore';
 // ─── Profile strip ────────────────────────────────────────────────────────────
 
 const HomeProfileStrip = () => {
-  const { username, profileUrl, bannerUrl, totalCore, currentStreak } = useUserStore();
+  const username = useUserStore((s) => s.username);
+  const profileUrl = useUserStore((s) => s.profileUrl);
+  const bannerUrl = useUserStore((s) => s.bannerUrl);
+  const totalCore = useUserStore((s) => s.totalCore);
+  const currentStreak = useUserStore((s) => s.currentStreak);
   return (
     <div className="dt-card" style={{ padding: 0, overflow: 'hidden', position: 'relative', flex: 1, minWidth: 0 }}>
       <div style={{ position: 'relative', height: 76 }}>

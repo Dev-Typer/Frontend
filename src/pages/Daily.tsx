@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
@@ -8,6 +8,7 @@ import Stat from '@/components/Stat';
 import { IconClock, IconPlay, IconTrophy, IconCode, IconChevronRight } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
 import { LANG_ICON } from '@/data';
+import coreLogo from '@/assets/core-logo.png';
 import {
   getDailyChallenge,
   submitDailyChallenge,
@@ -200,7 +201,7 @@ function DailyResultCard({
           <div className="dt-mono tabular-nums text-[52px] font-bold leading-none text-dt-primary">
             {Math.round(submitResult.core)}
           </div>
-          <div className="dt-label text-dt-text-3 mt-[6px]">CORE</div>
+          <div className="dt-label text-dt-text-3 mt-[6px] flex items-center justify-center gap-[5px]"><img src={coreLogo} style={{ width: 19, height: 19, objectFit: 'contain', opacity: 0.85 }} />CORE</div>
         </div>
       )}
       <div className="flex justify-center gap-10 flex-wrap mb-6">

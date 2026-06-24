@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+﻿import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import TypoHeatmap from '@/components/TypoHeatmap';
 import { useT } from '@/i18n';
@@ -13,6 +13,7 @@ import {
 } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult, SoloTrack } from '@/types';
 import { LANG_ICON } from '@/data';
+import coreLogo from '@/assets/core-logo.png';
 import { getPublicSnippet, getRandomSnippet } from '@/apis/snippetApi';
 import type { SnippetLanguage } from '@/apis/snippetApi';
 import { saveSnippetResult, getSnippetRanking } from '@/apis/snippetResultApi';
@@ -431,7 +432,7 @@ const SnippetRankingSection = ({ snippetId, myCore }: { snippetId: number; myCor
                   </span>
                 </div>
                 <span className="dt-mono tabular-nums" style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: 'var(--dt-primary)' }}>
-                  {Math.round(item.core)} <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontWeight: 400 }}>CORE</span>
+                  {Math.round(item.core)} <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--dt-text-3)', fontWeight: 400 }}><img src={coreLogo} style={{ width: 16, height: 16, objectFit: 'contain', opacity: 0.7 }} />CORE</span>
                 </span>
                 <span className="dt-mono tabular-nums" style={{ textAlign: 'right', fontSize: 13, color: 'var(--dt-text-2)' }}>
                   {item.wpm} <span style={{ fontSize: 10 }}>WPM</span>
@@ -537,7 +538,7 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         <div className="dt-card p-0 overflow-hidden" style={{ marginBottom: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr' }}>
             <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div className="dt-label" style={{ marginBottom: 6 }}>{t('CORE this run')}</div>
+              <div className="dt-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><img src={coreLogo} style={{ width: 19, height: 19, objectFit: 'contain' }} />{t('CORE this run')}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
                 <span className="dt-mono dt-tabular" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: 'var(--dt-primary)' }}>{core}</span>
                 {savedCoreInfo && (isNewBest ? (

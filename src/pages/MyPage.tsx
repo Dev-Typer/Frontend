@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { useUserStore } from '@/stores/userStore';
 import { LANG_ICON } from '@/data';
+import coreLogo from '@/assets/core-logo.png';
 import Avatar from '@/components/Avatar';
 import { IconChevronDown } from '@/components/icons/Icons';
 import {
@@ -210,7 +211,7 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
 
         {/* CORE 수치 */}
         <div className="pb-3 text-right shrink-0" style={{ zIndex: 2 }}>
-          <div className="dt-label text-dt-text-3 mb-1 tracking-widest text-[10px]">TOTAL CORE</div>
+          <div className="dt-label text-dt-text-3 mb-1 tracking-widest text-[10px] flex items-center gap-[4px]"><img src={coreLogo} style={{ width: 16, height: 16, objectFit: 'contain', opacity: 0.75 }} />TOTAL CORE</div>
           <div className="dt-mono tabular-nums font-bold leading-none"
             style={{ fontSize: 68, color: 'var(--dt-primary)', textShadow: '0 0 40px rgba(242,58,47,0.35)' }}>
             {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
@@ -543,7 +544,7 @@ const CoreChip = ({ snippetId, title, language, core }: CoreChipProps) => {
           </div>
           <div className="p-[10px_15px] flex items-center justify-between">
             <span className="dt-mono tabular-nums text-[14px] font-semibold text-dt-primary">
-              {Math.round(core)} <span className="text-[10px] text-dt-text-3">CORE</span>
+              {Math.round(core)} <span className="text-[10px] text-dt-text-3 inline-flex items-center gap-[3px]"><img src={coreLogo} style={{ width: 15, height: 15, objectFit: 'contain', opacity: 0.7 }} />CORE</span>
             </span>
             <span className="text-[10px] text-dt-text-3">클릭하여 플레이</span>
           </div>
@@ -579,7 +580,7 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
       <div className="flex justify-between items-center px-6 py-5 border-b border-dt-border/50">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-[6px]">
-            <span className="dt-h3 m-0">CORE</span>
+            <span className="dt-h3 m-0 flex items-center gap-[6px]"><img src={coreLogo} style={{ width: 23, height: 23, objectFit: 'contain' }} />CORE</span>
             <div className="relative group">
               <span className="text-[11px] font-semibold leading-none cursor-default select-none"
                 style={{ color: 'var(--dt-text-3)', border: '1px solid var(--dt-border)', borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>?</span>
@@ -602,7 +603,7 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
       </div>
       <div className="px-6 py-4 pb-[18px]"
         style={{ maxHeight: expanded ? 'none' : CONTENT_MAX_H, overflow: 'hidden', transition: 'max-height 250ms ease' }}>
-        <div className="dt-label mb-3">{t('Top snippets by CORE')}</div>
+        <div className="dt-label mb-3 flex items-center gap-[5px]"><img src={coreLogo} style={{ width: 17, height: 17, objectFit: 'contain', opacity: 0.8 }} />{t('Top snippets by CORE')}</div>
         {list.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10, justifyItems: 'center' }}>
             {shown.map((s, i) => <CoreChip key={i} snippetId={s.snippetId} title={s.title} language={s.language} core={s.core} />)}
@@ -772,7 +773,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
         </div>
         <div className="flex items-baseline gap-[6px]">
           <span className="dt-mono tabular-nums text-[16px] text-dt-primary">+{gain.toLocaleString()}</span>
-          <span className="dt-caption">CORE</span>
+          <span className="dt-caption inline-flex items-center gap-[3px]"><img src={coreLogo} style={{ width: 16, height: 16, objectFit: 'contain', opacity: 0.7 }} />CORE</span>
         </div>
       </div>
       {(points.length < 2 || vals.every(v => v === 0)) ? (
@@ -938,7 +939,7 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
                 boxShadow: metric === m ? 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 40%, transparent)' : 'none',
                 transition: 'all 120ms',
               }}>
-                {m === 'core' ? 'CORE' : t('Plays')}
+                {m === 'core' ? <span className="inline-flex items-center gap-[4px]"><img src={coreLogo} style={{ width: 16, height: 16, objectFit: 'contain' }} />CORE</span> : t('Plays')}
               </button>
             ))}
           </div>

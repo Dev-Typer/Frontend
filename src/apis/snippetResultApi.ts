@@ -58,6 +58,7 @@ export interface RankingItem {
   rank: number;
   userId: number;
   username: string;
+  core: number;
   wpm: number;
   accuracy: number;
   createdAt: string;

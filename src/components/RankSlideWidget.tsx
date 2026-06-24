@@ -46,6 +46,7 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
         rank: 0,
         userId: -(i + 1),
         username: DUMMY_NAMES[i % DUMMY_NAMES.length],
+        core: 0,
         wpm: dWpm,
         accuracy: 90 + Math.random() * 8,
         createdAt: '',
@@ -55,7 +56,7 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
     // 나 포함 WPM 내림차순 정렬
     const all: (RankingItem & { isMe?: boolean })[] = [
       ...others,
-      { rank: 0, userId, username: myUsername, wpm: myWpm, accuracy: 95, createdAt: '', isMe: true },
+      { rank: 0, userId, username: myUsername, core: 0, wpm: myWpm, accuracy: 95, createdAt: '', isMe: true },
     ].sort((a, b) => b.wpm - a.wpm).map((r, i) => ({ ...r, rank: i + 1 }));
 
     return all;

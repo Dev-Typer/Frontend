@@ -2,6 +2,8 @@ import api from './authApi';
 
 export type SnippetLanguage = 'JAVASCRIPT' | 'PYTHON' | 'JAVA' | 'CPP';
 export type SnippetDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type SnippetSort = 'newest' | 'oldest' | 'most-liked' | 'least-liked';
+export type PlayedByMe = 'played' | 'not-played';
 
 export interface Snippet {
   id: number;
@@ -12,9 +14,33 @@ export interface Snippet {
   source: string | null;
   avgWpm: number;
   playCount: number;
-  isDaily: boolean;
+  likeCount: number;
+  isLiked: boolean;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface SnippetPage {
+  data: Snippet[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface SnippetListParams {
+  language?: SnippetLanguage;
+  difficulty?: SnippetDifficulty;
+  keyword?: string;
+  sort?: SnippetSort;
+  likedByMe?: boolean;
+  playedByMe?: PlayedByMe;
+  page?: number;
+  size?: number;
+}
+
+export interface SnippetLikeResponse {
+  likeCount: number;
+  isLiked: boolean;
 }
 
 interface ApiResponse<T> {
@@ -24,7 +50,17 @@ interface ApiResponse<T> {
   timestamp: string;
 }
 
-// ─── 유저용 ───────────────────────────────────────────────────────────────────
+// ─── 유저용 (공개 API) ────────────────────────────────────────────────────────
+
+export const getPublicSnippets = async (params?: SnippetListParams): Promise<SnippetPage> => {
+  const { data } = await api.get<ApiResponse<SnippetPage>>('/api/snippets', { params });
+  return data.data;
+};
+
+export const getPublicSnippet = async (id: number): Promise<Snippet> => {
+  const { data } = await api.get<ApiResponse<Snippet>>(`/api/snippets/${id}`);
+  return data.data;
+};
 
 export const getRandomSnippet = async (
   language?: SnippetLanguage,
@@ -36,8 +72,13 @@ export const getRandomSnippet = async (
   return data.data;
 };
 
-export const getDailySnippet = async (): Promise<Snippet> => {
-  const { data } = await api.get<ApiResponse<Snippet>>('/api/snippets/daily');
+export const likeSnippet = async (id: number): Promise<SnippetLikeResponse> => {
+  const { data } = await api.post<ApiResponse<SnippetLikeResponse>>(`/api/snippets/${id}/like`);
+  return data.data;
+};
+
+export const unlikeSnippet = async (id: number): Promise<SnippetLikeResponse> => {
+  const { data } = await api.delete<ApiResponse<SnippetLikeResponse>>(`/api/snippets/${id}/like`);
   return data.data;
 };
 
@@ -51,27 +92,27 @@ export interface CreateSnippetBody {
   source?: string;
 }
 
-export type UpdateSnippetBody = Partial<CreateSnippetBody & { isDaily: boolean }>;
+export type UpdateSnippetBody = Partial<CreateSnippetBody & { isActive: boolean }>;
 
-export interface SnippetPage {
+export interface AdminSnippetPage {
   data: Snippet[];
   total: number;
   page: number;
   size: number;
 }
 
-export const getSnippets = async (params?: {
+export const getAdminSnippets = async (params?: {
   language?: SnippetLanguage;
   difficulty?: SnippetDifficulty;
   isActive?: boolean;
   page?: number;
   size?: number;
-}): Promise<SnippetPage> => {
-  const { data } = await api.get<ApiResponse<SnippetPage>>('/api/admin/snippets', { params });
+}): Promise<AdminSnippetPage> => {
+  const { data } = await api.get<ApiResponse<AdminSnippetPage>>('/api/admin/snippets', { params });
   return data.data;
 };
 
-export const getSnippet = async (id: number): Promise<Snippet> => {
+export const getAdminSnippet = async (id: number): Promise<Snippet> => {
   const { data } = await api.get<ApiResponse<Snippet>>(`/api/admin/snippets/${id}`);
   return data.data;
 };

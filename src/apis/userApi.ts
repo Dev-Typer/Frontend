@@ -7,6 +7,14 @@ import type {
   UserCoreHistoryResponse,
 } from '@/types';
 
+export interface UserMeResponse {
+  username: string;
+  profileUrl: string | null;
+  bannerUrl: string | null;
+  totalCore: number;
+  currentStreak: number;
+}
+
 interface ApiResponse<T> {
   success: boolean;
   statusCode: number;
@@ -14,6 +22,11 @@ interface ApiResponse<T> {
   message?: string;
   timestamp: string;
 }
+
+export const getUserMe = async (): Promise<UserMeResponse> => {
+  const { data } = await api.get<ApiResponse<UserMeResponse>>('/api/user/me');
+  return data.data!;
+};
 
 export const getUserStreak = async (year?: number, type?: string): Promise<UserStreakResponse> => {
   const { data } = await api.get<ApiResponse<UserStreakResponse>>('/api/user/me/streak', {

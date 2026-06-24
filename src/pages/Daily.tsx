@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
 import PlayEditor from '@/components/PlayEditor';
 import Avatar from '@/components/Avatar';
 import Stat from '@/components/Stat';
-import { IconClock, IconPlay, IconTrophy, IconX, IconCode, IconChevronRight } from '@/components/icons/Icons';
+import { IconClock, IconPlay, IconTrophy, IconCode, IconChevronRight } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
-import { LANG_ICON, TODAYS_CHALLENGE } from '@/data';
+import { LANG_ICON } from '@/data';
+import coreLogo from '@/assets/core-logo.png';
 import {
   getDailyChallenge,
   submitDailyChallenge,
@@ -27,125 +28,7 @@ const DIFF_COLOR: Record<string, string> = {
   easy: '#3DD68C', medium: '#57E5FF', hard: '#B93CFF',
 };
 
-// ─── Dummy history data ───────────────────────────────────────────────────────
-const CHALLENGE_HISTORY = [
-  { date: '2026-06-21', wpm: 112, rank: 3,   total: 4218 },
-  { date: '2026-06-20', wpm: 98,  rank: 17,  total: 3941 },
-  { date: '2026-06-19', wpm: 105, rank: 8,   total: 4102 },
-  { date: '2026-06-18', wpm: 88,  rank: 44,  total: 3877 },
-  { date: '2026-06-17', wpm: 117, rank: 2,   total: 4560 },
-  { date: '2026-06-16', wpm: 93,  rank: 28,  total: 3720 },
-  { date: '2026-06-15', wpm: 101, rank: 11,  total: 4033 },
-];
 
-// ─── Weekly challenge strip ───────────────────────────────────────────────────
-function WeeklyChallengeStrip() {
-  const t = useT();
-  const DOW = [t('Sun'), t('Mon'), t('Tue'), t('Wed'), t('Thu'), t('Fri'), t('Sat')];
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const dow = today.getDay();
-  const weekStart = new Date(today); weekStart.setDate(today.getDate() - dow);
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
-    const future = d > today;
-    const isToday = d.getTime() === today.getTime();
-    const n = Math.floor(d.getTime() / 86400000);
-    const s = Math.sin(n * 12.9898 + 2026 * 3.17) * 43758.5453;
-    const submitted = !future && (s - Math.floor(s)) > 0.4;
-    const wpm = submitted ? 70 + Math.round(Math.abs(Math.sin(n * 0.7)) * 60) : null;
-    return { d, future, isToday, submitted, wpm };
-  });
-  const done = days.filter(x => x.submitted).length;
-
-  return (
-    <div className="dt-card flex items-center gap-[18px] px-5 py-[14px] mb-5">
-      <div className="flex flex-col gap-[3px] shrink-0">
-        <span className="dt-label">{t('This week')}</span>
-        <span className="dt-mono tabular-nums text-[18px] text-dt-text">
-          {done}<span className="text-[12px] text-dt-text-3">/7</span>
-        </span>
-      </div>
-      <div className="flex gap-[10px] flex-1 justify-between">
-        {days.map((x, i) => {
-          const bg = x.future
-            ? 'rgba(255,255,255,0.035)'
-            : x.submitted
-              ? (x.wpm! >= 100 ? 'rgba(80,250,123,0.85)' : x.wpm! >= 80 ? 'rgba(80,250,123,0.55)' : 'rgba(80,250,123,0.32)')
-              : 'rgba(255,255,255,0.06)';
-          return (
-            <div key={i} title={x.submitted ? `${x.wpm} WPM` : ''} className="flex flex-col items-center gap-[6px] flex-1">
-              <span className="text-[10px] font-dt-mono"
-                style={{ color: x.isToday ? 'var(--dt-primary)' : 'var(--dt-text-3)', fontWeight: x.isToday ? 700 : 400 }}>
-                {DOW[i]}
-              </span>
-              <div className="w-full h-7 rounded-[7px] flex items-center justify-center"
-                style={{
-                  background: bg,
-                  boxShadow: x.isToday ? 'inset 0 0 0 1.5px var(--dt-primary)' : 'inset 0 0 0 0.5px rgba(255,255,255,0.06)',
-                }}>
-                {x.submitted && (
-                  <span className="text-[10px] font-bold font-dt-mono" style={{ color: '#0A1A0E' }}>{x.wpm}</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── History modal ────────────────────────────────────────────────────────────
-function ChallengeHistoryModal({ onClose }: { onClose: () => void }) {
-  const t = useT();
-  return (
-    <div
-      className="fixed inset-0 z-[300] flex items-center justify-center p-6"
-      style={{ background: 'rgba(7,12,31,0.72)', backdropFilter: 'blur(10px)', animation: 'dt-fade 160ms ease-out' }}
-      onClick={onClose}
-    >
-      <div
-        className="dt-card w-full max-w-[640px] max-h-[82vh] overflow-hidden flex flex-col p-0"
-        style={{ animation: 'dt-rise 200ms ease-out' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-[10px] px-6 py-5 border-b border-dt-border/50">
-          <span className="text-[18px]">📅</span>
-          <span className="dt-h3 m-0">{t('Daily challenge history')}</span>
-          <span className="dt-caption ml-auto">{CHALLENGE_HISTORY.length} {t('entries')}</span>
-          <button
-            onClick={onClose}
-            className="ml-2 w-8 h-8 rounded-[10px] border-0 cursor-default bg-dt-hover text-dt-text-2 flex items-center justify-center"
-          >
-            <IconX size={16} />
-          </button>
-        </div>
-        <div className="grid gap-3 px-6 py-3 shadow-[inset_0_-1px_0_var(--dt-border)]"
-          style={{ gridTemplateColumns: '1fr 90px 120px' }}>
-          <span className="dt-label">{t('Date')}</span>
-          <span className="dt-label text-right">WPM</span>
-          <span className="dt-label text-right">{t('Rank')}</span>
-        </div>
-        <div className="overflow-y-auto">
-          {CHALLENGE_HISTORY.map((h, i) => (
-            <div key={h.date}
-              className="grid items-center gap-3 px-6 py-[13px]"
-              style={{
-                gridTemplateColumns: '1fr 90px 120px',
-                boxShadow: i < CHALLENGE_HISTORY.length - 1 ? 'inset 0 -1px 0 var(--dt-border)' : 'none',
-              }}>
-              <span className="dt-mono text-[13px] text-dt-text-2">{h.date}</span>
-              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text">{h.wpm}</span>
-              <span className="dt-mono tabular-nums text-right text-[13px] text-dt-text-2">
-                #{h.rank} <span className="dt-caption">/ {h.total.toLocaleString()}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Intro: mac-style editor preview ─────────────────────────────────────────
 function DailyIntro({ ch, isLoggedIn, onStart }: { ch: DailyChallengeDto; isLoggedIn: boolean; onStart: () => void }) {
@@ -290,37 +173,37 @@ function DailyTyping({
   );
 }
 
-function dailyCore(wpm: number, acc: number, difficulty: string, codeLength: number): number {
-  const diffW = ({ easy: 1.0, medium: 1.3, hard: 1.6 } as Record<string, number>)[difficulty] ?? 1.3;
-  const lenW = Math.min(2.0, Math.max(0.5, codeLength / 200));
-  return Math.round(wpm * (acc / 100) * diffW * lenW);
-}
-
 // ─── Result card ──────────────────────────────────────────────────────────────
 function DailyResultCard({
-  result, submitResult, ch, onRetry,
+  result, submitResult, onRetry,
 }: {
   result: TypingResult;
   submitResult: SubmitDailyChallengeResponseDto | null;
-  ch: DailyChallengeDto;
   onRetry: () => void;
 }) {
   const t = useT();
-  const myCore = dailyCore(result.wpm, result.acc, ch.snippet.difficulty, ch.snippet.content.length);
   return (
     <div className="dt-card p-9 text-center">
       <div className="w-[60px] h-[60px] rounded-full mx-auto mb-[18px] flex items-center justify-center text-dt-primary"
         style={{ background: 'var(--dt-gradient-soft)' }}>
         <IconTrophy size={30} />
       </div>
-      <h2 className="dt-h1 m-0 mb-2">{t('Challenge submitted.')}</h2>
+      <h2 className="dt-h1 m-0 mb-2">
+        {submitResult ? t('Challenge submitted.') : t('Challenge complete.')}
+      </h2>
       <p className="dt-body-sm text-dt-text-2 mb-[26px]">
-        {t("You'll see your final position when the day closes. Live rank shown below.")}
+        {submitResult
+          ? t("You'll see your final position when the day closes. Live rank shown below.")
+          : t('Log in to save your result.')}
       </p>
-      <div className="mb-[26px]">
-        <div className="dt-mono tabular-nums text-[52px] font-bold leading-none text-dt-primary">{myCore}</div>
-        <div className="dt-label text-dt-text-3 mt-[6px]">CORE</div>
-      </div>
+      {submitResult && (
+        <div className="mb-[26px]">
+          <div className="dt-mono tabular-nums text-[52px] font-bold leading-none text-dt-primary">
+            {Math.round(submitResult.core)}
+          </div>
+          <div className="dt-label text-dt-text-3 mt-[6px] flex items-center justify-center gap-[5px]"><img src={coreLogo} style={{ width: 19, height: 19, objectFit: 'contain', opacity: 0.85 }} />CORE</div>
+        </div>
+      )}
       <div className="flex justify-center gap-10 flex-wrap mb-6">
         <Stat label="WPM" value={result.wpm} accent />
         <Stat label="Accuracy" value={result.acc.toFixed(1)} unit="%" />
@@ -404,14 +287,12 @@ const Daily = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [leaderTotal, setLeaderTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
-
-  // Countdown
+  // Countdown — UTC 자정 기준 (백엔드 챌린지 교체 시각과 동기화)
   const [, setTick] = useState(0);
   useEffect(() => { const id = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(id); }, []);
   const now = new Date();
-  const tomorrow = new Date(now); tomorrow.setHours(24, 0, 0, 0);
-  const msLeft = tomorrow.getTime() - now.getTime();
+  const nextUtcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const msLeft = nextUtcMidnight.getTime() - now.getTime();
   const hLeft = Math.floor(msLeft / 3600000);
   const mLeft = Math.floor((msLeft / 60000) % 60);
   const sLeft = Math.floor((msLeft / 1000) % 60);
@@ -425,19 +306,7 @@ const Daily = () => {
   useEffect(() => {
     getDailyChallenge()
       .then(ch => { setChallenge(ch); })
-      .catch(() => {
-        setChallenge({
-          id: 0,
-          date: TODAYS_CHALLENGE.date,
-          snippet: {
-            id: 0, title: 'Daily Challenge',
-            content: TODAYS_CHALLENGE.code,
-            language: TODAYS_CHALLENGE.language,
-            difficulty: TODAYS_CHALLENGE.difficulty as 'easy' | 'medium' | 'hard',
-            playCount: 0, avgWpm: 0,
-          },
-        });
-      })
+      .catch(() => { /* challenge stays null → error state */ })
       .finally(() => setLoading(false));
     loadLeaderboard();
   }, []);
@@ -449,8 +318,7 @@ const Daily = () => {
     setResult(r);
     setPhase('result');
     if (!challenge || !isLoggedIn) return;
-    const durationSec = Math.round(r.elapsed / 1000);
-    if (durationSec < 3) return;
+    const durationSec = Math.max(1, Math.round(r.elapsed / 1000));
     try {
       const res = await submitDailyChallenge({
         wpm: r.wpm, rawWpm: r.rawWpm, accuracy: r.acc,
@@ -518,14 +386,8 @@ const Daily = () => {
           </div>
         </div>
 
-        {/* Countdown + history */}
+        {/* Countdown */}
         <div className="flex items-center gap-3">
-          <button
-            className="dt-btn dt-btn-secondary h-16 inline-flex items-center gap-2"
-            onClick={() => setShowHistory(true)}
-          >
-            <IconClock size={18} /> {t('My history')}
-          </button>
           <div className="flex items-center gap-[14px] px-5 py-[14px] rounded-[14px] bg-dt-card shadow-[inset_0_0_0_1px_var(--dt-border)]">
             <IconClock size={20} style={{ color: 'var(--dt-warning)' }} />
             <div>
@@ -537,10 +399,6 @@ const Daily = () => {
           </div>
         </div>
       </div>
-
-      {showHistory && <ChallengeHistoryModal onClose={() => setShowHistory(false)} />}
-
-      {phase !== 'typing' && <WeeklyChallengeStrip />}
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       {phase === 'typing' ? (
@@ -558,7 +416,7 @@ const Daily = () => {
           <div>
             {phase === 'intro'
               ? <DailyIntro ch={challenge} isLoggedIn={isLoggedIn} onStart={start} />
-              : result && <DailyResultCard result={result} submitResult={submitResult} ch={challenge} onRetry={retry} />}
+              : result && <DailyResultCard result={result} submitResult={submitResult} onRetry={retry} />}
           </div>
           <DailyLeaderboard items={leaderboard} total={leaderTotal} myUserId={myUserId ?? undefined} />
         </div>

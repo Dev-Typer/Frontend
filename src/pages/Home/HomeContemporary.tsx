@@ -1,28 +1,38 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
 import UserHover from '@/components/UserHover';
 import { IconPlay, IconUser, IconCode } from '@/components/icons/Icons';
-import { GLOBAL_RANKING, TODAYS_CHALLENGE } from '@/data';
-import type { User } from '@/types';
-
-interface Props {
-  me: User;
-}
+import { GLOBAL_RANKING, LANG_ICON } from '@/data';
+import coreLogo from '@/assets/core-logo.png';
+import { getDailyChallenge } from '@/apis/dailyChallengeApi';
+import type { DailyChallengeDto } from '@/apis/dailyChallengeApi';
+import { useUserStore } from '@/stores/userStore';
 
 // ─── Profile strip ────────────────────────────────────────────────────────────
 
-const HomeProfileStrip = ({ me }: { me: User }) => {
-  const t = useT();
+const HomeProfileStrip = () => {
+  const username = useUserStore((s) => s.username);
+  const profileUrl = useUserStore((s) => s.profileUrl);
+  const bannerUrl = useUserStore((s) => s.bannerUrl);
+  const totalCore = useUserStore((s) => s.totalCore);
+  const currentStreak = useUserStore((s) => s.currentStreak);
   return (
     <div className="dt-card" style={{ padding: 0, overflow: 'hidden', position: 'relative', flex: 1, minWidth: 0 }}>
       <div style={{ position: 'relative', height: 76 }}>
-        <img
-          src="/assets/banner-default.gif"
-          alt=""
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-        />
+        {bannerUrl ? (
+          <img
+            src={bannerUrl}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(120deg, rgba(46,107,255,0.18) 0%, rgba(87,229,255,0.08) 100%)',
+          }} />
+        )}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
           background: 'linear-gradient(90deg, rgba(7,11,20,0.82) 0%, rgba(7,11,20,0.45) 50%, rgba(7,11,20,0.65) 100%)',
@@ -38,24 +48,22 @@ const HomeProfileStrip = ({ me }: { me: User }) => {
             boxShadow: 'inset 0 0 0 2px var(--dt-primary), 0 6px 18px -8px rgba(0,0,0,0.6)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
           }}>
-            <Avatar handle={me.handle} hue={me.avatarHue} size={46} />
+            <Avatar handle={username ?? ''} size={46} src={profileUrl} />
           </div>
           <div className="dt-stack" style={{ gap: 5 }}>
             <h1 style={{
               margin: 0, fontFamily: 'var(--dt-font-mono)', fontWeight: 700,
               fontSize: 19, lineHeight: 1, color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,0.7)',
-            }}>{me.handle}</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            }}>{username}</h1>
+            {currentStreak > 0 && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600,
                 color: 'var(--dt-warning)', background: 'rgba(255,184,108,0.18)',
                 boxShadow: 'inset 0 0 0 1px rgba(255,184,108,0.4)',
-              }}>🔥 {me.currentStreak}</span>
-              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11 }}>
-                {t('Global rank')} <span className="dt-mono" style={{ color: '#fff' }}>#{me.globalRank}</span>
-              </span>
-            </div>
+                width: 'fit-content',
+              }}>🔥 {currentStreak}</span>
+            )}
           </div>
         </div>
         {/* CORE right */}
@@ -66,8 +74,8 @@ const HomeProfileStrip = ({ me }: { me: User }) => {
           <div className="dt-tabular" style={{
             fontFamily: 'var(--dt-font-mono)', fontWeight: 700, fontSize: 28, lineHeight: 0.9,
             color: '#fff', textShadow: '0 3px 16px rgba(0,0,0,0.6)',
-          }}>{me.totalCore.toLocaleString()}</div>
-          <div style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginTop: 3 }}>CORE</div>
+          }}>{totalCore.toLocaleString()}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginTop: 3 }}><img src={coreLogo} style={{ width: 15, height: 15, objectFit: 'contain' }} />CORE</div>
         </div>
       </div>
     </div>
@@ -76,8 +84,9 @@ const HomeProfileStrip = ({ me }: { me: User }) => {
 
 // ─── Streak card ─────────────────────────────────────────────────────────────
 
-const CurrentStreakCard = ({ me }: { me: User }) => {
+const CurrentStreakCard = () => {
   const t = useT();
+  const currentStreak = useUserStore((s) => s.currentStreak);
   return (
     <div style={{
       position: 'relative', height: '100%', minHeight: 0, minWidth: 0,
@@ -87,7 +96,7 @@ const CurrentStreakCard = ({ me }: { me: User }) => {
       <div className="dt-stack" style={{ gap: 2 }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--dt-text-2)' }}>{t('Streak')}</span>
         <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 800, fontSize: 40, lineHeight: 1, color: 'var(--dt-text)' }}>
-          <span className="dt-tabular">{me.currentStreak}</span> {t('Day')}
+          <span className="dt-tabular">{currentStreak}</span> {t('Day')}
         </span>
       </div>
     </div>
@@ -324,17 +333,27 @@ const DIFF_COLOR: Record<string, string> = {
 
 const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) => {
   const t = useT();
-  const ch = TODAYS_CHALLENGE;
+  const [daily, setDaily] = useState<DailyChallengeDto | null>(null);
+
+  useEffect(() => {
+    getDailyChallenge().then(setDaily).catch(() => {});
+  }, []);
+
+  if (!daily) return null;
+
+  const ch = daily.snippet;
   const diffColor = DIFF_COLOR[ch.difficulty] || '#57E5FF';
   const diffLabel = ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
+  const langKey = ch.language.toLowerCase();
+  const langIcon = LANG_ICON[langKey];
 
   return (
     <section style={{ marginTop: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '0 4px' }}>
         <h2 style={{ margin: 0, fontFamily: 'var(--dt-font-display)', fontWeight: 600, fontSize: 20, color: 'var(--dt-text)' }}>
-          {t("Today's Challenge")}
+          {t("Today's challenge")}
         </h2>
-        <span className="dt-caption" style={{ marginLeft: 'auto' }}>{ch.date}</span>
+        <span className="dt-caption" style={{ marginLeft: 'auto' }}>{daily.date}</span>
       </div>
 
       <div className="dt-card" style={{ padding: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: '300px 1fr' }}>
@@ -349,7 +368,9 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <IconCode size={48} style={{ color: diffColor }} />
+            {langIcon
+              ? <img src={langIcon} alt={ch.language} style={{ width: 48, height: 48, objectFit: 'contain' }} />
+              : <IconCode size={48} style={{ color: diffColor }} />}
             <div className="dt-stack" style={{ gap: 2 }}>
               <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--dt-text)', lineHeight: 1 }}>
                 {ch.language}
@@ -371,7 +392,7 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
               {t(diffLabel)}
             </span>
             <p className="dt-caption" style={{ margin: '0 0 16px' }}>
-              4,218{t('명 중')} · {t('One snippet, one attempt.')}
+              {t('One snippet, one attempt.')}
             </p>
             <span className="dt-btn dt-btn-primary" style={{ pointerEvents: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <IconPlay size={14} /> {t('Take the challenge')}
@@ -384,31 +405,92 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
           <pre style={{
             margin: 0, fontFamily: 'var(--dt-font-mono)', fontSize: 14, lineHeight: 1.75,
             color: 'var(--dt-text)', whiteSpace: 'pre', overflowX: 'auto',
-          }}>{ch.code}</pre>
+          }}>{ch.content}</pre>
         </div>
       </div>
     </section>
   );
 };
 
+// ─── Guest banner ─────────────────────────────────────────────────────────────
+
+const GuestBanner = ({ navigate }: { navigate: (r: string) => void }) => {
+  const t = useT();
+  return (
+    <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ position: 'relative', height: 76 }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(90deg, rgba(7,11,20,0.92) 0%, rgba(7,11,20,0.6) 100%)',
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex',
+          alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 20px', zIndex: 2,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: 10,
+              background: 'rgba(255,255,255,0.06)',
+              boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <IconUser size={20} style={{ color: 'var(--dt-text-3)' }} />
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--dt-font-mono)', fontWeight: 700, fontSize: 16, color: 'var(--dt-text)', lineHeight: 1.2 }}>
+                {t('Guest')}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--dt-text-3)', marginTop: 3 }}>
+                {t('Sign in to track your streak and CORE')}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: '#24292F', color: '#fff',
+              padding: '8px 16px', border: 0, borderRadius: 8,
+              cursor: 'pointer', fontFamily: 'var(--dt-font-mono)',
+              fontSize: 13, fontWeight: 600, flexShrink: 0,
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            {t('Sign in with GitHub')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── HomeContemporary ─────────────────────────────────────────────────────────
 
-const HomeContemporary = ({ me }: Props) => {
+const HomeContemporary = () => {
   const navigate = useNavigate();
+  const isLoggedIn = useUserStore((s) => s.isLoggedIn);
   return (
     <div style={{
       maxWidth: 1100, margin: '0 auto', padding: '20px 44px 40px',
       minHeight: 'calc(100vh - 24px)',
       display: 'flex', flexDirection: 'column', justifyContent: 'center',
     }}>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <HomeProfileStrip me={me} />
+      {isLoggedIn ? (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <HomeProfileStrip />
+          </div>
+          <div style={{ width: 240, flexShrink: 0 }}>
+            <CurrentStreakCard />
+          </div>
         </div>
-        <div style={{ width: 240, flexShrink: 0 }}>
-          <CurrentStreakCard me={me} />
-        </div>
-      </div>
+      ) : (
+        <GuestBanner navigate={navigate} />
+      )}
       <ModeArena navigate={navigate} />
       <DailyChallengeSection navigate={navigate} />
     </div>

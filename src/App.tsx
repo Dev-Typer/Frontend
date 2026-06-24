@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
 import { getMe, logout } from '@/apis/authApi';
+import { getUserMe } from '@/apis/userApi';
 import { LangContext } from '@/i18n';
 import ContemporaryShell from '@/pages/ContemporaryShell';
 import HomeContemporary from '@/pages/Home/HomeContemporary';
@@ -38,11 +39,19 @@ const AppRoutes = () => {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
-  const { isLoggedIn, setUser, clearUser, username, role } = useUserStore();
+  const { isLoggedIn, setUser, setUserMe, clearUser, role } = useUserStore();
 
   useEffect(() => {
-    getMe().then((data) => setUser(data)).catch(() => {});
-  }, [setUser]);
+    getMe()
+      .then(async (data) => {
+        setUser(data);
+        try {
+          const me = await getUserMe();
+          setUserMe(me);
+        } catch {}
+      })
+      .catch(() => {});
+  }, [setUser, setUserMe]);
 
   const handleLogout = async () => {
     await logout().catch(() => {});
@@ -50,31 +59,9 @@ const AppRoutes = () => {
     navigate('/login');
   };
 
-  const me = {
-    handle: username ?? 'guest',
-    joined: '',
-    tier: 'bronze' as const,
-    rating: 0,
-    avatarHue: 160,
-    totalPlays: 0,
-    avgWpm: 0,
-    maxWpm: 0,
-    avgAcc: 0,
-    byLang: [],
-    totalCore: 0,
-    globalRank: 0,
-    langRank: 0,
-    uniqueSnippets: 0,
-    currentStreak: 0,
-    longestStreak: 0,
-    bestSnippets: [],
-    coreHistory: [],
-    topCore: [],
-  };
-
   const routes = (
     <Routes>
-      <Route path="/" element={<HomeContemporary me={me} />} />
+      <Route path="/" element={<HomeContemporary />} />
       <Route path="/solo" element={<Solo />} />
       <Route path="/battle" element={<Battle />} />
       <Route path="/daily" element={<Daily />} />
@@ -91,7 +78,7 @@ const AppRoutes = () => {
   );
 
   return (
-    <ContemporaryShell me={me} isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
+    <ContemporaryShell isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
       {routes}
     </ContemporaryShell>
   );

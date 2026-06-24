@@ -116,6 +116,17 @@ const TypingEngine = ({
     }
 
     typedRef.current = typedRef.current + inChar;
+
+    // 엔터 후 다음 줄 앞 공백(들여쓰기) 자동 스킵
+    if (isCorrect && inChar === '\n') {
+      let nextIdx = typedRef.current.length;
+      while (nextIdx < code.length && (code[nextIdx] === ' ' || code[nextIdx] === '\t')) {
+        replayDataRef.current.push({ index: nextIdx, char: code[nextIdx], timestamp, correct: true });
+        typedRef.current += code[nextIdx];
+        nextIdx++;
+      }
+    }
+
     setTyped(typedRef.current);
   }, [active, code]);
 
@@ -140,7 +151,7 @@ const TypingEngine = ({
       setFinishedFlag(true);
       const finalNow = Date.now();
       setNow(finalNow);
-      const finalElapsed = finalNow - startedAt;
+      const finalElapsed = Math.max(1, finalNow - startedAt);
       let finalCorrect = 0;
       for (let i = 0; i < typed.length; i++) if (typed[i] === code[i]) finalCorrect++;
       const finalTotalKeys = finalCorrect + errorsRef.current;
@@ -173,6 +184,28 @@ const TypingEngine = ({
     return out;
   }, [code, typed]);
 
+  // 현재 커서 위치 기반 상태바 정보
+  const statusInfo = useMemo(() => {
+    const curIdx = Math.min(typed.length, code.length - 1);
+    const before = code.slice(0, curIdx);
+    const linesBefore = before.split('\n');
+    const lineNum = linesBefore.length;
+    const col = linesBefore[linesBefore.length - 1].length + 1;
+    const allLines = code.split('\n');
+    const currentLineText = allLines[lineNum - 1] ?? '';
+    const colInLine = col - 1; // 0-based index in line
+
+    const nextChar = code[typed.length];
+    const charLabel =
+      nextChar === '\n' ? '↵ Enter'
+      : nextChar === '\t' ? '⇥ Tab'
+      : nextChar === ' ' ? '␣ Space'
+      : nextChar != null ? nextChar
+      : '';
+
+    return { lineNum, col, colInLine, currentLineText, charLabel, totalLines: allLines.length };
+  }, [typed, code]);
+
   return (
     <div ref={containerRef} tabIndex={0} className={`outline-none relative ${embedded ? 'h-full' : ''}`}>
       {showCounter && (
@@ -204,6 +237,39 @@ const TypingEngine = ({
           <span className={`ch cursor${caretStyle === 'block' ? ' caret-block' : ''}${caretStyle === 'under' ? ' caret-under' : ''}`}>&nbsp;</span>
         )}
       </div>
+
+      {/* 하단 상태바 */}
+      {active && !finishedFlag && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 16,
+          marginTop: 8, padding: '6px 4px',
+          fontFamily: 'var(--dt-font-mono)', fontSize: 12,
+          color: 'var(--dt-text-3)',
+          borderTop: '0.5px solid var(--dt-border)',
+          userSelect: 'none',
+        }}>
+          {/* 현재 줄 미리보기 */}
+          <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            <span style={{ opacity: 0.45 }}>
+              {statusInfo.currentLineText.slice(0, statusInfo.colInLine)}
+            </span>
+            <span style={{
+              color: 'var(--dt-primary)', fontWeight: 700,
+              background: 'color-mix(in oklab, var(--dt-primary) 18%, transparent)',
+              borderRadius: 3, padding: '0 2px',
+            }}>
+              {statusInfo.charLabel || '·'}
+            </span>
+            <span style={{ opacity: 0.3 }}>
+              {statusInfo.currentLineText.slice(statusInfo.colInLine + 1)}
+            </span>
+          </div>
+          {/* 줄:열 */}
+          <span style={{ whiteSpace: 'nowrap', opacity: 0.5 }}>
+            {statusInfo.lineNum} : {statusInfo.col} &nbsp; {typed.length} / {code.length}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

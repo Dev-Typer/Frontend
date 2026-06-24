@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+﻿import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import TypoHeatmap from '@/components/TypoHeatmap';
 import { useT } from '@/i18n';
@@ -13,6 +13,7 @@ import {
 } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult, SoloTrack } from '@/types';
 import { LANG_ICON } from '@/data';
+import coreLogo from '@/assets/core-logo.png';
 import { getPublicSnippet, getRandomSnippet } from '@/apis/snippetApi';
 import type { SnippetLanguage } from '@/apis/snippetApi';
 import { saveSnippetResult, getSnippetRanking } from '@/apis/snippetResultApi';
@@ -61,20 +62,6 @@ function computeCore(wpm: number, acc: number, diff: string, len: number) {
   const nWpm = wpm * (acc / 100);
   return { core: Math.round(nWpm * diffW * lenW), nWpm: +nWpm.toFixed(1), diffW, lenW };
 }
-function readBestMap(): Record<string, number> {
-  try { return JSON.parse(localStorage.getItem('dt_core_best') || '{}'); } catch { return {}; }
-}
-function writeBest(id: string, core: number) {
-  try {
-    const m = readBestMap();
-    m[id] = Math.max(m[id] || 0, core);
-    localStorage.setItem('dt_core_best', JSON.stringify(m));
-  } catch { /* noop */ }
-}
-function totalCoreSum(): number {
-  return Object.values(readBestMap()).reduce((s, v) => s + v, 0);
-}
-
 // ─── Setup ────────────────────────────────────────────────────────────────────
 interface SoloSetupProps {
   lang: string; setLang: (l: string) => void; onStart: () => void;
@@ -445,7 +432,7 @@ const SnippetRankingSection = ({ snippetId, myCore }: { snippetId: number; myCor
                   </span>
                 </div>
                 <span className="dt-mono tabular-nums" style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: 'var(--dt-primary)' }}>
-                  {Math.round(item.core)} <span style={{ fontSize: 10, color: 'var(--dt-text-3)', fontWeight: 400 }}>CORE</span>
+                  {Math.round(item.core)} <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--dt-text-3)', fontWeight: 400 }}><img src={coreLogo} style={{ width: 16, height: 16, objectFit: 'contain', opacity: 0.7 }} />CORE</span>
                 </span>
                 <span className="dt-mono tabular-nums" style={{ textAlign: 'right', fontSize: 13, color: 'var(--dt-text-2)' }}>
                   {item.wpm} <span style={{ fontSize: 10 }}>WPM</span>
@@ -467,9 +454,11 @@ interface SoloResultProps {
   result: TypingResult; track: SoloTrack | null; diff: string;
   onNext: () => void; onChangeSettings: () => void; snippet: string;
   apiSnippetId?: number;
+  savedCoreInfo?: { core: number; isNewBest: boolean; prevBestCore: number } | null;
+  isLoggedIn?: boolean;
 }
 
-const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, apiSnippetId }: SoloResultProps) => {
+const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, apiSnippetId, savedCoreInfo, isLoggedIn }: SoloResultProps) => {
   const t = useT();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -479,15 +468,13 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
   const sectionIdxRef = useRef(0);
   const wheelLockRef = useRef(false);
 
-  const snipId = track?.id || 'unknown';
   const realDiff = track?.difficulty || diff;
-  const { core, nWpm, diffW, lenW } = computeCore(result.wpm, result.acc, realDiff, snippet.length);
+  const { core: localCore, nWpm, diffW, lenW } = computeCore(result.wpm, result.acc, realDiff, snippet.length);
 
-  const prevBest = readBestMap()[snipId] || 0;
-  const isNewBest = core > prevBest;
-  const prevTotal = useMemo(() => totalCoreSum(), [snipId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const delta = isNewBest ? core - prevBest : 0;
-  useEffect(() => { writeBest(snipId, core); }, [snipId, core]);
+  // 백엔드 저장 결과 우선 사용, 없으면 로컬 계산값 fallback
+  const core = savedCoreInfo?.core ?? localCore;
+  const isNewBest = savedCoreInfo?.isNewBest ?? false;
+  const prevBest = savedCoreInfo?.prevBestCore ?? 0;
 
   const sectionRefs = useMemo(() =>
     [section0Ref, section1Ref, ...(apiSnippetId ? [section2Ref] : [])],
@@ -551,14 +538,14 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         <div className="dt-card p-0 overflow-hidden" style={{ marginBottom: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr' }}>
             <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div className="dt-label" style={{ marginBottom: 6 }}>{t('CORE this run')}</div>
+              <div className="dt-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><img src={coreLogo} style={{ width: 19, height: 19, objectFit: 'contain' }} />{t('CORE this run')}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
                 <span className="dt-mono dt-tabular" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: 'var(--dt-primary)' }}>{core}</span>
-                {isNewBest ? (
+                {savedCoreInfo && (isNewBest ? (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, color: 'var(--dt-primary)', background: 'color-mix(in oklab, var(--dt-primary) 16%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 45%, transparent)' }}>🎉 {t('New best!')}</span>
                 ) : (
-                  <span className="dt-caption">{t('Best on this snippet')}: <span className="dt-mono" style={{ color: 'var(--dt-text)' }}>{prevBest}</span></span>
-                )}
+                  <span className="dt-caption">{t('Best on this snippet')}: <span className="dt-mono" style={{ color: 'var(--dt-text)' }}>{Math.round(prevBest)}</span></span>
+                ))}
               </div>
               <div className="dt-mono" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, color: 'var(--dt-text-2)' }}>
                 <CoreFactor label="nWPM" value={nWpm} />
@@ -570,16 +557,35 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
             </div>
             <div style={{ background: 'var(--dt-border)' }} />
             <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-              <div className="dt-label">{t('Total CORE')}</div>
+              <div className="dt-label">{t('Best on this snippet')}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span className="dt-mono dt-tabular" style={{ fontSize: 28, fontWeight: 700, color: 'var(--dt-text)' }}>{(prevTotal + delta).toLocaleString()}</span>
-                {isNewBest
-                  ? <span className="dt-mono" style={{ fontSize: 14, fontWeight: 700, color: 'var(--dt-success)', display: 'flex', alignItems: 'center', gap: 2 }}><IconArrowUp size={13} /> +{delta}</span>
-                  : <span className="dt-caption">+0</span>}
+                {savedCoreInfo ? (
+                  <>
+                    <span className="dt-mono dt-tabular" style={{ fontSize: 28, fontWeight: 700, color: 'var(--dt-text)' }}>
+                      {isNewBest ? Math.round(core) : Math.round(prevBest)}
+                    </span>
+                    {isNewBest && (
+                      <span className="dt-mono" style={{ fontSize: 14, fontWeight: 700, color: 'var(--dt-success)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <IconArrowUp size={13} /> +{Math.round(core - prevBest)}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="dt-caption" style={{ fontSize: 13 }}>—</span>
+                )}
               </div>
-              <p className="dt-caption" style={{ marginTop: 4, lineHeight: 1.5, maxWidth: 280 }}>
-                {isNewBest ? t('This beat your previous best on this snippet, so it lifted your Total CORE.') : t('Only your best run per snippet counts. This run is saved to history but did not change Total CORE.')}
-              </p>
+              {savedCoreInfo ? (
+                <p className="dt-caption" style={{ marginTop: 4, lineHeight: 1.5, maxWidth: 280 }}>
+                  {isNewBest ? t('This beat your previous best on this snippet, so it lifted your Total CORE.') : t('Only your best run per snippet counts. This run is saved to history but did not change Total CORE.')}
+                </p>
+              ) : !isLoggedIn ? (
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <p className="dt-caption" style={{ lineHeight: 1.5 }}>{t('Sign in to devtyper')}</p>
+                  <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={() => navigate('/login')} style={{ alignSelf: 'flex-start' }}>
+                    {t('Sign in with GitHub')}
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -683,6 +689,7 @@ const Solo = () => {
   const [track, setTrack] = useState<SoloTrack | null>(null);
   const [apiSnippetId, setApiSnippetId] = useState<number | undefined>(undefined);
   const [loadingSnippet, setLoadingSnippet] = useState(false);
+  const [savedCoreInfo, setSavedCoreInfo] = useState<{ core: number; isNewBest: boolean; prevBestCore: number } | null>(null);
 
   // Load snippet from URL param on mount
   useEffect(() => {
@@ -751,18 +758,22 @@ const Solo = () => {
   const onFinish = async (r: TypingResult) => {
     setResult(r);
     setPhase('result');
+    setSavedCoreInfo(null);
 
     if (isLoggedIn && apiSnippetId) {
       try {
-        await saveSnippetResult({
+        const saved = await saveSnippetResult({
           snippetId: apiSnippetId,
-          wpm: Math.min(299, Math.max(0.1, r.wpm)),
-          rawWpm: Math.min(299, Math.max(0.1, r.rawWpm)),
+          wpm: Math.max(0.1, r.wpm),
+          rawWpm: Math.max(0.1, r.rawWpm),
           accuracy: Math.min(100, Math.max(0, r.acc)),
-          durationSec: Math.min(599, Math.max(3, Math.round(r.elapsed / 1000))),
+          durationSec: Math.min(3600, Math.max(1, Math.round(r.elapsed / 1000))),
           typos: r.typos ?? [],
           replayData: r.replayData ?? [],
         });
+        if (saved) {
+          setSavedCoreInfo({ core: saved.core, isNewBest: saved.isNewBest, prevBestCore: saved.prevBestCore });
+        }
       } catch (err) {
         console.error('[Solo] saveSnippetResult failed:', err);
       }
@@ -800,6 +811,8 @@ const Solo = () => {
           onChangeSettings={() => { setApiSnippetId(undefined); setPhase('setup'); }}
           snippet={snippet}
           apiSnippetId={apiSnippetId}
+          savedCoreInfo={savedCoreInfo}
+          isLoggedIn={isLoggedIn}
         />
       )}
     </div>

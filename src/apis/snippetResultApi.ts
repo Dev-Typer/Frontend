@@ -39,6 +39,9 @@ export interface SnippetResultResponse {
   rawWpm: number;
   accuracy: number;
   durationSec: number;
+  core: number;
+  isNewBest: boolean;
+  prevBestCore: number;
   createdAt: string;
 }
 

@@ -91,15 +91,22 @@ const BannerSection = () => {
   };
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ height: 200 }}>
+    /* 권장 배너 업로드 사이즈: 1500 × 400 px (15:4 비율) */
+    <div className="relative w-full overflow-hidden" style={{ height: 400 }}>
       {bannerUrl
-        ? <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        : <div className="absolute inset-0"
-            style={{ background: `linear-gradient(135deg, color-mix(in oklab, hsl(${hue}deg 55% 28%) 50%, #070C1F) 0%, #070C1F 100%)` }} />
+        ? <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
+        : <div className="absolute inset-0" style={{
+            background: `linear-gradient(135deg,
+              color-mix(in oklab, hsl(${hue}deg 70% 35%) 60%, #070C1F) 0%,
+              color-mix(in oklab, hsl(${(hue + 40) % 360}deg 55% 20%) 40%, #070C1F) 60%,
+              #070C1F 100%)`,
+          }} />
       }
-      {/* 하단 페이드 — 페이지 배경과 자연스럽게 이어지게 */}
+      {/* 노이즈 텍스처 느낌 레이어 */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 60% at 20% 50%, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
+      {/* 하단 페이드 */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'linear-gradient(180deg, transparent 40%, rgba(7,12,31,0.85) 100%)' }} />
+        style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(7,12,31,0.95) 100%)' }} />
 
       {/* 배너 변경 버튼 */}
       <div className="absolute top-3 right-[44px] z-10 flex gap-2">
@@ -148,17 +155,18 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
   };
 
   return (
-    <div style={{ marginTop: -56 }}>
+    <div style={{ marginTop: -70 }}>
       {/* 아바타 + 유저명 + CORE 한 줄 */}
-      <div className="flex items-end gap-5">
+      <div className="flex items-end gap-6">
         {/* 아바타 */}
         <input ref={profileInput} type="file" accept="image/*" className="hidden" onChange={handleProfileUpload} />
         <div
-          className="relative shrink-0 rounded-[20px] overflow-hidden cursor-default"
+          className="relative shrink-0 overflow-hidden cursor-default"
           style={{
-            width: 100, height: 100,
-            boxShadow: 'inset 0 0 0 2.5px var(--dt-primary), 0 8px 32px -8px rgba(0,0,0,0.7)',
-            background: 'var(--dt-card)',
+            width: 120, height: 120,
+            borderRadius: 24,
+            background: 'var(--dt-surface)',
+            boxShadow: '0 0 0 3px var(--dt-primary), 0 0 0 5px rgba(242,58,47,0.25), 0 12px 40px -8px rgba(0,0,0,0.8)',
             zIndex: 2,
           }}
           onMouseEnter={() => setProfileHover(true)}
@@ -167,29 +175,33 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
         >
           {profileUrl
             ? <img src={profileUrl} alt={username ?? ''} className="w-full h-full object-cover" />
-            : <Avatar handle={username ?? ''} hue={hue} size={88} />
+            : <Avatar handle={username ?? ''} hue={hue} size={108} />
           }
           {profileHover && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1"
-              style={{ background: 'rgba(0,0,0,0.6)' }}>
-              <span className="text-[22px]">📷</span>
-              <span className="text-[10px] text-white font-medium">{uploading ? '…' : t('Change')}</span>
+              style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(2px)' }}>
+              <span className="text-[24px]">📷</span>
+              <span className="text-[10px] text-white font-semibold tracking-wide">{uploading ? '…' : t('Change')}</span>
             </div>
           )}
         </div>
 
         {/* 유저명 + 가입일 */}
-        <div className="flex-1 pb-2" style={{ zIndex: 2 }}>
-          <h1 className="m-0 dt-mono font-bold leading-none" style={{ fontSize: 34, color: 'var(--dt-text)' }}>
+        <div className="flex-1 pb-3" style={{ zIndex: 2 }}>
+          <h1 className="m-0 dt-mono font-bold leading-none" style={{ fontSize: 42, color: 'var(--dt-text)', letterSpacing: '-0.02em' }}>
             {username}
           </h1>
-          <div className="flex items-center gap-3 mt-2">
-            <span className="dt-caption text-dt-text-3">
-              {t('Joined')} {createdAt ? formatJoined(createdAt) : '—'}
+          <div className="flex items-center gap-[10px] mt-[10px]">
+            <span style={{
+              display: 'inline-block', width: 3, height: 14,
+              background: 'var(--dt-primary)', borderRadius: 2,
+            }} />
+            <span className="text-[13px] text-dt-text-2">
+              {t('Joined')} <span className="dt-mono text-dt-text">{createdAt ? formatJoined(createdAt) : '—'}</span>
             </span>
             {profileUrl && (
               <button onClick={(e) => { e.stopPropagation(); handleProfileDelete(); }} disabled={uploading}
-                className="text-[11px] border-0 bg-transparent cursor-default" style={{ color: 'var(--dt-error)' }}>
+                className="text-[11px] border-0 bg-transparent cursor-default ml-1" style={{ color: 'var(--dt-error)', opacity: 0.7 }}>
                 {t('Remove photo')}
               </button>
             )}
@@ -197,18 +209,23 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
         </div>
 
         {/* CORE 수치 */}
-        <div className="pb-2 text-right shrink-0" style={{ zIndex: 2 }}>
-          <div className="dt-mono tabular-nums font-bold leading-none" style={{ fontSize: 58, color: 'var(--dt-primary)' }}>
+        <div className="pb-3 text-right shrink-0" style={{ zIndex: 2 }}>
+          <div className="dt-label text-dt-text-3 mb-1 tracking-widest text-[10px]">TOTAL CORE</div>
+          <div className="dt-mono tabular-nums font-bold leading-none"
+            style={{ fontSize: 68, color: 'var(--dt-primary)', textShadow: '0 0 40px rgba(242,58,47,0.35)' }}>
             {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
           </div>
-          <div className="dt-label text-dt-text-3 mt-1">CORE</div>
         </div>
       </div>
 
+      {/* 구분선 */}
+      <div className="mt-5 mb-4 h-px" style={{ background: 'linear-gradient(90deg, var(--dt-primary) 0%, transparent 60%)' }} />
+
       {/* 뱃지 (박스 없음) */}
-      <div className="flex items-center gap-3 mt-5 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-[11px] font-semibold text-dt-text-3 tracking-wider uppercase">Badges</span>
         <span className="dt-caption text-dt-text-3">
-          🎖️ <span className="dt-mono text-dt-primary">{earned}</span>/{BADGES.length}
+          <span className="dt-mono text-dt-primary font-semibold">{earned}</span>/{BADGES.length}
         </span>
         <div className="w-px h-4 bg-dt-border" />
         <div className="flex gap-[8px] flex-wrap">

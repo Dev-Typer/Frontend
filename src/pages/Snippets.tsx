@@ -405,9 +405,11 @@ const Snippets = () => {
             <div style={{ height: 1, background: 'var(--dt-border)', margin: '16px 0' }} />
 
             <FilterSection label={t('Show')}>
-              <CheckRow checked={likedOnly} onToggle={() => setLikedOnly(v => !v)} accent="#FF5F8F">
-                {t('Liked only')}
-              </CheckRow>
+              {isLoggedIn && (
+                <CheckRow checked={likedOnly} onToggle={() => setLikedOnly(v => !v)} accent="#FF5F8F">
+                  {t('Liked only')}
+                </CheckRow>
+              )}
               {isLoggedIn && (
                 <CheckRow checked={playedByMe} onToggle={() => setPlayedByMe(v => !v)}>
                   {t('Played')}

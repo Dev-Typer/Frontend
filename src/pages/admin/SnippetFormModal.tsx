@@ -7,13 +7,13 @@ interface Props {
   onSaved: () => void;
 }
 
-const LANGS: SnippetLanguage[] = ['JAVASCRIPT', 'PYTHON', 'JAVA', 'CPP'];
+const LANGS: SnippetLanguage[] = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'C++', 'C#', 'C', 'Rust', 'Kotlin'];
 const DIFFS: SnippetDifficulty[] = ['EASY', 'MEDIUM', 'HARD'];
 
 const SnippetFormModal = ({ snippet, onClose, onSaved }: Props) => {
   const isEdit = !!snippet;
   const [title, setTitle]       = useState(snippet?.title      ?? '');
-  const [language, setLanguage] = useState<SnippetLanguage>(snippet?.language   ?? 'JAVASCRIPT');
+  const [language, setLanguage] = useState<SnippetLanguage>(snippet?.language   ?? 'JavaScript');
   const [difficulty, setDiff]   = useState<SnippetDifficulty>(snippet?.difficulty ?? 'EASY');
   const [content, setContent]   = useState(snippet?.content    ?? '');
   const [source, setSource]     = useState(snippet?.source     ?? '');

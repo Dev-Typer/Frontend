@@ -11,8 +11,8 @@ import {
   IconPlay, IconRefresh, IconSettings, IconKeyboard, IconArrowRight, IconArrowUp, IconArrowDown,
 } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult, SoloTrack } from '@/types';
-import { SOLO_TRACKS, LANG_ICON } from '@/data';
-import { getPublicSnippet } from '@/apis/snippetApi';
+import { LANG_ICON } from '@/data';
+import { getPublicSnippet, getRandomSnippet } from '@/apis/snippetApi';
 import type { SnippetLanguage } from '@/apis/snippetApi';
 import { saveSnippetResult, getSnippetRanking } from '@/apis/snippetResultApi';
 import type { RankingItem } from '@/apis/snippetResultApi';
@@ -44,9 +44,14 @@ function fileExtFor(lang: string) {
 }
 
 function toLangKey(lang: SnippetLanguage): string {
-  if (lang === 'CPP') return 'c++';
   return lang.toLowerCase();
 }
+
+const UI_TO_API_LANG: Record<string, SnippetLanguage> = {
+  javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python',
+  go: 'Go', java: 'Java', kotlin: 'Kotlin',
+  'c++': 'C++', 'c#': 'C#', c: 'C', rust: 'Rust',
+};
 
 // ─── CORE scoring ────────────────────────────────────────────────────────────
 function computeCore(wpm: number, acc: number, diff: string, len: number) {
@@ -639,23 +644,36 @@ const Solo = () => {
       .finally(() => setLoadingSnippet(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pickRandom = (l: string): SoloTrack => {
-    const pool = l === 'random' ? SOLO_TRACKS : SOLO_TRACKS.filter((tr) => tr.lang === l);
-    return pool[Math.floor(Math.random() * pool.length)] || SOLO_TRACKS[0];
-  };
-
   const snippet = track ? track.code : '';
   const diff = track ? track.difficulty : 'medium';
   const realLang = track ? track.lang : lang;
 
-  const startWith = (l: string) => {
-    setApiSnippetId(undefined);
-    setTrack(pickRandom(l));
-    setResult(null);
-    setResetKey((k) => k + 1);
-    setPhase('typing');
+  const fetchAndStart = async (l: string) => {
+    setLoadingSnippet(true);
+    try {
+      const apiLang = UI_TO_API_LANG[l];
+      const s = await getRandomSnippet(apiLang);
+      const langKey = toLangKey(s.language);
+      const soloTrack: SoloTrack = {
+        id: String(s.id),
+        lang: langKey,
+        difficulty: s.difficulty.toLowerCase() as SoloTrack['difficulty'],
+        title: s.title,
+        avgWpm: Number(s.avgWpm),
+        code: s.content,
+      };
+      setApiSnippetId(s.id);
+      setTrack(soloTrack);
+      setResult(null);
+      setResetKey((k) => k + 1);
+      setPhase('typing');
+    } catch {
+      // API 실패 시 setup 유지 — 오류는 버튼 상태로 표시 안 함
+    } finally {
+      setLoadingSnippet(false);
+    }
   };
-  const start = () => startWith(lang);
+  const start = () => fetchAndStart(lang);
 
   const onFinish = async (r: TypingResult) => {
     setResult(r);
@@ -678,13 +696,7 @@ const Solo = () => {
     }
   };
 
-  const next = () => {
-    setApiSnippetId(undefined);
-    setTrack(pickRandom(lang));
-    setResetKey((k) => k + 1);
-    setResult(null);
-    setPhase('typing');
-  };
+  const next = () => fetchAndStart(lang);
 
   if (loadingSnippet) {
     return (

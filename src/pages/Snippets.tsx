@@ -137,13 +137,14 @@ function MetaPill({ children, mono, style }: { children: React.ReactNode; mono?:
 
 // ─── Snippet card ─────────────────────────────────────────────────────────────
 function SnippetCard({
-  snippet, likeCount, isLiked, onLike, onPractice,
+  snippet, likeCount, isLiked, onLike, onPractice, onRanking,
 }: {
   snippet: Snippet;
   likeCount: number;
   isLiked: boolean;
   onLike: () => void;
   onPractice: () => void;
+  onRanking: () => void;
 }) {
   const t = useT();
   const [hover, setHover] = useState(false);
@@ -238,6 +239,12 @@ function SnippetCard({
             }}>
               <IconHeart size={17} filled={isLiked} />
               <span className="dt-mono" style={{ fontSize: 12 }}>{likeCount}</span>
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); onRanking(); }} style={{
+              background: 'transparent', border: 0, cursor: 'default', display: 'flex', alignItems: 'center',
+              fontSize: 11, fontWeight: 600, color: 'var(--dt-text-3)', gap: 4, letterSpacing: '0.02em',
+            }}>
+              🏆 {t('View leaderboard')}
             </button>
           </div>
         </div>
@@ -505,6 +512,7 @@ const Snippets = () => {
                     isLiked={ov !== undefined ? ov.isLiked : s.isLiked}
                     onLike={() => handleLike(s)}
                     onPractice={() => navigate(`/solo?snippetId=${s.id}`)}
+                    onRanking={() => navigate(`/ranking/snippets/${s.id}`)}
                   />
                 );
               })}

@@ -206,6 +206,7 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
     'Top snippets by CORE': 'CORE 상위 스니펫',
     'View top 100': '상위 100개 보기',
     'View full ranking': '전체 랭킹 보기',
+    'View leaderboard': '랭킹 보러가기',
     'Solo ranking': '솔로 랭킹',
     'Battle ranking': '배틀 랭킹',
     'My history': '내 기록',

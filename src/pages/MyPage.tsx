@@ -639,7 +639,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
           <span className="dt-caption">CORE</span>
         </div>
       </div>
-      {points.length < 2 ? (
+      {(points.length < 2 || vals.every(v => v === 0)) ? (
         <div className="flex flex-col items-center justify-center gap-[10px]" style={{ minHeight: 220 }}>
           <span className="text-[28px] leading-none">📈</span>
           <div className="text-center">
@@ -788,7 +788,7 @@ const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
 
   if (loading) return <CardSkeleton height={260} />;
 
-  const hasData = results.length >= 2;
+  const hasData = results.length >= 2 && results.some(r => r.avgWpm > 0);
   const vals = results.map(r => r.avgWpm);
   const minV  = hasData ? Math.min(...vals) - 6 : 0;
   const maxV  = hasData ? Math.max(...vals) + 6 : 100;

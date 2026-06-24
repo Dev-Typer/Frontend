@@ -8,6 +8,7 @@ import { GLOBAL_RANKING, LANG_ICON } from '@/data';
 import coreLogo from '@/assets/core-logo.png';
 import { getDailyChallenge } from '@/apis/dailyChallengeApi';
 import type { DailyChallengeDto } from '@/apis/dailyChallengeApi';
+import { useUserStore } from '@/stores/userStore';
 import type { User } from '@/types';
 
 interface Props {
@@ -406,24 +407,85 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
   );
 };
 
+// ─── Guest banner ─────────────────────────────────────────────────────────────
+
+const GuestBanner = ({ navigate }: { navigate: (r: string) => void }) => {
+  const t = useT();
+  return (
+    <div className="dt-card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ position: 'relative', height: 76 }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(90deg, rgba(7,11,20,0.92) 0%, rgba(7,11,20,0.6) 100%)',
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex',
+          alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 20px', zIndex: 2,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: 10,
+              background: 'rgba(255,255,255,0.06)',
+              boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <IconUser size={20} style={{ color: 'var(--dt-text-3)' }} />
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--dt-font-mono)', fontWeight: 700, fontSize: 16, color: 'var(--dt-text)', lineHeight: 1.2 }}>
+                {t('Guest')}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--dt-text-3)', marginTop: 3 }}>
+                {t('Sign in to track your streak and CORE')}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: '#24292F', color: '#fff',
+              padding: '8px 16px', border: 0, borderRadius: 8,
+              cursor: 'pointer', fontFamily: 'var(--dt-font-mono)',
+              fontSize: 13, fontWeight: 600, flexShrink: 0,
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            {t('Sign in with GitHub')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── HomeContemporary ─────────────────────────────────────────────────────────
 
 const HomeContemporary = ({ me }: Props) => {
   const navigate = useNavigate();
+  const isLoggedIn = useUserStore((s) => s.isLoggedIn);
   return (
     <div style={{
       maxWidth: 1100, margin: '0 auto', padding: '20px 44px 40px',
       minHeight: 'calc(100vh - 24px)',
       display: 'flex', flexDirection: 'column', justifyContent: 'center',
     }}>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <HomeProfileStrip me={me} />
+      {isLoggedIn ? (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <HomeProfileStrip me={me} />
+          </div>
+          <div style={{ width: 240, flexShrink: 0 }}>
+            <CurrentStreakCard me={me} />
+          </div>
         </div>
-        <div style={{ width: 240, flexShrink: 0 }}>
-          <CurrentStreakCard me={me} />
-        </div>
-      </div>
+      ) : (
+        <GuestBanner navigate={navigate} />
+      )}
       <ModeArena navigate={navigate} />
       <DailyChallengeSection navigate={navigate} />
     </div>

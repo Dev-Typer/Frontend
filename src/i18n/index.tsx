@@ -119,6 +119,8 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
     'rating': '레이팅',
     'platinum': 'Platinum',
     'Sign in with GitHub': 'GitHub로 로그인',
+    'Guest': '게스트',
+    'Sign in to track your streak and CORE': '로그인하면 스트릭과 CORE를 기록할 수 있어요',
     'Tip: focus on accuracy first — fixed mistakes still count against your accuracy score.':
       'Tip: 정확도 먼저 — 고친 오타도 점수에 반영돼요.',
     "We'll pair you with 1–3 developers within ±150 rating of you. Same snippet, same start, first to finish wins.":

@@ -683,10 +683,10 @@ const Solo = () => {
       try {
         await saveSnippetResult({
           snippetId: apiSnippetId,
-          wpm: r.wpm,
-          rawWpm: r.rawWpm,
+          wpm: Math.max(0.1, r.wpm),
+          rawWpm: Math.max(0.1, r.rawWpm),
           accuracy: r.acc,
-          durationSec: Math.round(r.elapsed / 1000),
+          durationSec: Math.max(3, Math.round(r.elapsed / 1000)),
           typos: r.typos ?? [],
           replayData: r.replayData ?? [],
         });

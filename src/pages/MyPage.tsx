@@ -691,16 +691,14 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   const xs = vals.length > 0
     ? vals.map((_, i) => (i / Math.max(vals.length - 1, 1)) * (w - padL - padR) + padL)
     : [];
-  const ys = vals.map(v => base - (v / (max || 1)) * (base - padT));
+  const step = max <= 50 ? 10 : max <= 200 ? 50 : max <= 1000 ? 200 : 500;
+  const niceMax = Math.ceil(max / step) * step || 1;
+  const coreTicks = [1, 2, 3, 4].map(i => Math.round(niceMax * i / 4));
+  const coreTickY = (v: number) => base - (v / niceMax) * (base - padT);
+
+  const ys = vals.map(v => coreTickY(v));
   const line = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i]} ${ys[i]}`).join(' ');
   const area = points.length > 1 ? `${line} L ${xs[xs.length-1]} ${base} L ${xs[0]} ${base} Z` : '';
-
-  const coreTicks = (() => {
-    const step = max <= 50 ? 10 : max <= 200 ? 50 : max <= 1000 ? 200 : 500;
-    const niceMax = Math.ceil(max / step) * step;
-    return [1, 2, 3, 4].map(i => Math.round(niceMax * i / 4));
-  })();
-  const coreTickY = (v: number) => base - (v / (max || 1)) * (base - padT);
 
   if (loading) return <CardSkeleton height={280} />;
 
@@ -759,7 +757,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
             <path d={line} fill="none" stroke="url(#coreLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             {hi !== null && <line x1={xs[hi]} x2={xs[hi]} y1={padT - 4} y2={base} stroke="#57E5FF" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />}
             {points.map((p, i) => {
-              const ratio = max > 0 ? vals[i] / max : 0;
+              const ratio = niceMax > 0 ? vals[i] / niceMax : 0;
               const dotColor = ratio > 0.75 ? '#57E5FF' : ratio > 0.4 ? 'var(--dt-primary)' : '#FFD060';
               const r = hi === i ? 6 : i === points.length - 1 ? 5 : 3.5;
               return (

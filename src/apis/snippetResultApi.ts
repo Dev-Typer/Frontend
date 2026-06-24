@@ -58,6 +58,7 @@ export interface SnippetResultStats {
 }
 
 export interface RankingItem {
+  resultId: number;
   rank: number;
   userId: number;
   username: string;

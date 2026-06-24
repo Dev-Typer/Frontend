@@ -15,7 +15,7 @@ const SnippetRankingPage = () => {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [replayResultId, setReplayResultId] = useState<number | null>(null);
+  const [replayResultId, setReplayResultId] = useState<number | null>(null); // snippet_result.id (not userId)
 
   useEffect(() => {
     setLoading(true);
@@ -74,7 +74,7 @@ const SnippetRankingPage = () => {
                   <button
                     className="dt-btn dt-btn-secondary dt-btn-sm"
                     style={{ fontSize: 12 }}
-                    onClick={() => setReplayResultId(item.userId)}
+                    onClick={() => setReplayResultId(item.resultId)}
                   >
                     리플레이
                   </button>

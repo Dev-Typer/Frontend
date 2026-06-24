@@ -39,8 +39,15 @@ const RankBadge = ({ rank }: { rank: number }) => (
   </span>
 );
 
-const PlayerCell = ({ username, profileUrl, me }: { username: string; profileUrl: string | null; me?: boolean }) => (
-  <UserHover handle={username}>
+interface PlayerCellProps {
+  username: string;
+  profileUrl: string | null;
+  me?: boolean;
+  stats?: { totalCore?: number; avgWpm?: number; currentStreak?: number; rank?: number };
+}
+
+const PlayerCell = ({ username, profileUrl, me, stats }: PlayerCellProps) => (
+  <UserHover handle={username} stats={stats}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <Avatar handle={username} hue={(username.charCodeAt(0) * 7) % 360} size={28} src={profileUrl ?? undefined} />
       <span className="dt-mono" style={{ fontSize: 14, color: me ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
@@ -75,7 +82,8 @@ function CoreTable({ rows, loading }: { rows: SoloLeaderboardEntry[]; loading: b
         <TableRow key={r.userId} me={r.isMe}>
           <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
             <RankBadge rank={r.rank} />
-            <PlayerCell username={r.username} profileUrl={r.profileUrl} me={r.isMe} />
+            <PlayerCell username={r.username} profileUrl={r.profileUrl} me={r.isMe}
+              stats={{ rank: r.rank, totalCore: r.totalCore, avgWpm: r.avgWpm }} />
             <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.avgWpm}</span>
             <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.playCount}</span>
             <span className="dt-mono tabular-nums text-right text-[14px] text-dt-primary font-semibold">{r.snippetCount}</span>
@@ -149,7 +157,8 @@ function StreakTable() {
         <TableRow key={r.userId} me={r.isMe}>
           <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
             <RankBadge rank={r.rank} />
-            <PlayerCell username={r.username} profileUrl={r.profileUrl} me={r.isMe} />
+            <PlayerCell username={r.username} profileUrl={r.profileUrl} me={r.isMe}
+              stats={{ rank: r.rank, currentStreak: r.currentStreak }} />
             <span className="flex items-center justify-end gap-[6px] text-right">
               <span className="text-[15px]">🔥</span>
               <span className="dt-mono tabular-nums text-[17px] font-bold"

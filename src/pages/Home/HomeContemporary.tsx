@@ -4,7 +4,9 @@ import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
 import UserHover from '@/components/UserHover';
 import { IconPlay, IconUser, IconCode } from '@/components/icons/Icons';
-import { GLOBAL_RANKING, LANG_ICON } from '@/data';
+import { LANG_ICON } from '@/data';
+import { getSoloLeaderboard } from '@/apis/leaderboardApi';
+import type { SoloLeaderboardEntry } from '@/apis/leaderboardApi';
 import coreLogo from '@/assets/core-logo.png';
 import { getDailyChallenge } from '@/apis/dailyChallengeApi';
 import type { DailyChallengeDto } from '@/apis/dailyChallengeApi';
@@ -109,10 +111,15 @@ const ArenaLeaderboard = ({ focus, navigate }: { focus: string; navigate: (r: st
   const t = useT();
   const isBattle = focus === 'battle';
   const accent = isBattle ? '#B93CFF' : '#57E5FF';
-  const rows = isBattle
-    ? GLOBAL_RANKING.slice(0, 6).map(r => ({ handle: r.handle, tier: r.tier, value: r.rating, me: r.me }))
-    : [...GLOBAL_RANKING].sort((a, b) => b.wpm - a.wpm).slice(0, 6).map(r => ({ handle: r.handle, tier: r.tier, value: r.wpm, me: r.me }));
-  const unit = isBattle ? '' : ' WPM';
+  const [soloRows, setSoloRows] = useState<SoloLeaderboardEntry[]>([]);
+
+  useEffect(() => {
+    if (!isBattle) {
+      getSoloLeaderboard(1, 6)
+        .then(res => setSoloRows(res.entries))
+        .catch(() => setSoloRows([]));
+    }
+  }, [isBattle]);
 
   return (
     <div className="dt-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -128,36 +135,41 @@ const ArenaLeaderboard = ({ focus, navigate }: { focus: string; navigate: (r: st
           marginLeft: 'auto', fontSize: 11, fontWeight: 600,
           padding: '3px 10px', borderRadius: 999, color: accent,
           background: `color-mix(in oklab, ${accent} 16%, transparent)`,
-        }}>{isBattle ? t('by rating') : t('by avg WPM')}</span>
+        }}>{isBattle ? t('by rating') : t('by CORE')}</span>
       </div>
 
       <div style={{ flex: 1, padding: '6px 8px' }}>
-        {rows.map((r, i) => (
-          <div key={r.handle} style={{
+        {soloRows.map((r, i) => (
+          <div key={r.userId} style={{
             display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: 10,
             alignItems: 'center', padding: '8px 12px', borderRadius: 10,
-            background: r.me ? `color-mix(in oklab, ${accent} 10%, transparent)` : 'transparent',
+            background: r.isMe ? `color-mix(in oklab, ${accent} 10%, transparent)` : 'transparent',
           }}>
             <span className="dt-mono" style={{
               fontSize: 13, fontWeight: 600, textAlign: 'center',
               color: i < 3 ? accent : 'var(--dt-text-3)',
             }}>{i + 1}</span>
-            <UserHover handle={r.handle} tier={r.tier}>
+            <UserHover handle={r.username}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-                <Avatar handle={r.handle} hue={(r.handle.charCodeAt(0) * 7) % 360} size={24} />
+                <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
                 <span className="dt-mono" style={{
-                  fontSize: 13, color: r.me ? accent : 'var(--dt-text)',
+                  fontSize: 13, color: r.isMe ? accent : 'var(--dt-text)',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
-                  {r.handle}{r.me && ' (you)'}
+                  {r.username}{r.isMe && ' (you)'}
                 </span>
               </div>
             </UserHover>
             <span className="dt-mono dt-tabular" style={{ fontSize: 14, fontWeight: 600, color: 'var(--dt-text)' }}>
-              {r.value}<span style={{ fontSize: 10, color: 'var(--dt-text-3)' }}>{unit}</span>
+              {r.totalCore.toLocaleString()}
             </span>
           </div>
         ))}
+        {soloRows.length === 0 && !isBattle && (
+          <div style={{ padding: '16px 12px', textAlign: 'center', fontSize: 13, color: 'var(--dt-text-3)' }}>
+            기록이 없습니다.
+          </div>
+        )}
       </div>
 
       <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={() => navigate('/ranking')}

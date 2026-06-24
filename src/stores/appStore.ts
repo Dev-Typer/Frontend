@@ -13,7 +13,7 @@ interface AppState extends AppTweaks {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  design: 'editor',
+  design: 'contemporary',
   theme: 'dark',
   lang: 'ko',
   loggedIn: false,

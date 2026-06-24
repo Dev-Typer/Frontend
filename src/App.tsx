@@ -4,15 +4,15 @@ import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
 import { getMe, logout } from '@/apis/authApi';
 import { LangContext } from '@/i18n';
-import TopNav from '@/components/TopNav';
-import EditorShell from '@/pages/EditorShell';
-import HomeEditor from '@/pages/Home/HomeEditor';
+import ContemporaryShell from '@/pages/ContemporaryShell';
+import HomeContemporary from '@/pages/Home/HomeContemporary';
 import Solo from '@/pages/Solo';
 import Battle from '@/pages/Battle';
 import Daily from '@/pages/Daily';
 import Ranking from '@/pages/Ranking';
 import MyPage from '@/pages/MyPage';
 import Login from '@/pages/Login';
+import Snippets from '@/pages/Snippets';
 import SnippetRankingPage from '@/pages/ranking/SnippetRankingPage';
 import AdminSnippets from '@/pages/admin/AdminSnippets';
 
@@ -35,16 +35,13 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
-  const design = useAppStore((s) => s.design);
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
   const { isLoggedIn, setUser, clearUser, username, role } = useUserStore();
 
   useEffect(() => {
-    getMe()
-      .then((data) => setUser(data.userId, data.username, data.role))
-      .catch(() => {});
+    getMe().then((data) => setUser(data)).catch(() => {});
   }, [setUser]);
 
   const handleLogout = async () => {
@@ -65,15 +62,24 @@ const AppRoutes = () => {
     avgAcc: 0,
     byLang: [],
     totalCore: 0,
+    globalRank: 0,
+    langRank: 0,
+    uniqueSnippets: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    bestSnippets: [],
+    coreHistory: [],
+    topCore: [],
   };
 
   const routes = (
     <Routes>
-      <Route path="/" element={<HomeEditor />} />
+      <Route path="/" element={<HomeContemporary me={me} />} />
       <Route path="/solo" element={<Solo />} />
       <Route path="/battle" element={<Battle />} />
       <Route path="/daily" element={<Daily />} />
       <Route path="/ranking" element={<Ranking />} />
+      <Route path="/snippets" element={<Snippets />} />
       <Route path="/mypage" element={<AuthGuard><MyPage /></AuthGuard>} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin/snippets" element={
@@ -84,19 +90,10 @@ const AppRoutes = () => {
     </Routes>
   );
 
-  if (design === 'editor') {
-    return (
-      <EditorShell me={me} isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
-        {routes}
-      </EditorShell>
-    );
-  }
-
   return (
-    <>
-      <TopNav theme={theme} onTheme={toggleTheme} isLoggedIn={isLoggedIn} onLogin={() => navigate('/login')} onLogout={handleLogout} me={me} />
+    <ContemporaryShell me={me} isLoggedIn={isLoggedIn} isAdmin={role === 'ADMIN'} onLogin={() => navigate('/login')} onLogout={handleLogout} theme={theme} onTheme={toggleTheme}>
       {routes}
-    </>
+    </ContemporaryShell>
   );
 };
 
@@ -108,7 +105,7 @@ const App = () => {
   return (
     <LangContext.Provider value={lang}>
       <BrowserRouter>
-        <div className={`dt-design-${design} dt-theme-${theme}`} style={{ minHeight: '100vh' }}>
+        <div className={`dt-design-${design} dt-theme-${theme} dt-skin-revised`} style={{ minHeight: '100vh' }}>
           <AppRoutes />
         </div>
       </BrowserRouter>

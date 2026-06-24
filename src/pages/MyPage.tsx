@@ -533,13 +533,19 @@ interface CoreDetailCardProps {
   loading: boolean;
 }
 
+const CONTENT_MAX_H = 380; // 10 language rows 기준 공통 높이
+const CORE_ROW_ITEMS = 10; // 10-col grid
+const CORE_ROW_H = 62;    // chip 52px + gap 10px
+const CORE_OVERHEAD = 58; // label + padding (dt-label 24 + py-4/pb-18 34)
+const CORE_VISIBLE_ROWS = Math.floor((CONTENT_MAX_H - CORE_OVERHEAD) / CORE_ROW_H); // ≈ 5
+const CORE_CAP = CORE_VISIBLE_ROWS * CORE_ROW_ITEMS; // ≈ 50
+
 const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
   const t = useT();
   const [expanded, setExpanded] = useState(false);
-  const CAP = 10;
   const list = data?.snippetList ?? [];
-  const shown = expanded ? list : list.slice(0, CAP);
-  const rest  = list.length - CAP;
+  const shown = expanded ? list : list.slice(0, CORE_CAP);
+  const hasMore = list.length > CORE_CAP;
 
   if (loading) return <CardSkeleton height={280} />;
 
@@ -569,15 +575,15 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
           <span className="dt-label text-dt-text-3">· {data?.snippetCount ?? 0} {t('snippets')}</span>
         </div>
       </div>
-      <div className="px-6 py-4 pb-[18px]" style={{ minHeight: 140 }}>
+      <div className="px-6 py-4 pb-[18px]"
+        style={{ maxHeight: expanded ? 'none' : CONTENT_MAX_H, overflow: 'hidden', transition: 'max-height 250ms ease' }}>
         <div className="dt-label mb-3">{t('Top snippets by CORE')}</div>
         {list.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10, justifyItems: 'center' }}>
             {shown.map((s, i) => <CoreChip key={i} title={s.title} language={s.language} core={s.core} />)}
           </div>
         ) : (
-          /* 고스트 칩 + 빈 상태 */
-          <div className="relative">
+          <div className="relative" style={{ height: CONTENT_MAX_H - CORE_OVERHEAD }}>
             <div className="pointer-events-none opacity-20"
               style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10 }}>
               {Array.from({ length: 10 }, (_, i) => (
@@ -591,17 +597,17 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
             </div>
           </div>
         )}
-        {rest > 0 && (
-          <button onClick={() => setExpanded(e => !e)}
-            className="mt-[14px] w-full py-[9px] rounded-[10px] border-0 cursor-default font-sans text-[12.5px] font-semibold flex items-center justify-center gap-[6px]"
-            style={{ background: 'var(--dt-hover)', color: 'var(--dt-text-2)', boxShadow: 'inset 0 0 0 1px var(--dt-border)' }}>
-            {expanded ? t('Show less') : `+${rest} ${t('more')}`}
-            <span style={{ display: 'inline-flex', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>
-              <IconChevronDown size={14} />
-            </span>
-          </button>
-        )}
       </div>
+      {hasMore && (
+        <button onClick={() => setExpanded(e => !e)}
+          className="w-full py-[9px] border-0 border-t cursor-pointer font-sans text-[12.5px] font-semibold flex items-center justify-center gap-[6px]"
+          style={{ background: 'var(--dt-hover)', color: 'var(--dt-text-2)', borderColor: 'var(--dt-border)' }}>
+          {expanded ? '접기' : `+${list.length - CORE_CAP}개 더 보기`}
+          <span style={{ display: 'inline-flex', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>
+            <IconChevronDown size={14} />
+          </span>
+        </button>
+      )}
     </div>
   );
 };
@@ -612,10 +618,15 @@ interface LangCardProps {
   loading: boolean;
 }
 
+const LANG_CAP = 5; // 기본 표시 언어 수
+
 const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
   const t = useT();
+  const [expanded, setExpanded] = useState(false);
   const langs = (data?.byLanguage ?? []).filter(l => l.totalCore > 0);
   const maxCore = langs.length ? Math.max(...langs.map(l => l.totalCore)) : 1;
+  const shown = expanded ? langs : langs.slice(0, LANG_CAP);
+  const hasMore = langs.length > LANG_CAP;
   const GHOST_LANGS = ['JavaScript', 'Python', 'TypeScript', 'Java', 'Kotlin'];
 
   if (loading) return <CardSkeleton height={280} />;
@@ -628,8 +639,7 @@ const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
       </div>
 
       {langs.length === 0 ? (
-        /* 고스트 바 + 빈 상태 */
-        <div className="relative py-3" style={{ minHeight: 200 }}>
+        <div className="relative py-3" style={{ height: CONTENT_MAX_H }}>
           <div className="pointer-events-none opacity-[0.12]">
             {GHOST_LANGS.map((_l, i) => (
               <div key={i} className="grid items-center gap-4 px-6 py-[10px]"
@@ -650,24 +660,37 @@ const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="py-3">
-          {langs.map(l => (
-            <div key={l.language} className="grid items-center gap-4 px-6 py-[10px]"
-              style={{ gridTemplateColumns: '132px 1fr 72px 60px' }}>
-              <span className="flex items-center gap-[9px] min-w-0">
-                {LANG_ICON[l.language.toLowerCase()] && (
-                  <img src={LANG_ICON[l.language.toLowerCase()]} alt="" className="w-[18px] h-[18px] object-contain shrink-0" />
-                )}
-                <span className="dt-body-sm truncate">{LANG_DISPLAY[l.language] ?? l.language}</span>
-              </span>
-              <div className="h-[6px] bg-dt-hover rounded-full overflow-hidden">
-                <div style={{ width: `${(l.totalCore / maxCore) * 100}%`, height: '100%', background: 'var(--dt-primary)', borderRadius: 999 }} />
+        <>
+          <div className="py-3"
+            style={{ maxHeight: expanded ? 'none' : CONTENT_MAX_H, overflow: 'hidden', transition: 'max-height 250ms ease' }}>
+            {shown.map(l => (
+              <div key={l.language} className="grid items-center gap-4 px-6 py-[10px]"
+                style={{ gridTemplateColumns: '132px 1fr 72px 60px' }}>
+                <span className="flex items-center gap-[9px] min-w-0">
+                  {LANG_ICON[l.language.toLowerCase()] && (
+                    <img src={LANG_ICON[l.language.toLowerCase()]} alt="" className="w-[18px] h-[18px] object-contain shrink-0" />
+                  )}
+                  <span className="dt-body-sm truncate">{LANG_DISPLAY[l.language] ?? l.language}</span>
+                </span>
+                <div className="h-[6px] bg-dt-hover rounded-full overflow-hidden">
+                  <div style={{ width: `${(l.totalCore / maxCore) * 100}%`, height: '100%', background: 'var(--dt-primary)', borderRadius: 999 }} />
+                </div>
+                <span className="dt-mono tabular-nums text-right text-[14px] font-semibold text-dt-primary">{Math.round(l.totalCore)}</span>
+                <span className="dt-mono tabular-nums dt-caption text-right">{l.snippetCount}</span>
               </div>
-              <span className="dt-mono tabular-nums text-right text-[14px] font-semibold text-dt-primary">{l.totalCore}</span>
-              <span className="dt-mono tabular-nums dt-caption text-right">{l.snippetCount}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {hasMore && (
+            <button onClick={() => setExpanded(e => !e)}
+              className="w-full py-[9px] border-0 border-t cursor-pointer font-sans text-[12.5px] font-semibold flex items-center justify-center gap-[6px]"
+              style={{ background: 'var(--dt-hover)', color: 'var(--dt-text-2)', borderColor: 'var(--dt-border)' }}>
+              {expanded ? '접기' : `+${langs.length - LANG_CAP}개 더 보기`}
+              <span style={{ display: 'inline-flex', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>
+                <IconChevronDown size={14} />
+              </span>
+            </button>
+          )}
+        </>
       )}
     </div>
   );
@@ -1173,7 +1196,7 @@ const MyPage = () => {
       <ProfileInfoSection coreData={core} />
       <StreakCard data={streak} loading={loadingStreak} onYearChange={handleYearChange} />
 
-      <div className="grid gap-5 mt-5 items-start" style={{ gridTemplateColumns: '2fr 1.2fr' }}>
+      <div className="grid gap-5 mt-5" style={{ gridTemplateColumns: '2fr 1.2fr' }}>
         <CoreDetailCard data={core} loading={loadingCore} />
         <LanguageStatsCard data={byLang} loading={loadingByLang} />
       </div>

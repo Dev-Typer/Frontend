@@ -1,10 +1,13 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
 import UserHover from '@/components/UserHover';
 import { IconPlay, IconUser, IconCode } from '@/components/icons/Icons';
-import { GLOBAL_RANKING, TODAYS_CHALLENGE, LANG_ICON } from '@/data';
+import { GLOBAL_RANKING, LANG_ICON } from '@/data';
+import coreLogo from '@/assets/core-logo.png';
+import { getDailyChallenge } from '@/apis/dailyChallengeApi';
+import type { DailyChallengeDto } from '@/apis/dailyChallengeApi';
 import type { User } from '@/types';
 
 interface Props {
@@ -67,7 +70,7 @@ const HomeProfileStrip = ({ me }: { me: User }) => {
             fontFamily: 'var(--dt-font-mono)', fontWeight: 700, fontSize: 28, lineHeight: 0.9,
             color: '#fff', textShadow: '0 3px 16px rgba(0,0,0,0.6)',
           }}>{me.totalCore.toLocaleString()}</div>
-          <div style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginTop: 3 }}>CORE</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginTop: 3 }}><img src={coreLogo} style={{ width: 15, height: 15, objectFit: 'contain' }} />CORE</div>
         </div>
       </div>
     </div>
@@ -324,7 +327,15 @@ const DIFF_COLOR: Record<string, string> = {
 
 const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) => {
   const t = useT();
-  const ch = TODAYS_CHALLENGE;
+  const [daily, setDaily] = useState<DailyChallengeDto | null>(null);
+
+  useEffect(() => {
+    getDailyChallenge().then(setDaily).catch(() => {});
+  }, []);
+
+  if (!daily) return null;
+
+  const ch = daily.snippet;
   const diffColor = DIFF_COLOR[ch.difficulty] || '#57E5FF';
   const diffLabel = ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
   const langKey = ch.language.toLowerCase();
@@ -336,7 +347,7 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
         <h2 style={{ margin: 0, fontFamily: 'var(--dt-font-display)', fontWeight: 600, fontSize: 20, color: 'var(--dt-text)' }}>
           {t("Today's Challenge")}
         </h2>
-        <span className="dt-caption" style={{ marginLeft: 'auto' }}>{ch.date}</span>
+        <span className="dt-caption" style={{ marginLeft: 'auto' }}>{daily.date}</span>
       </div>
 
       <div className="dt-card" style={{ padding: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: '300px 1fr' }}>
@@ -388,7 +399,7 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
           <pre style={{
             margin: 0, fontFamily: 'var(--dt-font-mono)', fontSize: 14, lineHeight: 1.75,
             color: 'var(--dt-text)', whiteSpace: 'pre', overflowX: 'auto',
-          }}>{ch.code}</pre>
+          }}>{ch.content}</pre>
         </div>
       </div>
     </section>

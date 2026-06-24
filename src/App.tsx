@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
 import { getMe, logout } from '@/apis/authApi';
+import { getUserMe } from '@/apis/userApi';
 import { LangContext } from '@/i18n';
 import ContemporaryShell from '@/pages/ContemporaryShell';
 import HomeContemporary from '@/pages/Home/HomeContemporary';
@@ -38,11 +39,19 @@ const AppRoutes = () => {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
-  const { isLoggedIn, setUser, clearUser, username, role } = useUserStore();
+  const { isLoggedIn, setUser, setUserMe, clearUser, username, role, totalCore, currentStreak } = useUserStore();
 
   useEffect(() => {
-    getMe().then((data) => setUser(data)).catch(() => {});
-  }, [setUser]);
+    getMe()
+      .then(async (data) => {
+        setUser(data);
+        try {
+          const me = await getUserMe();
+          setUserMe(me);
+        } catch {}
+      })
+      .catch(() => {});
+  }, [setUser, setUserMe]);
 
   const handleLogout = async () => {
     await logout().catch(() => {});
@@ -61,11 +70,11 @@ const AppRoutes = () => {
     maxWpm: 0,
     avgAcc: 0,
     byLang: [],
-    totalCore: 0,
+    totalCore,
     globalRank: 0,
     langRank: 0,
     uniqueSnippets: 0,
-    currentStreak: 0,
+    currentStreak,
     longestStreak: 0,
     bestSnippets: [],
     coreHistory: [],

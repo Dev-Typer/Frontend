@@ -1,23 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { useT } from '@/i18n';
-import { GLOBAL_RANKING, CHALLENGE_BOARD, LANG_ICON } from '@/data';
+import { LANG_ICON } from '@/data';
+import { useUserStore } from '@/stores/userStore';
 import Segmented from '@/components/Segmented';
 import Avatar from '@/components/Avatar';
 import UserHover from '@/components/UserHover';
-import { IconCalendar, IconChevronDown } from '@/components/icons/Icons';
+import { IconChevronDown } from '@/components/icons/Icons';
+import { getSoloLeaderboard, getStreakLeaderboard } from '@/apis/leaderboardApi';
+import type { SoloLeaderboardEntry, StreakLeaderboardEntry } from '@/apis/leaderboardApi';
+import { getDailyLeaderboard } from '@/apis/dailyChallengeApi';
+import type { LeaderboardItem, ChallengeLeaderboardDto } from '@/apis/dailyChallengeApi';
 
 const LANG_OPTS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'C++', 'C#', 'C', 'Rust', 'Kotlin'];
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function coreFields(r: { handle: string; rating?: number; rank: number; wpm?: number }, langBoost = 0) {
-  const seed = r.handle.charCodeAt(0) + r.handle.length * 7;
-  const nWpm = Math.round(((r.wpm ?? 80) * 0.92 + (seed % 7)) * 10) / 10;
-  const plays = 60 + (seed * 13) % 200;
-  const snippets = 12 + (seed * 5) % 44;
-  const acc = Math.round((88 + (seed % 11)) * 10) / 10;
-  const totalCore = Math.round(((r.rating ?? 1500) * 2.6 + langBoost - r.rank * 60));
-  return { nWpm, plays, snippets, acc, totalCore };
-}
 
 // ─── Shared table primitives ──────────────────────────────────────────────────
 interface ColDef { template: string; labels: string[]; aligns: string[] }
@@ -45,43 +39,179 @@ const RankBadge = ({ rank }: { rank: number }) => (
   </span>
 );
 
-const PlayerCell = ({ handle, me, tier }: { handle: string; me?: boolean; tier?: string }) => (
-  <UserHover handle={handle} tier={tier}>
+const PlayerCell = ({ username, profileUrl, me }: { username: string; profileUrl: string | null; me?: boolean }) => (
+  <UserHover handle={username}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <Avatar handle={handle} hue={(handle.charCodeAt(0) * 7) % 360} size={28} />
+      <Avatar handle={username} hue={(username.charCodeAt(0) * 7) % 360} size={28} src={profileUrl ?? undefined} />
       <span className="dt-mono" style={{ fontSize: 14, color: me ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
-        {handle}{me && <span style={{ marginLeft: 6, fontSize: 12 }}>(you)</span>}
+        {username}{me && <span style={{ marginLeft: 6, fontSize: 12 }}>(you)</span>}
       </span>
     </div>
   </UserHover>
 );
 
-// ─── CoreTable (Overall / Language) ──────────────────────────────────────────
-function CoreTable({ rows, langBoost = 0 }: { rows: typeof GLOBAL_RANKING; langBoost?: number }) {
+const EmptyRow = ({ cols }: { cols: number }) => (
+  <div className="px-6 py-10 text-center dt-caption" style={{ gridColumn: `1 / ${cols + 1}` }}>
+    아직 기록이 없습니다.
+  </div>
+);
+
+// ─── CoreTable ────────────────────────────────────────────────────────────────
+function CoreTable({ rows, loading }: { rows: SoloLeaderboardEntry[]; loading: boolean }) {
   const t = useT();
   const tpl = '64px 1fr 92px 84px 90px 80px 110px';
   return (
     <div className="dt-card p-0">
       <TableHeader cols={{
         template: tpl,
-        labels: [t('Rank'), t('Player'), 'nWPM', t('Plays'), t('Snippets'), 'Acc%', 'CORE'],
-        aligns: ['left','left','right','right','right','right','right'],
+        labels: [t('Rank'), t('Player'), 'avgWPM', t('Plays'), t('Snippets'), 'Acc%', 'CORE'],
+        aligns: ['left', 'left', 'right', 'right', 'right', 'right', 'right'],
       }} />
-      {rows.map(r => {
-        const c = coreFields(r, langBoost);
+      {loading ? (
+        <div className="px-6 py-10 text-center dt-caption">loading...</div>
+      ) : rows.length === 0 ? (
+        <EmptyRow cols={7} />
+      ) : rows.map(r => (
+        <TableRow key={r.userId} me={r.isMe}>
+          <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
+            <RankBadge rank={r.rank} />
+            <PlayerCell username={r.username} profileUrl={r.profileUrl} me={r.isMe} />
+            <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.avgWpm}</span>
+            <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.playCount}</span>
+            <span className="dt-mono tabular-nums text-right text-[14px] text-dt-primary font-semibold">{r.snippetCount}</span>
+            <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.avgAccuracy}%</span>
+            <span className="dt-mono tabular-nums text-right text-[17px] font-bold"
+              style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
+              {r.totalCore.toLocaleString()}
+            </span>
+          </div>
+        </TableRow>
+      ))}
+    </div>
+  );
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function OverallTable() {
+  const [rows, setRows] = useState<SoloLeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getSoloLeaderboard(1, 50)
+      .then(res => setRows(res.entries))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return <CoreTable rows={rows} loading={loading} />;
+}
+
+function LanguageTable({ lang }: { lang: string }) {
+  const [rows, setRows] = useState<SoloLeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    getSoloLeaderboard(1, 50, lang)
+      .then(res => setRows(res.entries))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [lang]);
+
+  return <CoreTable rows={rows} loading={loading} />;
+}
+
+function StreakTable() {
+  const t = useT();
+  const [rows, setRows] = useState<StreakLeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getStreakLeaderboard(1, 50)
+      .then(res => setRows(res.entries))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const tpl = '64px 1fr 150px';
+  return (
+    <div className="dt-card p-0">
+      <TableHeader cols={{
+        template: tpl,
+        labels: [t('Rank'), t('Player'), t('Current streak')],
+        aligns: ['left', 'left', 'right'],
+      }} />
+      {loading ? (
+        <div className="px-6 py-10 text-center dt-caption">loading...</div>
+      ) : rows.length === 0 ? (
+        <EmptyRow cols={3} />
+      ) : rows.map(r => (
+        <TableRow key={r.userId} me={r.isMe}>
+          <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
+            <RankBadge rank={r.rank} />
+            <PlayerCell username={r.username} profileUrl={r.profileUrl} me={r.isMe} />
+            <span className="flex items-center justify-end gap-[6px] text-right">
+              <span className="text-[15px]">🔥</span>
+              <span className="dt-mono tabular-nums text-[17px] font-bold"
+                style={{ color: r.rank <= 3 ? '#FF7A3C' : 'var(--dt-text)' }}>
+                {r.currentStreak}
+              </span>
+              <span className="dt-caption">{t('days')}</span>
+            </span>
+          </div>
+        </TableRow>
+      ))}
+    </div>
+  );
+}
+
+// ─── Daily challenge table ───────────────────────────────────────────────────
+function DailyChallengeTable() {
+  const t = useT();
+  const myUserId = useUserStore((s) => s.userId);
+  const [data, setData] = useState<ChallengeLeaderboardDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDailyLeaderboard()
+      .then(res => setData(res))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const tpl = '64px 1fr 100px 100px 100px';
+  const rows: LeaderboardItem[] = data?.items ?? [];
+
+  return (
+    <div className="dt-card p-0">
+      {data && (
+        <div className="flex items-center gap-[10px] px-6 py-4 border-b border-dt-border/50">
+          <span className="dt-h3 m-0">Today · {new Date(data.date).toLocaleDateString('ko-KR')}</span>
+          {data.total > 0 && <span className="dt-caption">· {data.total.toLocaleString()} submissions</span>}
+        </div>
+      )}
+      <TableHeader cols={{
+        template: tpl,
+        labels: [t('Rank'), t('Player'), 'WPM', 'nWPM', 'Acc%'],
+        aligns: ['left', 'left', 'right', 'right', 'right'],
+      }} />
+      {loading ? (
+        <div className="px-6 py-10 text-center dt-caption">loading...</div>
+      ) : rows.length === 0 ? (
+        <EmptyRow cols={5} />
+      ) : rows.map(r => {
+        const isMe = myUserId !== null && r.userId === myUserId;
         return (
-          <TableRow key={r.handle} me={r.me}>
+          <TableRow key={r.userId} me={isMe}>
             <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
               <RankBadge rank={r.rank} />
-              <PlayerCell handle={r.handle} me={r.me} tier={r.tier} />
-              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{c.nWpm}</span>
-              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{c.plays}</span>
-              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-primary font-semibold">{c.snippets}</span>
-              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{c.acc}%</span>
-              <span className="dt-mono tabular-nums text-right text-[17px] font-bold"
+              <PlayerCell username={r.username} profileUrl={null} me={isMe} />
+              <span className="dt-mono tabular-nums text-right text-[16px] font-medium"
                 style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
-                {c.totalCore}
+                {r.wpm.toFixed(1)}
               </span>
+              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.nWpm.toFixed(1)}</span>
+              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.accuracy.toFixed(1)}%</span>
             </div>
           </TableRow>
         );
@@ -90,94 +220,7 @@ function CoreTable({ rows, langBoost = 0 }: { rows: typeof GLOBAL_RANKING; langB
   );
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-function OverallTable() {
-  return <CoreTable rows={GLOBAL_RANKING} />;
-}
-
-function LanguageTable({ lang }: { lang: string }) {
-  const OFFSET: Record<string, number> = { JavaScript: 0, TypeScript: 5, Python: 3, Java: 8, Go: 6, 'C++': 9, 'C#': 11, C: 13, Rust: 15, Kotlin: 12 };
-  const offset = OFFSET[lang] ?? 0;
-  const len = GLOBAL_RANKING.length;
-  const rows = GLOBAL_RANKING
-    .map((r, i) => ({ ...r, rank: ((i + offset) % len) + 1 }))
-    .sort((a, b) => a.rank - b.rank);
-  return <CoreTable rows={rows} langBoost={offset * 40} />;
-}
-
-function ChallengeTable() {
-  const tpl = '70px 1fr 1fr 100px 100px';
-  return (
-    <div className="dt-card p-0">
-      <div className="flex items-center gap-[10px] px-6 py-4 border-b border-dt-border/50">
-        <IconCalendar size={16} style={{ color: 'var(--dt-primary)' }} />
-        <span className="dt-h3 m-0">Today · TypeScript medium</span>
-        <span className="dt-caption">· 4,218 submissions so far</span>
-        <span className="ml-auto flex items-center gap-[6px]">
-          <span className="dt-live-dot" />
-          <span className="dt-caption">live</span>
-        </span>
-      </div>
-      <TableHeader cols={{
-        template: tpl,
-        labels: ['Rank', 'Developer', '', 'WPM', 'Accuracy'],
-        aligns: ['left','left','left','right','right'],
-      }} />
-      {CHALLENGE_BOARD.map(r => (
-        <TableRow key={r.handle} me={r.me}>
-          <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
-            <RankBadge rank={r.rank} />
-            <PlayerCell handle={r.handle} me={r.me} tier={r.tier} />
-            <span />
-            <span className="dt-mono tabular-nums text-right text-[18px] font-medium"
-              style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
-              {r.wpm}
-            </span>
-            <span className="dt-mono tabular-nums text-right text-dt-text-2">{r.acc}%</span>
-          </div>
-        </TableRow>
-      ))}
-    </div>
-  );
-}
-
-function StreakTable() {
-  const t = useT();
-  const tpl = '64px 1fr 150px 130px';
-  const rows = GLOBAL_RANKING.map(r => {
-    const seed = r.handle.charCodeAt(0) + r.handle.length * 11;
-    return { ...r, streak: Math.max(1, 80 - r.rank * 3 + (seed % 9)), best: Math.max(1, 90 - r.rank * 2 + (seed % 14)) };
-  }).sort((a, b) => b.streak - a.streak).map((r, i) => ({ ...r, rank: i + 1 }));
-
-  return (
-    <div className="dt-card p-0">
-      <TableHeader cols={{
-        template: tpl,
-        labels: [t('Rank'), t('Player'), t('Current streak'), t('Best')],
-        aligns: ['left','left','right','right'],
-      }} />
-      {rows.map(r => (
-        <TableRow key={r.handle} me={r.me}>
-          <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
-            <RankBadge rank={r.rank} />
-            <PlayerCell handle={r.handle} me={r.me} tier={r.tier} />
-            <span className="flex items-center justify-end gap-[6px] text-right">
-              <span className="text-[15px]">🔥</span>
-              <span className="dt-mono tabular-nums text-[17px] font-bold"
-                style={{ color: r.rank <= 3 ? '#FF7A3C' : 'var(--dt-text)' }}>
-                {r.streak}
-              </span>
-              <span className="dt-caption">{t('days')}</span>
-            </span>
-            <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.best} {t('days')}</span>
-          </div>
-        </TableRow>
-      ))}
-    </div>
-  );
-}
-
-// ─── Language dropdown with icons ─────────────────────────────────────────────
+// ─── Language dropdown ────────────────────────────────────────────────────────
 function LangSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -247,7 +290,7 @@ const Ranking = () => {
 
       {tab === 'overall'  && <OverallTable />}
       {tab === 'language' && <LanguageTable lang={lang} />}
-      {tab === 'daily'    && <ChallengeTable />}
+      {tab === 'daily'    && <DailyChallengeTable />}
       {tab === 'streak'   && <StreakTable />}
     </div>
   );

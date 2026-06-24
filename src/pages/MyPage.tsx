@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { useUserStore } from '@/stores/userStore';
 import { LANG_ICON } from '@/data';
@@ -488,39 +489,63 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
 
 // ─── CoreDetailCard ────────────────────────────────────────────────────────────
 interface CoreChipProps {
+  snippetId: number;
   title: string;
   language: string;
   core: number;
 }
 
-const CoreChip = ({ title, language, core }: CoreChipProps) => {
-  const [show, setShow] = useState(false);
+const CoreChip = ({ snippetId, title, language, core }: CoreChipProps) => {
+  const navigate = useNavigate();
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const langKey = language.toLowerCase();
   const icon = LANG_ICON[langKey];
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setPos({ x: r.left, y: r.top });
+  };
+
   return (
     <span className="relative inline-flex"
-      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
-      <button className="inline-flex items-center justify-center w-[52px] h-[52px] rounded-[12px] border-0 p-0 cursor-default transition-[box-shadow,transform] duration-[120ms]"
+      onMouseEnter={handleMouseEnter} onMouseLeave={() => setPos(null)}>
+      <button
+        onClick={() => navigate(`/solo?snippetId=${snippetId}`)}
+        className="inline-flex items-center justify-center w-[52px] h-[52px] rounded-[12px] border-0 p-0 cursor-pointer transition-[box-shadow,transform] duration-[120ms]"
         style={{
           background: 'var(--dt-hover)',
-          boxShadow: show ? 'inset 0 0 0 1.5px color-mix(in oklab, var(--dt-primary) 55%, transparent)' : 'inset 0 0 0 1px var(--dt-border)',
-          transform: show ? 'translateY(-2px)' : 'none',
+          boxShadow: pos ? 'inset 0 0 0 1.5px color-mix(in oklab, var(--dt-primary) 55%, transparent)' : 'inset 0 0 0 1px var(--dt-border)',
+          transform: pos ? 'translateY(-2px)' : 'none',
         }}>
         {icon
           ? <img src={icon} alt={language} className="w-[30px] h-[30px] object-contain" />
           : <span className="dt-mono text-[13px] text-dt-text">{language.slice(0, 2)}</span>}
       </button>
-      {show && (
-        <div className="absolute bottom-full left-0 mb-2 z-[200] w-[220px] rounded-[12px] overflow-hidden text-left"
-          style={{ background: 'var(--dt-card)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px var(--dt-border), 0 20px 50px -16px rgba(0,0,0,0.7)' }}>
-          <div className="flex items-center gap-[9px] px-[15px] py-[13px] shadow-[inset_0_-1px_0_var(--dt-border)]">
+      {pos && (
+        <div style={{
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y - 8,
+          transform: 'translateY(-100%)',
+          zIndex: 9999,
+          width: 220,
+          borderRadius: 12,
+          overflow: 'hidden',
+          textAlign: 'left',
+          background: 'var(--dt-card)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px var(--dt-border), 0 20px 50px -16px rgba(0,0,0,0.7)',
+          pointerEvents: 'none',
+        }}>
+          <div className="flex items-center gap-[9px] px-[15px] py-[13px]"
+            style={{ borderBottom: '1px solid var(--dt-border)' }}>
             {icon && <img src={icon} alt="" className="w-[18px] h-[18px] object-contain" />}
-            <span className="dt-mono text-[14px] text-dt-text truncate">{title}</span>
+            <span className="dt-mono text-[13px] text-dt-text" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
           </div>
-          <div className="p-[13px_15px]">
+          <div className="p-[10px_15px] flex items-center justify-between">
             <span className="dt-mono tabular-nums text-[14px] font-semibold text-dt-primary">
               {Math.round(core)} <span className="text-[10px] text-dt-text-3">CORE</span>
             </span>
+            <span className="text-[10px] text-dt-text-3">클릭하여 플레이</span>
           </div>
         </div>
       )}
@@ -580,7 +605,7 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
         <div className="dt-label mb-3">{t('Top snippets by CORE')}</div>
         {list.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10, justifyItems: 'center' }}>
-            {shown.map((s, i) => <CoreChip key={i} title={s.title} language={s.language} core={s.core} />)}
+            {shown.map((s, i) => <CoreChip key={i} snippetId={s.snippetId} title={s.title} language={s.language} core={s.core} />)}
           </div>
         ) : (
           <div className="relative" style={{ height: CONTENT_MAX_H - CORE_OVERHEAD }}>

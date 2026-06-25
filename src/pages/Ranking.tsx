@@ -188,7 +188,7 @@ function DailyChallengeTable() {
       .finally(() => setLoading(false));
   }, []);
 
-  const tpl = '64px 1fr 100px 100px 100px';
+  const tpl = '64px 1fr 110px 90px 90px 90px';
   const rows: LeaderboardItem[] = data?.items ?? [];
 
   return (
@@ -201,24 +201,25 @@ function DailyChallengeTable() {
       )}
       <TableHeader cols={{
         template: tpl,
-        labels: [t('Rank'), t('Player'), 'WPM', 'nWPM', 'Acc%'],
-        aligns: ['left', 'left', 'right', 'right', 'right'],
+        labels: [t('Rank'), t('Player'), 'CORE', 'WPM', 'nWPM', 'Acc%'],
+        aligns: ['left', 'left', 'right', 'right', 'right', 'right'],
       }} />
       {loading ? (
         <div className="px-6 py-10 text-center dt-caption">loading...</div>
       ) : rows.length === 0 ? (
-        <EmptyRow cols={5} />
+        <EmptyRow cols={6} />
       ) : rows.map(r => {
         const isMe = myUserId !== null && r.userId === myUserId;
         return (
           <TableRow key={r.userId} me={isMe}>
             <div className="grid gap-4 px-6 py-[14px] items-center" style={{ gridTemplateColumns: tpl }}>
               <RankBadge rank={r.rank} />
-              <PlayerCell username={r.username} profileUrl={null} me={isMe} />
-              <span className="dt-mono tabular-nums text-right text-[16px] font-medium"
+              <PlayerCell username={r.username} profileUrl={r.profileUrl} me={isMe} />
+              <span className="dt-mono tabular-nums text-right text-[17px] font-bold"
                 style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
-                {r.wpm.toFixed(1)}
+                {r.core.toFixed(1)}
               </span>
+              <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.wpm.toFixed(1)}</span>
               <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.nWpm.toFixed(1)}</span>
               <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.accuracy.toFixed(1)}%</span>
             </div>

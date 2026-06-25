@@ -64,6 +64,8 @@ export interface LeaderboardItem {
   rank: number;
   userId: number;
   username: string;
+  profileUrl: string | null;
+  core: number;
   wpm: number;
   nWpm: number;
   accuracy: number;

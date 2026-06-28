@@ -16,6 +16,7 @@ interface UserState {
   isLoggedIn: boolean;
   setUser: (data: MeResponse) => void;
   setUserMe: (data: UserMeResponse) => void;
+  setCurrentStreak: (n: number) => void;
   setProfileUrl: (url: string | null) => void;
   setBannerUrl: (url: string | null) => void;
   clearUser: () => void;
@@ -45,6 +46,7 @@ export const useUserStore = create<UserState>((set) => ({
     totalCore: data.totalCore,
     currentStreak: data.currentStreak,
   }),
+  setCurrentStreak: (n) => set({ currentStreak: n }),
   setProfileUrl: (profileUrl) => set({ profileUrl }),
   setBannerUrl: (bannerUrl) => set({ bannerUrl }),
   clearUser: () => set({

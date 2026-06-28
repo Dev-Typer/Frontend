@@ -11,6 +11,7 @@ import type { SoloLeaderboardEntry } from '@/apis/leaderboardApi';
 import coreLogo from '@/assets/core-logo.png';
 import { getDailyChallenge } from '@/apis/dailyChallengeApi';
 import type { DailyChallengeDto } from '@/apis/dailyChallengeApi';
+import { getCurrentStreak } from '@/apis/userApi';
 import { useUserStore } from '@/stores/userStore';
 
 // ─── Profile strip ────────────────────────────────────────────────────────────
@@ -500,6 +501,15 @@ const GuestBanner = ({ navigate }: { navigate: (r: string) => void }) => {
 const HomeContemporary = () => {
   const navigate = useNavigate();
   const isLoggedIn = useUserStore((s) => s.isLoggedIn);
+  const setCurrentStreak = useUserStore((s) => s.setCurrentStreak);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    getCurrentStreak()
+      .then(({ currentStreak }) => setCurrentStreak(currentStreak))
+      .catch(() => {});
+  }, [isLoggedIn, setCurrentStreak]);
+
   return (
     <div style={{
       maxWidth: 1100, margin: '0 auto', padding: '20px 44px 40px',

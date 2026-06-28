@@ -351,7 +351,24 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
     getDailyChallenge().then(setDaily).catch(() => {});
   }, []);
 
-  if (!daily) return null;
+  if (!daily) {
+    return (
+      <section style={{ marginTop: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '0 4px' }}>
+          <div className="animate-pulse" style={{ height: 20, width: 160, borderRadius: 6, background: 'var(--dt-hover)' }} />
+          <div className="animate-pulse" style={{ height: 14, width: 80, borderRadius: 6, background: 'var(--dt-hover)', marginLeft: 'auto' }} />
+        </div>
+        <div className="dt-card p-0 overflow-hidden animate-pulse" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', minHeight: 200 }}>
+          <div style={{ background: 'var(--dt-hover)', borderRight: '1px solid var(--dt-border)' }} />
+          <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[100, 90, 80, 70, 60].map((w, i) => (
+              <div key={i} style={{ height: 12, width: `${w}%`, borderRadius: 4, background: 'var(--dt-hover)' }} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const ch = daily.snippet;
   const diffColor = DIFF_COLOR[ch.difficulty] || '#57E5FF';
@@ -386,9 +403,6 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
             <div className="dt-stack" style={{ gap: 2 }}>
               <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--dt-text)', lineHeight: 1 }}>
                 {ch.language}
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: diffColor }}>
-                {t(diffLabel).toUpperCase()}
               </span>
             </div>
           </div>

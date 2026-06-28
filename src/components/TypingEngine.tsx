@@ -40,6 +40,7 @@ const TypingEngine = ({
   const startedAtRef = useRef<number | null>(null);
   const currentComboRef = useRef(0);
   const longestComboRef = useRef(0);
+  const cursorSpanRef   = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
     setTyped(''); setErrors(0); setStartedAt(null); setFinishedFlag(false);
@@ -138,6 +139,11 @@ const TypingEngine = ({
 
   useEffect(() => { if (autoFocus && containerRef.current) containerRef.current.focus(); }, [autoFocus, resetKey]);
 
+  // 커서 위치를 부모 스크롤 컨테이너에 노출 (overflow-auto 인 PlayEditor inner div가 스크롤)
+  useEffect(() => {
+    cursorSpanRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [typed.length]);
+
   useEffect(() => {
     onProgress?.({
       index: typed.length, total: code.length,
@@ -226,47 +232,30 @@ const TypingEngine = ({
           if (isNewline) {
             return (
               <span key={i}>
-                <span className={cls}>{state === 'error' ? '↵' : ' '}</span>
+                <span ref={isCursor ? cursorSpanRef : null} className={cls}>{state === 'error' ? '↵' : ' '}</span>
                 {'\n'}
               </span>
             );
           }
-          return <span key={i} className={cls}>{ch}</span>;
+          return <span ref={isCursor ? cursorSpanRef : null} key={i} className={cls}>{ch}</span>;
         })}
         {typed.length === code.length && !finishedFlag && (
           <span className={`ch cursor${caretStyle === 'block' ? ' caret-block' : ''}${caretStyle === 'under' ? ' caret-under' : ''}`}>&nbsp;</span>
         )}
       </div>
 
-      {/* 하단 상태바 */}
+      {/* 하단 상태바 — Ln/Col + 진행도 */}
       {active && !finishedFlag && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 16,
-          marginTop: 8, padding: '6px 4px',
-          fontFamily: 'var(--dt-font-mono)', fontSize: 12,
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16,
+          marginTop: 6, padding: '4px 4px 2px',
+          fontFamily: 'var(--dt-font-mono)', fontSize: 11,
           color: 'var(--dt-text-3)',
           borderTop: '0.5px solid var(--dt-border)',
           userSelect: 'none',
         }}>
-          {/* 현재 줄 미리보기 */}
-          <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            <span style={{ opacity: 0.45 }}>
-              {statusInfo.currentLineText.slice(0, statusInfo.colInLine)}
-            </span>
-            <span style={{
-              color: 'var(--dt-primary)', fontWeight: 700,
-              background: 'color-mix(in oklab, var(--dt-primary) 18%, transparent)',
-              borderRadius: 3, padding: '0 2px',
-            }}>
-              {statusInfo.charLabel || '·'}
-            </span>
-            <span style={{ opacity: 0.3 }}>
-              {statusInfo.currentLineText.slice(statusInfo.colInLine + 1)}
-            </span>
-          </div>
-          {/* 줄:열 */}
-          <span style={{ whiteSpace: 'nowrap', opacity: 0.5 }}>
-            {statusInfo.lineNum} : {statusInfo.col} &nbsp; {typed.length} / {code.length}
+          <span style={{ opacity: 0.5 }}>
+            Ln {statusInfo.lineNum} / {statusInfo.totalLines} &nbsp; {typed.length} / {code.length}
           </span>
         </div>
       )}

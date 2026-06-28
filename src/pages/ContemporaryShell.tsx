@@ -69,7 +69,6 @@ const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, 
   const profileUrl = useUserStore((s) => s.profileUrl);
   const username = useUserStore((s) => s.username);
   const totalCore = useUserStore((s) => s.totalCore);
-  const currentStreak = useUserStore((s) => s.currentStreak);
   const tree = isAdmin ? [...CONTEM_TREE, ADMIN_NODE] : CONTEM_TREE;
   return (
     <aside
@@ -114,7 +113,7 @@ const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, 
               <Avatar handle={username ?? ''} size={30} ring="var(--dt-primary)" src={profileUrl} />
               <div className="dt-stack gap-0 min-w-0 flex-1">
                 <span className="text-[13px] text-dt-text whitespace-nowrap overflow-hidden text-ellipsis">{username}</span>
-                <span className="text-[11px] text-dt-text-3">{totalCore.toLocaleString()} CORE · 🔥{currentStreak}</span>
+                <span className="text-[11px] text-dt-text-3">{totalCore.toLocaleString()} CORE</span>
               </div>
             </button>
             <button

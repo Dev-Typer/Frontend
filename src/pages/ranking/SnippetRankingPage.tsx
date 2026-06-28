@@ -62,7 +62,7 @@ const SnippetRankingPage = () => {
                     <span className="dt-mono" style={{ fontSize: 13 }}>{item.username}</span>
                   </div>
                 </td>
-                <td style={{ padding: '12px 16px', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-primary)', fontWeight: 700 }}>{item.core.toFixed(1)}</td>
+                <td style={{ padding: '12px 16px', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-primary)', fontWeight: 700 }}>{Math.round(item.core)}</td>
                 <td style={{ padding: '12px 16px', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-text)' }}>{item.wpm.toFixed(1)}</td>
                 <td style={{ padding: '12px 16px', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-text-2)' }}>{item.rawWpm.toFixed(1)}</td>
                 <td style={{ padding: '12px 16px', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-text-2)' }}>{item.accuracy.toFixed(1)}%</td>

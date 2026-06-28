@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
 import { CODE_SNIPPETS, OPPONENTS, RECENT_BATTLES, ME } from '@/data';
@@ -247,12 +247,80 @@ const RaceLanes = ({ racers }: { racers: Racer[] }) => (
   </div>
 );
 
+const DevRaceTrack = ({ racers }: { racers: Racer[] }) => (
+  <div style={{
+    fontFamily: 'var(--dt-font-mono)', background: 'var(--dt-type-bg)',
+    borderRadius: 12, overflow: 'hidden', height: '100%',
+    boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.15)',
+    display: 'flex', flexDirection: 'column',
+  }}>
+    <div style={{ padding: '9px 14px', borderBottom: '1px solid rgba(120,150,255,0.10)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 5 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FF5F57' }} />
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFBD2E' }} />
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28C840' }} />
+      </div>
+      <span style={{ fontSize: 11, color: 'var(--dt-text-3)', marginLeft: 6 }}>race.sh — live</span>
+      <span className="dt-live-dot" style={{ marginLeft: 'auto' }} />
+    </div>
+    <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' } as React.CSSProperties}>
+      {racers.map((r, i) => {
+        const color = r.you ? 'var(--dt-primary)' : `oklch(78% 0.14 ${r.hue})`;
+        const pct = Math.round(r.progress * 100);
+        return (
+          <div key={r.handle} style={{
+            display: 'grid', gridTemplateColumns: '148px 1fr 88px',
+            alignItems: 'center', gap: 12, padding: '11px 16px',
+            borderBottom: i < racers.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+            background: r.you ? 'color-mix(in oklab, var(--dt-primary) 5%, transparent)' : 'transparent',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <span style={{ color: r.you ? color : 'var(--dt-text-3)', fontSize: 12, flexShrink: 0 }}>
+                {r.you ? '▶' : '·'}
+              </span>
+              <Avatar handle={r.handle} hue={r.you ? 170 : r.hue} size={22} ring={r.you ? 'var(--dt-primary)' : undefined} />
+              <span style={{ fontSize: 12.5, fontWeight: r.you ? 600 : 400, color: r.you ? color : 'var(--dt-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {r.handle}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', width: `${pct}%`, background: color, borderRadius: 3,
+                  transition: 'width 200ms ease-linear',
+                  boxShadow: r.you ? `0 0 10px color-mix(in oklab, var(--dt-primary) 55%, transparent)` : 'none',
+                }} />
+              </div>
+              {!r.done
+                ? <span className="animate-pulse" style={{ color, fontSize: 13, lineHeight: 1, flexShrink: 0 }}>▮</span>
+                : <span style={{ color: 'var(--dt-success)', fontSize: 13, flexShrink: 0 }}>✓</span>
+              }
+            </div>
+            <div style={{ textAlign: 'right', lineHeight: 1.4 }}>
+              {r.done ? (
+                <span style={{ fontSize: 12, color: 'var(--dt-success)', fontWeight: 600 }}>exit 0</span>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13, color: r.you ? color : 'var(--dt-text-2)', fontWeight: r.you ? 600 : 400 }}>
+                    {r.wpm} <span style={{ fontSize: 10, color: 'var(--dt-text-3)' }}>wpm</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>{pct}%</div>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
 const RaceTrack = ({ racers, vizStyle }: { racers: Racer[]; vizStyle: string }) => {
   if (vizStyle === 'bars') return <RaceBars racers={racers} />;
   if (vizStyle === 'lanes') return <RaceLanes racers={racers} />;
-  return <RaceAvatars racers={racers} />;
+  if (vizStyle === 'avatars') return <RaceAvatars racers={racers} />;
+  return <DevRaceTrack racers={racers} />;
 };
-
 interface BattleRaceProps {
   snippet: string;
   opponents: Opponent[];
@@ -339,8 +407,8 @@ const BattleRace = ({ snippet, opponents, progress, setProgress, onFinish, reset
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div style={{ height: 'calc(100vh - 90px)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <span className="dt-live-dot" />
           <span className="dt-label text-dt-error">LIVE BATTLE</span>
@@ -352,22 +420,23 @@ const BattleRace = ({ snippet, opponents, progress, setProgress, onFinish, reset
           <span><span className="dt-tabular text-base">{progress.acc.toFixed(0)}</span><span className="text-dt-text-2 text-xs">%</span></span>
         </div>
       </div>
-      <RaceTrack racers={racers} vizStyle={raceViz} />
-      <div className="mt-6">
-        <PlayEditor
-          code={snippet}
-          resetKey={resetKey}
-          caretStyle={caret}
-          fontSize={density === 'compact' ? 16 : 18}
-          onProgress={handleProgress}
-          onFinish={handleMyFinish}
-          fileName="battle.js"
-          index={progress.index}
-          total={progress.total}
-        />
+      <PlayEditor
+        fill
+        code={snippet}
+        resetKey={resetKey}
+        caretStyle={caret}
+        fontSize={density === 'compact' ? 15 : 17}
+        onProgress={handleProgress}
+        onFinish={handleMyFinish}
+        fileName="battle.js"
+        index={progress.index}
+        total={progress.total}
+      />
+      <div style={{ flex: '1 1 0', minHeight: 0 }}>
+        <RaceTrack racers={racers} vizStyle={raceViz} />
       </div>
       {myFinish && !allDone && (
-        <div className="mt-5 p-4 bg-dt-card rounded-dt-md border-[0.5px] border-dt-primary text-center text-dt-primary">
+        <div className="shrink-0 p-4 bg-dt-card rounded-dt-md border-[0.5px] border-dt-primary text-center text-dt-primary">
           <IconCheck size={20} className="align-middle mr-2" />
           You finished! Waiting for others to complete…
         </div>

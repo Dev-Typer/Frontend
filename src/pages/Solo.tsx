@@ -137,32 +137,96 @@ function getWordContext(snippet: string, typedIndex: number) {
   return { prev, curr, next, typedInCurr, curIdx };
 }
 
+// input box 스타일 — 실제 입력 중인 글자만 표시 (remaining 없음)
 const WordFocusBar = ({ snippet, typedIndex }: { snippet: string; typedIndex: number }) => {
-  const { prev, curr, next, typedInCurr, curIdx } = getWordContext(snippet, typedIndex);
-  const isDone = typedInCurr >= (curr?.text.length ?? 0);
+  const { curr, typedInCurr, curIdx } = getWordContext(snippet, typedIndex);
+  const typedWord = curr?.text.slice(0, typedInCurr) ?? '';
   return (
     <>
-      <style>{`@keyframes wfb-in{from{opacity:0.15;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      <style>{`@keyframes wfb-pop{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}`}</style>
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22,
-        padding: '0 20px', height: 50, marginTop: 10, flexShrink: 0,
-        background: 'var(--dt-type-bg)', borderRadius: 10,
-        boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.12), 0 4px 16px -8px rgba(0,0,0,0.35)',
-        overflow: 'hidden', userSelect: 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: 46, marginTop: 8, flexShrink: 0,
+        userSelect: 'none', width: '100%',
       }}>
-        <span style={{ fontFamily: 'var(--dt-font-mono)', fontSize: 13, color: 'var(--dt-text-3)', opacity: 0.35, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {prev?.text ?? ''}
-        </span>
-        <span key={curIdx} style={{ fontFamily: 'var(--dt-font-mono)', fontSize: 20, fontWeight: 500, letterSpacing: '0.02em', animation: 'wfb-in 140ms ease-out' }}>
-          <span style={{ color: 'var(--dt-primary)' }}>{curr?.text.slice(0, typedInCurr) ?? ''}</span>
-          <span style={{ color: 'var(--dt-text-3)' }}>{curr?.text.slice(typedInCurr) ?? ''}</span>
-          <span style={{ display: 'inline-block', width: 2, height: '0.85em', background: 'var(--dt-primary)', verticalAlign: 'text-bottom', marginLeft: 1, opacity: isDone ? 0 : 1 }} />
-        </span>
-        <span style={{ fontFamily: 'var(--dt-font-mono)', fontSize: 13, color: 'var(--dt-text-2)', opacity: 0.28, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {next?.text ?? ''}
-        </span>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          minWidth: 160, padding: '0 22px', height: 46,
+          background: 'var(--dt-type-bg)', borderRadius: 24,
+          boxShadow: 'inset 0 0 0 1.5px rgba(120,150,255,0.22), 0 0 24px -6px color-mix(in oklab, var(--dt-primary) 25%, transparent)',
+        }}>
+          <span key={curIdx} style={{
+            fontFamily: 'var(--dt-font-mono)', fontSize: 18, fontWeight: 500,
+            color: 'var(--dt-primary)', letterSpacing: '0.06em',
+            animation: 'wfb-pop 120ms ease-out',
+          }}>
+            {typedWord || <span style={{ opacity: 0.2, color: 'var(--dt-text-3)' }}>{'|'}</span>}
+          </span>
+          <span className="animate-pulse" style={{
+            display: 'inline-block', width: 2, height: '1em',
+            background: 'var(--dt-primary)', verticalAlign: 'text-bottom', marginLeft: 2,
+          }} />
+        </div>
       </div>
     </>
+  );
+};
+
+// 솔로 레이스바 (단일 플레이어 DevRaceTrack 스타일)
+const SoloRaceBar = ({ progressFrac, wpm, username }: { progressFrac: number; wpm: number; username: string }) => {
+  const hue = (username.charCodeAt(0) * 7) % 360;
+  const pct = Math.round(progressFrac * 100);
+  return (
+    <div style={{
+      flexShrink: 0, marginTop: 8,
+      fontFamily: 'var(--dt-font-mono)', background: 'var(--dt-type-bg)',
+      borderRadius: 10, overflow: 'hidden',
+      boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.12)',
+    }}>
+      <div style={{ padding: '7px 14px', borderBottom: '1px solid rgba(120,150,255,0.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {['#FF5F57', '#FFBD2E', '#28C840'].map((c) => (
+            <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 10, color: 'var(--dt-text-3)', marginLeft: 4 }}>race.sh — solo</span>
+        <span className="dt-live-dot" style={{ marginLeft: 'auto' }} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '148px 1fr 88px', alignItems: 'center', gap: 12, padding: '10px 16px', background: 'color-mix(in oklab, var(--dt-primary) 5%, transparent)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <span style={{ color: 'var(--dt-primary)', fontSize: 12 }}>▶</span>
+          <Avatar handle={username} hue={hue} size={22} ring="var(--dt-primary)" />
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--dt-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {username}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', width: `${pct}%`, background: 'var(--dt-primary)', borderRadius: 3,
+              transition: 'width 200ms ease-linear',
+              boxShadow: '0 0 10px color-mix(in oklab, var(--dt-primary) 55%, transparent)',
+            }} />
+          </div>
+          {pct < 100
+            ? <span className="animate-pulse" style={{ color: 'var(--dt-primary)', fontSize: 13, lineHeight: 1, flexShrink: 0 }}>▮</span>
+            : <span style={{ color: 'var(--dt-success)', fontSize: 13, flexShrink: 0 }}>✓</span>
+          }
+        </div>
+        <div style={{ textAlign: 'right', lineHeight: 1.4 }}>
+          {pct >= 100 ? (
+            <span style={{ fontSize: 12, color: 'var(--dt-success)', fontWeight: 600 }}>exit 0</span>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, color: 'var(--dt-primary)', fontWeight: 600 }}>
+                {wpm} <span style={{ fontSize: 10, color: 'var(--dt-text-3)' }}>wpm</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>{pct}%</div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -171,6 +235,7 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
   const t = useT();
   const caret = useAppStore((s) => s.caret);
   const density = useAppStore((s) => s.density);
+  const username = useUserStore((s) => s.username) || 'me';
   const dispLang = realLang || lang;
   const pct = (progress.index / Math.max(1, progress.total)) * 100;
 
@@ -218,10 +283,13 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
         total={progress.total}
       />
 
-      {/* Word focus bar (typegg 스타일) */}
+      {/* 레이스바 (단일 플레이어) */}
+      <SoloRaceBar progressFrac={pct / 100} wpm={progress.wpm} username={username} />
+
+      {/* Word focus bar — 실제 입력 중인 글자 표시 */}
       <WordFocusBar snippet={snippet} typedIndex={progress.index} />
 
-      <div className="dt-caption mt-2.5 text-dt-text-2 text-center shrink-0">
+      <div className="dt-caption mt-2 text-dt-text-2 text-center shrink-0">
         <kbd className={kbdClass}>Tab</kbd> + <kbd className={kbdClass}>Enter</kbd> {t('to restart')}
       </div>
     </div>

@@ -114,60 +114,58 @@ interface SoloTypingProps {
   onReset: () => void; onChangeSettings: () => void; realLang: string;
 }
 
-// ─── Code overview (스니펫 전체 뷰, 현재 줄 자동 스크롤) ────────────────────────
-const CodeOverview = ({ code, currentLine }: { code: string; currentLine: number }) => {
-  const lines = code.split('\n');
-  const activeRef = useRef<HTMLDivElement | null>(null);
+// ─── Word focus bar (typegg 스타일) ─────────────────────────────────────────────
+function getWordContext(snippet: string, typedIndex: number) {
+  const tokens: { text: string; start: number; end: number }[] = [];
+  let i = 0;
+  while (i < snippet.length) {
+    if (/\S/.test(snippet[i])) {
+      const start = i;
+      while (i < snippet.length && /\S/.test(snippet[i])) i++;
+      tokens.push({ text: snippet.slice(start, i), start, end: i });
+    } else { i++; }
+  }
+  let curIdx = tokens.findIndex((t) => typedIndex >= t.start && typedIndex < t.end);
+  if (curIdx === -1) {
+    curIdx = tokens.findIndex((t) => t.start > typedIndex);
+    if (curIdx === -1) curIdx = tokens.length - 1;
+  }
+  const curr = tokens[curIdx];
+  const prev = curIdx > 0 ? tokens[curIdx - 1] : null;
+  const next = tokens[curIdx + 1] ?? null;
+  const typedInCurr = curr ? Math.max(0, typedIndex - curr.start) : 0;
+  return { prev, curr, next, typedInCurr, curIdx };
+}
 
-  useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }, [currentLine]);
-
+const WordFocusBar = ({ snippet, typedIndex }: { snippet: string; typedIndex: number }) => {
+  const { prev, curr, next, typedInCurr, curIdx } = getWordContext(snippet, typedIndex);
+  const isDone = typedInCurr >= (curr?.text.length ?? 0);
   return (
-    <div style={{ height: '100%', overflowY: 'scroll', scrollbarWidth: 'none', fontFamily: 'var(--dt-font-mono)' }}>
-      <div style={{ padding: '10px 0' }}>
-        {lines.map((line, i) => {
-          const lineNum = i + 1;
-          const isActive = lineNum === currentLine;
-          const isPast = lineNum < currentLine;
-          return (
-            <div
-              key={i}
-              ref={isActive ? activeRef : null}
-              style={{
-                display: 'flex', alignItems: 'flex-start', gap: 0,
-                padding: '1px 0',
-                background: isActive ? 'color-mix(in oklab, var(--dt-primary) 9%, transparent)' : 'transparent',
-                borderLeft: `2px solid ${isActive ? 'var(--dt-primary)' : 'transparent'}`,
-                transition: 'background 80ms, border-color 80ms',
-              }}
-            >
-              <span style={{
-                width: 40, flexShrink: 0, textAlign: 'right',
-                paddingRight: 14, paddingTop: 1,
-                fontSize: 11, lineHeight: '1.85',
-                color: isActive ? 'var(--dt-primary)' : 'var(--dt-text-3)',
-                opacity: isPast ? 0.4 : 1,
-                userSelect: 'none',
-              }}>
-                {lineNum}
-              </span>
-              <pre style={{
-                margin: 0, flex: 1,
-                fontSize: 13, lineHeight: '1.85',
-                whiteSpace: 'pre',
-                color: isActive ? 'var(--dt-text)' : isPast ? 'var(--dt-text-3)' : 'color-mix(in oklab, var(--dt-text-2) 70%, transparent)',
-                opacity: isPast ? 0.45 : 1,
-              }}>
-                {line || ' '}
-              </pre>
-            </div>
-          );
-        })}
+    <>
+      <style>{`@keyframes wfb-in{from{opacity:0.15;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22,
+        padding: '0 20px', height: 50, marginTop: 10, flexShrink: 0,
+        background: 'var(--dt-type-bg)', borderRadius: 10,
+        boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.12), 0 4px 16px -8px rgba(0,0,0,0.35)',
+        overflow: 'hidden', userSelect: 'none',
+      }}>
+        <span style={{ fontFamily: 'var(--dt-font-mono)', fontSize: 13, color: 'var(--dt-text-3)', opacity: 0.35, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {prev?.text ?? ''}
+        </span>
+        <span key={curIdx} style={{ fontFamily: 'var(--dt-font-mono)', fontSize: 20, fontWeight: 500, letterSpacing: '0.02em', animation: 'wfb-in 140ms ease-out' }}>
+          <span style={{ color: 'var(--dt-primary)' }}>{curr?.text.slice(0, typedInCurr) ?? ''}</span>
+          <span style={{ color: 'var(--dt-text-3)' }}>{curr?.text.slice(typedInCurr) ?? ''}</span>
+          <span style={{ display: 'inline-block', width: 2, height: '0.85em', background: 'var(--dt-primary)', verticalAlign: 'text-bottom', marginLeft: 1, opacity: isDone ? 0 : 1 }} />
+        </span>
+        <span style={{ fontFamily: 'var(--dt-font-mono)', fontSize: 13, color: 'var(--dt-text-2)', opacity: 0.28, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {next?.text ?? ''}
+        </span>
       </div>
-    </div>
+    </>
   );
 };
+
 
 const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, resetKey, onReset, onChangeSettings, realLang }: SoloTypingProps) => {
   const t = useT();
@@ -175,9 +173,6 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
   const density = useAppStore((s) => s.density);
   const dispLang = realLang || lang;
   const pct = (progress.index / Math.max(1, progress.total)) * 100;
-
-  // 현재 커서가 위치한 줄 번호
-  const currentLine = snippet.slice(0, progress.index).split('\n').length;
 
   return (
     <div style={{ height: 'calc(100vh - 90px)', display: 'flex', flexDirection: 'column' }}>
@@ -209,26 +204,22 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
         <div style={{ width: `${pct}%` }} />
       </div>
 
-      {/* 상단: 스니펫 코드 전체 뷰 (현재 줄 자동 스크롤) */}
-      <div className="dt-card p-0 overflow-hidden" style={{ flex: '1 1 0', minHeight: 0 }}>
-        <CodeOverview code={snippet} currentLine={currentLine} />
-      </div>
+      {/* 에디터 (기존 스타일 유지, fill) */}
+      <PlayEditor
+        fill
+        code={snippet}
+        resetKey={resetKey}
+        caretStyle={caret}
+        fontSize={density === 'compact' ? 15 : 17}
+        onProgress={setProgress}
+        onFinish={onFinish}
+        fileName={`snippet${fileExtFor(dispLang)}`}
+        index={progress.index}
+        total={progress.total}
+      />
 
-      {/* 하단: 고정 높이 에디터 (타이핑 실제 입력 영역) */}
-      <div style={{ marginTop: 12, flexShrink: 0 }}>
-        <PlayEditor
-          height={density === 'compact' ? 200 : 230}
-          code={snippet}
-          resetKey={resetKey}
-          caretStyle={caret}
-          fontSize={density === 'compact' ? 15 : 17}
-          onProgress={setProgress}
-          onFinish={onFinish}
-          fileName={`snippet${fileExtFor(dispLang)}`}
-          index={progress.index}
-          total={progress.total}
-        />
-      </div>
+      {/* Word focus bar (typegg 스타일) */}
+      <WordFocusBar snippet={snippet} typedIndex={progress.index} />
 
       <div className="dt-caption mt-2.5 text-dt-text-2 text-center shrink-0">
         <kbd className={kbdClass}>Tab</kbd> + <kbd className={kbdClass}>Enter</kbd> {t('to restart')}
@@ -236,7 +227,6 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
     </div>
   );
 };
-
 const InlineStat = ({ label, value, unit, accent }: { label: string; value: string | number; unit?: string; accent?: boolean }) => (
   <div className="flex flex-col items-end leading-none">
     <span className={`dt-mono dt-tabular text-2xl font-semibold ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>

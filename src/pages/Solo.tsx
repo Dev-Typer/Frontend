@@ -114,15 +114,75 @@ interface SoloTypingProps {
   onReset: () => void; onChangeSettings: () => void; realLang: string;
 }
 
+// ─── Code overview (스니펫 전체 뷰, 현재 줄 자동 스크롤) ────────────────────────
+const CodeOverview = ({ code, currentLine }: { code: string; currentLine: number }) => {
+  const lines = code.split('\n');
+  const activeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [currentLine]);
+
+  return (
+    <div style={{ height: '100%', overflowY: 'scroll', scrollbarWidth: 'none', fontFamily: 'var(--dt-font-mono)' }}>
+      <div style={{ padding: '10px 0' }}>
+        {lines.map((line, i) => {
+          const lineNum = i + 1;
+          const isActive = lineNum === currentLine;
+          const isPast = lineNum < currentLine;
+          return (
+            <div
+              key={i}
+              ref={isActive ? activeRef : null}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 0,
+                padding: '1px 0',
+                background: isActive ? 'color-mix(in oklab, var(--dt-primary) 9%, transparent)' : 'transparent',
+                borderLeft: `2px solid ${isActive ? 'var(--dt-primary)' : 'transparent'}`,
+                transition: 'background 80ms, border-color 80ms',
+              }}
+            >
+              <span style={{
+                width: 40, flexShrink: 0, textAlign: 'right',
+                paddingRight: 14, paddingTop: 1,
+                fontSize: 11, lineHeight: '1.85',
+                color: isActive ? 'var(--dt-primary)' : 'var(--dt-text-3)',
+                opacity: isPast ? 0.4 : 1,
+                userSelect: 'none',
+              }}>
+                {lineNum}
+              </span>
+              <pre style={{
+                margin: 0, flex: 1,
+                fontSize: 13, lineHeight: '1.85',
+                whiteSpace: 'pre',
+                color: isActive ? 'var(--dt-text)' : isPast ? 'var(--dt-text-3)' : 'color-mix(in oklab, var(--dt-text-2) 70%, transparent)',
+                opacity: isPast ? 0.45 : 1,
+              }}>
+                {line || ' '}
+              </pre>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, resetKey, onReset, onChangeSettings, realLang }: SoloTypingProps) => {
   const t = useT();
   const caret = useAppStore((s) => s.caret);
   const density = useAppStore((s) => s.density);
   const dispLang = realLang || lang;
   const pct = (progress.index / Math.max(1, progress.total)) * 100;
+
+  // 현재 커서가 위치한 줄 번호
+  const currentLine = snippet.slice(0, progress.index).split('\n').length;
+
   return (
-    <div className="min-h-[calc(100vh-90px)] flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+    <div style={{ height: 'calc(100vh - 90px)', display: 'flex', flexDirection: 'column' }}>
+      {/* 헤더 */}
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-3">
           {LANG_ICON[dispLang] && (
             <img src={LANG_ICON[dispLang]} alt="" className="w-[26px] h-[26px] object-contain" />
@@ -144,24 +204,33 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
         </div>
       </div>
 
-      <div className="dt-progress mb-[18px] h-1.5">
+      {/* 진행바 */}
+      <div className="dt-progress mb-3 h-1.5 shrink-0">
         <div style={{ width: `${pct}%` }} />
       </div>
 
-      <PlayEditor
-        fill
-        code={snippet}
-        resetKey={resetKey}
-        caretStyle={caret}
-        fontSize={density === 'compact' ? 17 : 20}
-        onProgress={setProgress}
-        onFinish={onFinish}
-        fileName={`snippet${fileExtFor(dispLang)}`}
-        index={progress.index}
-        total={progress.total}
-      />
+      {/* 상단: 스니펫 코드 전체 뷰 (현재 줄 자동 스크롤) */}
+      <div className="dt-card p-0 overflow-hidden" style={{ flex: '1 1 0', minHeight: 0 }}>
+        <CodeOverview code={snippet} currentLine={currentLine} />
+      </div>
 
-      <div className="dt-caption mt-3.5 text-dt-text-2 text-center shrink-0">
+      {/* 하단: 고정 높이 에디터 (타이핑 실제 입력 영역) */}
+      <div style={{ marginTop: 12, flexShrink: 0 }}>
+        <PlayEditor
+          height={density === 'compact' ? 200 : 230}
+          code={snippet}
+          resetKey={resetKey}
+          caretStyle={caret}
+          fontSize={density === 'compact' ? 15 : 17}
+          onProgress={setProgress}
+          onFinish={onFinish}
+          fileName={`snippet${fileExtFor(dispLang)}`}
+          index={progress.index}
+          total={progress.total}
+        />
+      </div>
+
+      <div className="dt-caption mt-2.5 text-dt-text-2 text-center shrink-0">
         <kbd className={kbdClass}>Tab</kbd> + <kbd className={kbdClass}>Enter</kbd> {t('to restart')}
       </div>
     </div>
@@ -494,6 +563,18 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
     const handler = (e: WheelEvent) => {
       if (wheelLockRef.current) return;
       const dir = e.deltaY > 0 ? 1 : -1;
+
+      // 이벤트 타겟에서 container까지 올라가며 내부 스크롤 가능 요소 확인
+      let el = e.target as HTMLElement | null;
+      while (el && el !== container) {
+        const oy = window.getComputedStyle(el).overflowY;
+        if (oy === 'auto' || oy === 'scroll') {
+          if (dir === -1 && el.scrollTop > 0) return; // 위 스크롤: 내부 콘텐츠 먼저
+          if (dir === 1 && el.scrollTop < el.scrollHeight - el.clientHeight - 1) return; // 아래 스크롤: 내부 콘텐츠 먼저
+        }
+        el = el.parentElement;
+      }
+
       const next = Math.max(0, Math.min(sectionRefs.length - 1, sectionIdxRef.current + dir));
       if (next === sectionIdxRef.current) return;
       e.preventDefault();
@@ -593,7 +674,7 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         {/* 5 stat cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 10 }}>
           <StatCard label={t('WPM')} value={result.wpm} />
-          <StatCard label={t('Raw WPM')} value={Math.round(result.wpm / Math.max(0.5, result.acc / 100))} />
+          <StatCard label="더 정확히 쳤다면?" value={Math.round(result.wpm / Math.max(0.5, result.acc / 100))} />
           <StatCard label={t('Accuracy')} value={result.acc.toFixed(1)} unit="%" sub={`${result.errors} ${t('mistakes corrected')}`} />
           <StatCard label={t('Longest combo')} value={soloDerived(result, snippet).combo} unit="x" />
           <StatCard label={t('Time')} value={(result.elapsed / 1000).toFixed(1)} unit="s" sub={`${snippet.length} ${t('chars typed')}`} />
@@ -650,9 +731,12 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
-          <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change settings')}</button>
-          <button className="dt-btn dt-btn-primary" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
+          <button className="dt-btn dt-btn-secondary" onClick={() => navigate(-1)}>✕ {t('Exit')}</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="dt-btn dt-btn-secondary" onClick={onChangeSettings}>{t('Change settings')}</button>
+            <button className="dt-btn dt-btn-primary" onClick={onNext}><IconArrowRight size={16} /> {t('Try another snippet')}</button>
+          </div>
         </div>
       </div>
 
@@ -661,6 +745,7 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
         <div ref={section2Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 16, overflowY: 'auto' }}>
           <SnippetRankingSection snippetId={apiSnippetId} myCore={core} />
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 'auto', paddingTop: 20 }}>
+            <button className="dt-btn dt-btn-secondary" onClick={() => navigate(-1)}>✕ {t('Exit')}</button>
             <button onClick={() => goToSection(1)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--dt-text-3)', padding: '8px 16px' }}>
               <IconArrowUp size={16} /> {t('Back to stats')}
             </button>

@@ -43,12 +43,16 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
     for (let i = 0; i < needed; i++) {
       const dWpm = makeDummyWpm(myWpm, offsets[i] ?? -i * 5);
       others.push({
+        resultId: -(i + 1),
         rank: 0,
         userId: -(i + 1),
         username: DUMMY_NAMES[i % DUMMY_NAMES.length],
+        profileUrl: null,
         core: 0,
         wpm: dWpm,
+        rawWpm: dWpm,
         accuracy: 90 + Math.random() * 8,
+        durationSec: 0,
         createdAt: '',
       });
     }
@@ -56,7 +60,7 @@ const RankSlideWidget = ({ snippetId, userId, myWpm, myUsername = '나' }: Props
     // 나 포함 WPM 내림차순 정렬
     const all: (RankingItem & { isMe?: boolean })[] = [
       ...others,
-      { rank: 0, userId, username: myUsername, core: 0, wpm: myWpm, accuracy: 95, createdAt: '', isMe: true },
+      { resultId: 0, rank: 0, userId, username: myUsername, profileUrl: null, core: 0, wpm: myWpm, rawWpm: myWpm, accuracy: 95, durationSec: 0, createdAt: '', isMe: true },
     ].sort((a, b) => b.wpm - a.wpm).map((r, i) => ({ ...r, rank: i + 1 }));
 
     return all;

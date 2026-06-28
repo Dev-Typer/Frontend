@@ -859,7 +859,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
             {/* hover 툴팁 */}
             {hi !== null && (() => {
               const prev = hi > 0 ? vals[hi] - vals[hi - 1] : null;
-              const tw = 138, th2 = 58;
+              const tw = 165, th2 = 58;
               const tx = Math.min(Math.max(xs[hi] - tw / 2, padL), w - padR - tw);
               const ty = Math.max(ys[hi] - th2 - 10, padT + 4);
               const deltaColor = prev !== null ? (prev >= 0 ? '#3DD68C' : '#FF6B6B') : null;
@@ -1016,13 +1016,14 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
             </text>
           )}
 
-          {/* hover 툴팁 */}
+          {/* hover 툴팁 — 수직 스택 레이아웃으로 숫자 겹침 방지 */}
           {hi !== null && (() => {
             const l = langs[hi];
-            const tw = 148, tx = Math.min(Math.max(cx - tw / 2, 4), 300 - tw - 4), ty = 6;
+            const tw = 190, tx = Math.min(Math.max(cx - tw / 2, 4), 300 - tw - 4), ty = 6;
+            const th = l.played ? 62 : 38;
             return (
               <g pointerEvents="none">
-                <rect x={tx} y={ty} width={tw} height={l.played ? 50 : 38} rx={8}
+                <rect x={tx} y={ty} width={tw} height={th} rx={8}
                   fill="var(--dt-card)" stroke="var(--dt-border)" strokeWidth="1" />
                 <text x={tx + 12} y={ty + 18} fontSize="12" fill="var(--dt-text)"
                   fontFamily="var(--dt-font-mono)" fontWeight="600">
@@ -1036,7 +1037,7 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
                         ? <>{Math.round(l.totalCore).toLocaleString()}<tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan></>
                         : <>{l.snippetCount}<tspan fontSize="9" fill="var(--dt-text-3)"> {t('Plays')}</tspan></>}
                     </text>
-                    <text x={tx + tw - 12} y={ty + 37} textAnchor="end" fontSize="11"
+                    <text x={tx + 12} y={ty + 53} fontSize="11"
                       fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
                       {metric === 'core' ? `${l.snippetCount} ${t('snippets')}` : `${Math.round(l.totalCore).toLocaleString()} CORE`}
                     </text>

@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
+import { formatCore } from '@/utils/formatCore';
 import UserHover from '@/components/UserHover';
 import { IconPlay, IconUser, IconCode } from '@/components/icons/Icons';
 import { LANG_ICON } from '@/data';
@@ -76,7 +77,7 @@ const HomeProfileStrip = () => {
           <div className="dt-tabular" style={{
             fontFamily: 'var(--dt-font-mono)', fontWeight: 700, fontSize: 28, lineHeight: 0.9,
             color: '#fff', textShadow: '0 3px 16px rgba(0,0,0,0.6)',
-          }}>{totalCore.toLocaleString()}</div>
+          }}>{formatCore(totalCore)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginTop: 3 }}><img src={coreLogo} style={{ width: 15, height: 15, objectFit: 'contain' }} />CORE</div>
         </div>
       </div>
@@ -161,7 +162,7 @@ const ArenaLeaderboard = ({ focus, navigate }: { focus: string; navigate: (r: st
               </div>
             </UserHover>
             <span className="dt-mono dt-tabular" style={{ fontSize: 14, fontWeight: 600, color: 'var(--dt-text)' }}>
-              {r.totalCore.toLocaleString()}
+              {formatCore(r.totalCore)}
             </span>
           </div>
         ))}

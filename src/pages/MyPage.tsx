@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { useUserStore } from '@/stores/userStore';
+import { formatCore } from '@/utils/formatCore';
 import { LANG_ICON } from '@/data';
 import coreLogo from '@/assets/core-logo.png';
 import Avatar from '@/components/Avatar';
@@ -214,7 +215,7 @@ const ProfileInfoSection = ({ coreData }: ProfileInfoSectionProps) => {
           <div className="dt-label text-dt-text-3 mb-1 tracking-widest text-[10px] flex items-center gap-[4px]"><img src={coreLogo} style={{ width: 16, height: 16, objectFit: 'contain', opacity: 0.75 }} />TOTAL CORE</div>
           <div className="dt-mono tabular-nums font-bold leading-none"
             style={{ fontSize: 68, color: 'var(--dt-primary)', textShadow: '0 0 40px rgba(242,58,47,0.35)' }}>
-            {Math.round(coreData?.totalCore ?? 0).toLocaleString()}
+            {formatCore(coreData?.totalCore ?? 0)}
           </div>
         </div>
       </div>
@@ -544,7 +545,7 @@ const CoreChip = ({ snippetId, title, language, core }: CoreChipProps) => {
           </div>
           <div className="p-[10px_15px] flex items-center justify-between">
             <span className="dt-mono tabular-nums text-[14px] font-semibold text-dt-primary">
-              {Math.round(core)} <span className="text-[10px] text-dt-text-3 inline-flex items-center gap-[3px]"><img src={coreLogo} style={{ width: 15, height: 15, objectFit: 'contain', opacity: 0.7 }} />CORE</span>
+              {formatCore(core)} <span className="text-[10px] text-dt-text-3 inline-flex items-center gap-[3px]"><img src={coreLogo} style={{ width: 15, height: 15, objectFit: 'contain', opacity: 0.7 }} />CORE</span>
             </span>
             <span className="text-[10px] text-dt-text-3">클릭하여 플레이</span>
           </div>
@@ -596,7 +597,7 @@ const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
         </div>
         <div className="flex items-baseline gap-[6px]">
           <span className="dt-mono tabular-nums text-[30px] font-bold text-dt-primary">
-            {(data?.totalCore ?? 0).toLocaleString()}
+            {formatCore(data?.totalCore ?? 0)}
           </span>
           <span className="dt-label text-dt-text-3">· {data?.snippetCount ?? 0} {t('snippets')}</span>
         </div>
@@ -701,7 +702,7 @@ const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
                 <div className="h-[6px] bg-dt-hover rounded-full overflow-hidden">
                   <div style={{ width: `${(l.totalCore / maxCore) * 100}%`, height: '100%', background: 'var(--dt-primary)', borderRadius: 999 }} />
                 </div>
-                <span className="dt-mono tabular-nums text-right text-[14px] font-semibold text-dt-primary">{Math.round(l.totalCore)}</span>
+                <span className="dt-mono tabular-nums text-right text-[14px] font-semibold text-dt-primary">{formatCore(l.totalCore)}</span>
                 <span className="dt-mono tabular-nums dt-caption text-right">{l.snippetCount}</span>
               </div>
             ))}
@@ -772,7 +773,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
           <span className="dt-caption">{t('Last 6 months')}</span>
         </div>
         <div className="flex items-baseline gap-[6px]">
-          <span className="dt-mono tabular-nums text-[16px] text-dt-primary">+{gain.toLocaleString()}</span>
+          <span className="dt-mono tabular-nums text-[16px] text-dt-primary">+{formatCore(gain)}</span>
           <span className="dt-caption inline-flex items-center gap-[3px]"><img src={coreLogo} style={{ width: 16, height: 16, objectFit: 'contain', opacity: 0.7 }} />CORE</span>
         </div>
       </div>
@@ -870,13 +871,13 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
                   <text x={tx + 12} y={ty + 20} fontSize="11" fill="var(--dt-text-3)"
                     fontFamily="var(--dt-font-mono)">{monthLabel(points[hi].date)}</text>
                   <text x={tx + 12} y={ty + 42} fontSize="15" fontWeight="700" fill="#57E5FF"
-                    fontFamily="var(--dt-font-mono)">{vals[hi].toLocaleString()}
+                    fontFamily="var(--dt-font-mono)">{formatCore(vals[hi])}
                     <tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan>
                   </text>
                   {prev !== null && (
                     <text x={tx + tw - 10} y={ty + 42} textAnchor="end" fontSize="11"
                       fontWeight="600" fill={deltaColor!} fontFamily="var(--dt-font-mono)">
-                      {prev >= 0 ? `+${prev}` : String(prev)}
+                      {prev >= 0 ? `+${formatCore(prev)}` : `-${formatCore(Math.abs(prev))}`}
                     </text>
                   )}
                 </g>
@@ -1034,12 +1035,12 @@ const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
                     <text x={tx + 12} y={ty + 37} fontSize="14" fontWeight="700"
                       fill="var(--dt-primary)" fontFamily="var(--dt-font-mono)">
                       {metric === 'core'
-                        ? <>{Math.round(l.totalCore).toLocaleString()}<tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan></>
+                        ? <>{formatCore(l.totalCore)}<tspan fontSize="9" fill="var(--dt-text-3)"> CORE</tspan></>
                         : <>{l.snippetCount}<tspan fontSize="9" fill="var(--dt-text-3)"> {t('Plays')}</tspan></>}
                     </text>
                     <text x={tx + 12} y={ty + 53} fontSize="11"
                       fill="var(--dt-text-3)" fontFamily="var(--dt-font-mono)">
-                      {metric === 'core' ? `${l.snippetCount} ${t('snippets')}` : `${Math.round(l.totalCore).toLocaleString()} CORE`}
+                      {metric === 'core' ? `${l.snippetCount} ${t('snippets')}` : `${formatCore(l.totalCore)} CORE`}
                     </text>
                   </>
                 ) : (

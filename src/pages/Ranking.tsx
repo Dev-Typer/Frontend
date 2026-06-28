@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useT } from '@/i18n';
 import { LANG_ICON } from '@/data';
 import { useUserStore } from '@/stores/userStore';
+import { formatCore } from '@/utils/formatCore';
 import Segmented from '@/components/Segmented';
 import Avatar from '@/components/Avatar';
 import UserHover from '@/components/UserHover';
@@ -90,7 +91,7 @@ function CoreTable({ rows, loading }: { rows: SoloLeaderboardEntry[]; loading: b
             <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.avgAccuracy}%</span>
             <span className="dt-mono tabular-nums text-right text-[17px] font-bold"
               style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
-              {r.totalCore.toLocaleString()}
+              {formatCore(r.totalCore)}
             </span>
           </div>
         </TableRow>

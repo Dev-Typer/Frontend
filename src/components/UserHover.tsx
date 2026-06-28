@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Avatar from './Avatar';
+import { formatCore } from '@/utils/formatCore';
 
 interface Props {
   handle: string;
@@ -53,7 +54,7 @@ const UserHover = ({ handle, children, stats }: Props) => {
                 {stats?.totalCore !== undefined && (
                   <div className="dt-stack" style={{ gap: 1 }}>
                     <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--dt-text-3)' }}>CORE</span>
-                    <span className="dt-mono dt-tabular" style={{ fontSize: 15, color: 'var(--dt-primary)', fontWeight: 600 }}>{stats.totalCore.toLocaleString()}</span>
+                    <span className="dt-mono dt-tabular" style={{ fontSize: 15, color: 'var(--dt-primary)', fontWeight: 600 }}>{formatCore(stats.totalCore)}</span>
                   </div>
                 )}
                 {stats?.avgWpm !== undefined && (

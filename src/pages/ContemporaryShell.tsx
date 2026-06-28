@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
 import Logo from '@/components/Logo';
+import { formatCore } from '@/utils/formatCore';
 import { IconSun, IconMoon, IconArrowLeft, GithubMark } from '@/components/icons/Icons';
 import { useUserStore } from '@/stores/userStore';
 
@@ -113,7 +114,7 @@ const ContemExplorer = ({ route, navigate, theme, onTheme, isLoggedIn, isAdmin, 
               <Avatar handle={username ?? ''} size={30} ring="var(--dt-primary)" src={profileUrl} />
               <div className="dt-stack gap-0 min-w-0 flex-1">
                 <span className="text-[13px] text-dt-text whitespace-nowrap overflow-hidden text-ellipsis">{username}</span>
-                <span className="text-[11px] text-dt-text-3">{totalCore.toLocaleString()} CORE</span>
+                <span className="text-[11px] text-dt-text-3">{formatCore(totalCore)} CORE</span>
               </div>
             </button>
             <button

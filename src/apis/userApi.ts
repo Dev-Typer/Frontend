@@ -35,6 +35,11 @@ export const getUserStreak = async (year?: number, type?: string): Promise<UserS
   return data.data!;
 };
 
+export const getCurrentStreak = async (): Promise<{ currentStreak: number }> => {
+  const { data } = await api.get<ApiResponse<{ currentStreak: number }>>('/api/user/me/current-streak');
+  return data.data!;
+};
+
 export const getUserWpmHistory = async (): Promise<UserWpmHistoryResponse> => {
   const { data } = await api.get<ApiResponse<UserWpmHistoryResponse>>('/api/user/me/wpm/history');
   return data.data!;

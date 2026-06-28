@@ -217,7 +217,7 @@ function DailyChallengeTable() {
               <PlayerCell username={r.username} profileUrl={r.profileUrl} me={isMe} />
               <span className="dt-mono tabular-nums text-right text-[17px] font-bold"
                 style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text)' }}>
-                {r.core.toFixed(1)}
+                {Math.round(r.core)}
               </span>
               <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.wpm.toFixed(1)}</span>
               <span className="dt-mono tabular-nums text-right text-[14px] text-dt-text-2">{r.nWpm.toFixed(1)}</span>

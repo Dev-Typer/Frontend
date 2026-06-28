@@ -323,9 +323,49 @@ function soloDerived(result: TypingResult, snippet: string) {
   return { combo, samples };
 }
 
-const StatCard = ({ label, value, unit, sub }: { label: string; value: string | number; unit?: string; sub?: string }) => (
+const InfoTooltip = ({ text }: { text: string }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', verticalAlign: 'middle' }}>
+      <span
+        onMouseEnter={() => setVisible(true)}
+        onMouseLeave={() => setVisible(false)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 14, height: 14, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+          fontSize: 9, fontWeight: 700, color: 'var(--dt-text-3)',
+          cursor: 'help', lineHeight: 1, fontFamily: 'inherit',
+        }}
+      >i</span>
+      {visible && (
+        <div style={{
+          position: 'absolute', bottom: '130%', left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--dt-card)', border: '1px solid var(--dt-border)',
+          borderRadius: 8, padding: '8px 12px', width: 220,
+          fontSize: 11.5, lineHeight: 1.55, color: 'var(--dt-text-2)',
+          zIndex: 100, boxShadow: '0 8px 24px -8px rgba(0,0,0,0.5)',
+          pointerEvents: 'none', whiteSpace: 'normal',
+        }}>
+          {text}
+          <div style={{
+            position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+            borderTop: '5px solid var(--dt-border)',
+          }} />
+        </div>
+      )}
+    </span>
+  );
+};
+
+const StatCard = ({ label, value, unit, sub, info }: { label: string; value: string | number; unit?: string; sub?: string; info?: string }) => (
   <div className="dt-card p-5">
-    <div className="dt-label mb-1.5">{label}</div>
+    <div className="dt-label mb-1.5 flex items-center gap-1.5">
+      {label}
+      {info && <InfoTooltip text={info} />}
+    </div>
     <div className="dt-mono dt-tabular text-[28px] font-medium">
       {value}{unit && <span className="text-[15px] text-dt-text-2">{unit}</span>}
     </div>
@@ -679,7 +719,7 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
             <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="dt-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><img src={coreLogo} style={{ width: 19, height: 19, objectFit: 'contain' }} />{t('CORE this run')}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-                <span className="dt-mono dt-tabular" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: 'var(--dt-primary)' }}>{core}</span>
+                <span className="dt-mono dt-tabular" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: 'var(--dt-primary)' }}>{Math.round(core)}</span>
                 {savedCoreInfo && (isNewBest ? (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, color: 'var(--dt-primary)', background: 'color-mix(in oklab, var(--dt-primary) 16%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 45%, transparent)' }}>🎉 {t('New best!')}</span>
                 ) : (
@@ -731,11 +771,11 @@ const SoloResult = ({ result, track, diff, onNext, onChangeSettings, snippet, ap
 
         {/* 5 stat cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 10 }}>
-          <StatCard label={t('WPM')} value={result.wpm} />
-          <StatCard label="더 정확히 쳤다면?" value={Math.round(result.wpm / Math.max(0.5, result.acc / 100))} />
-          <StatCard label={t('Accuracy')} value={result.acc.toFixed(1)} unit="%" sub={`${result.errors} ${t('mistakes corrected')}`} />
-          <StatCard label={t('Longest combo')} value={soloDerived(result, snippet).combo} unit="x" />
-          <StatCard label={t('Time')} value={(result.elapsed / 1000).toFixed(1)} unit="s" sub={`${snippet.length} ${t('chars typed')}`} />
+          <StatCard label={t('WPM')} value={result.wpm} info="1분 동안 올바르게 입력한 글자 수 ÷ 5. 5자를 표준 단어 1개로 계산한 속도입니다." />
+          <StatCard label="더 정확히 쳤다면?" value={Math.round(result.wpm / Math.max(0.5, result.acc / 100))} info="같은 타이밍으로 모든 키를 정확히 눌렀을 때 나왔을 예상 WPM입니다. 오타가 없었다면 이 수치가 WPM이 됩니다." />
+          <StatCard label={t('Accuracy')} value={result.acc.toFixed(1)} unit="%" sub={`${result.errors} ${t('mistakes corrected')}`} info="전체 키 입력 중 올바른 입력의 비율. 수정한 오타도 실수로 카운트됩니다." />
+          <StatCard label={t('Longest combo')} value={soloDerived(result, snippet).combo} unit="x" info="오타 없이 연속으로 입력한 최대 글자 수입니다. 한 글자라도 틀리면 콤보가 리셋됩니다." />
+          <StatCard label={t('Time')} value={(result.elapsed / 1000).toFixed(1)} unit="s" sub={`${snippet.length} ${t('chars typed')}`} info="첫 키 입력부터 마지막 글자 완성까지의 총 경과 시간입니다." />
         </div>
 
         {/* WPM graph */}

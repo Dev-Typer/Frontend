@@ -240,10 +240,11 @@ function SnippetCard({
               <IconHeart size={17} filled={isLiked} />
               <span className="dt-mono" style={{ fontSize: 12 }}>{likeCount}</span>
             </button>
-            <button onClick={(e) => { e.stopPropagation(); onRanking(); }} style={{
-              background: 'transparent', border: 0, cursor: 'default', display: 'flex', alignItems: 'center',
-              fontSize: 11, fontWeight: 600, color: 'var(--dt-text-3)', gap: 4, letterSpacing: '0.02em',
-            }}>
+            <button
+              className="dt-btn dt-btn-secondary dt-btn-sm"
+              onClick={(e) => { e.stopPropagation(); onRanking(); }}
+              style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+            >
               🏆 {t('View leaderboard')}
             </button>
           </div>
@@ -512,7 +513,7 @@ const Snippets = () => {
                     isLiked={ov !== undefined ? ov.isLiked : s.isLiked}
                     onLike={() => handleLike(s)}
                     onPractice={() => navigate(`/solo?snippetId=${s.id}`)}
-                    onRanking={() => navigate(`/ranking/snippets/${s.id}`)}
+                    onRanking={() => navigate(`/snippets/${s.id}/ranking`)}
                   />
                 );
               })}

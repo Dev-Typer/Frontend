@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
-import { getMe, logout } from '@/apis/authApi';
+import { getMe, logout, refreshToken } from '@/apis/authApi';
 import { getUserMe } from '@/apis/userApi';
 import { LangContext } from '@/i18n';
 import ContemporaryShell from '@/pages/ContemporaryShell';
@@ -42,15 +42,28 @@ const AppRoutes = () => {
   const { isLoggedIn, setUser, setUserMe, clearUser, role } = useUserStore();
 
   useEffect(() => {
-    getMe()
-      .then(async (data) => {
-        setUser(data);
+    const init = async () => {
+      let meData;
+      try {
+        meData = await getMe();
+      } catch {
+        // 액세스 토큰 만료 시 refresh 후 재시도
         try {
-          const me = await getUserMe();
-          setUserMe(me);
-        } catch {}
-      })
-      .catch(() => {});
+          await refreshToken();
+          meData = await getMe();
+        } catch {
+          return;
+        }
+      }
+      setUser(meData);
+      try {
+        const userMe = await getUserMe();
+        setUserMe(userMe);
+      } catch (err) {
+        console.error('[App] getUserMe failed:', err);
+      }
+    };
+    init();
   }, [setUser, setUserMe]);
 
   const handleLogout = async () => {

@@ -460,7 +460,7 @@ const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                   <span className="text-[22px]">🔥</span>
                   <p className="text-[12px] font-semibold text-dt-text-2">오늘 첫 기록을 남겨보세요</p>
-                  <p className="text-[11px] text-dt-text-3">데일리 챌린지를 완료하면 스트릭이 쌓입니다</p>
+                  <p className="text-[11px] text-dt-text-3">매일 코드를 타이핑하면 스트릭이 쌓입니다</p>
                 </div>
               </div>
             ) : (

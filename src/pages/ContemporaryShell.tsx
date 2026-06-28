@@ -18,7 +18,7 @@ const CONTEM_TREE: TreeFile[] = [
   { name: 'README.md',   route: '',                emoji: '📖' },
   { name: 'snippets.ts', route: 'snippets',         emoji: '📚' },
   { name: 'challenge.ts', route: 'daily',           emoji: '📅' },
-  { name: 'ranking.sql', route: 'ranking',          emoji: '🏆' },
+  { name: 'leaderboard.sql', route: 'ranking',       emoji: '🏆' },
   { name: 'profile.tsx', route: 'mypage',           emoji: '👤' },
   { name: 'stargaze.gl', action: 'stargaze',        emoji: '🪐' },
 ];

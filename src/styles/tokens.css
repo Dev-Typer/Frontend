@@ -356,10 +356,35 @@ button { font-family: inherit; }
 }
 .dt-code-area .ch.cursor.caret-block::before { width: 100%; opacity: 0.35; top: 0; bottom: 0; }
 .dt-code-area .ch.cursor.caret-under::before { width: 100%; height: 2px; top: auto; bottom: 4px; }
+.dt-code-area .ch.cur-word { text-decoration: underline; text-decoration-color: var(--dt-text-2); text-underline-offset: 5px; text-decoration-thickness: 1.5px; }
+.dt-code-area .ch.cur-word.correct { text-decoration-color: var(--dt-type-correct); }
 @keyframes dt-blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
 }
+
+/* ── Race typing UI ──────────────────────────────────────────────────── */
+.dt-racetrack { display: flex; align-items: center; gap: 12px; height: 44px; }
+.dt-racetrack-bar { position: relative; flex: 1; height: 8px; border-radius: 999px; background: var(--dt-hover); box-shadow: inset 0 0 0 1px var(--dt-border); }
+.dt-racetrack-fill { height: 100%; border-radius: 999px; background: var(--dt-gradient); transition: width 180ms ease-out; }
+.dt-racetrack-runner { position: absolute; top: 50%; transform: translate(-50%, -50%); transition: left 180ms ease-out; z-index: 3; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+.dt-racetrack-ghost { position: absolute; top: 50%; transform: translate(-50%, -50%); transition: left 180ms ease-out; z-index: 2; opacity: 0.6; }
+.dt-racetrack-flag { flex-shrink: 0; width: 22px; height: 22px; border-radius: 4px; background-image: linear-gradient(45deg, var(--dt-text-2) 25%, transparent 25%, transparent 75%, var(--dt-text-2) 75%), linear-gradient(45deg, var(--dt-text-2) 25%, transparent 25%, transparent 75%, var(--dt-text-2) 75%); background-size: 7px 7px; background-position: 0 0, 3.5px 3.5px; background-color: var(--dt-card); opacity: 0.85; }
+.dt-race-wpm { display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px; border-radius: 999px; background: color-mix(in oklab, var(--dt-card) 70%, transparent); box-shadow: inset 0 0 0 1px var(--dt-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-family: var(--dt-font-mono); }
+.dt-race-checker { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background-image: linear-gradient(45deg, var(--dt-text-2) 25%, transparent 25%, transparent 75%, var(--dt-text-2) 75%), linear-gradient(45deg, var(--dt-text-2) 25%, transparent 25%, transparent 75%, var(--dt-text-2) 75%); background-size: 6px 6px; background-position: 0 0, 3px 3px; opacity: 0.8; }
+.dt-snip-viewport { position: relative; overflow: hidden; width: 100%; }
+.dt-snip-scroll { transition: transform 180ms cubic-bezier(.2,.6,.2,1); will-change: transform; }
+.dt-snip-ln { flex-shrink: 0; text-align: right; padding-right: 18px; margin-right: 18px; color: var(--dt-text-3); opacity: 0.55; user-select: none; box-shadow: inset -1px 0 0 var(--dt-border); }
+.dt-snip-fade { position: absolute; left: 0; right: 0; height: 38px; pointer-events: none; z-index: 2; }
+.dt-snip-fade-top { top: 0; background: linear-gradient(to bottom, var(--dt-bg), transparent); }
+.dt-snip-fade-bot { bottom: 0; background: linear-gradient(to top, var(--dt-bg), transparent); }
+.dt-type-inputrow { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 22px 28px 4px; }
+.dt-type-input { display: flex; align-items: center; gap: 2px; width: 300px; height: 48px; padding: 0 18px; border-radius: 12px; background: color-mix(in oklab, var(--dt-card) 55%, transparent); box-shadow: inset 0 0 0 1px var(--dt-border); cursor: text; overflow: hidden; }
+.dt-type-caret { display: inline-block; width: 2px; height: 22px; border-radius: 1px; background: var(--dt-primary); animation: dt-blink 1s step-end infinite; }
+.dt-type-iconbtn { width: 48px; height: 48px; border-radius: 12px; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--dt-text-2); background: color-mix(in oklab, var(--dt-card) 55%, transparent); box-shadow: inset 0 0 0 1px var(--dt-border); transition: background 140ms, color 140ms; }
+.dt-type-iconbtn:hover { color: var(--dt-text); background: var(--dt-hover); }
+.dt-type-iconbtn.primary { color: var(--dt-primary); background: color-mix(in oklab, var(--dt-primary) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 40%, transparent); }
+.dt-type-iconbtn.primary:hover { background: color-mix(in oklab, var(--dt-primary) 26%, transparent); }
 
 /* Progress */
 .dt-progress { background: var(--dt-hover); border-radius: 999px; height: 6px; overflow: hidden; }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { LANG_ICON } from '@/data';
 import { useUserStore } from '@/stores/userStore';
@@ -278,9 +279,13 @@ function LangSelect({ value, onChange }: { value: string; onChange: (v: string) 
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+const VALID_TABS = ['overall', 'language', 'daily', 'streak'];
+
 const Ranking = () => {
   const t = useT();
-  const [tab, setTab] = useState('overall');
+  const [searchParams] = useSearchParams();
+  const initialTab = VALID_TABS.includes(searchParams.get('tab') ?? '') ? (searchParams.get('tab') as string) : 'overall';
+  const [tab, setTab] = useState(initialTab);
   const [lang, setLang] = useState('JavaScript');
 
   return (

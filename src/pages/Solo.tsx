@@ -1,13 +1,15 @@
 ﻿import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import TypoHeatmap from '@/components/TypoHeatmap';
+import TypingEngine from '@/components/TypingEngine';
+import RaceProgress from '@/components/RaceProgress';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
 import SectionHead from '@/components/SectionHead';
 import Pill from '@/components/Pill';
-import PlayEditor from '@/components/PlayEditor';
 import Avatar from '@/components/Avatar';
+import StatCard from '@/components/StatCard';
 import {
   IconPlay, IconRefresh, IconSettings, IconKeyboard, IconArrowRight, IconArrowUp, IconArrowDown,
 } from '@/components/icons/Icons';
@@ -39,11 +41,6 @@ const DIFFS = [
   { id: 'hard',   label: 'Hard',   chars: '~320 chars' },
 ];
 
-const kbdClass = 'inline-block py-px px-1.5 mx-0.5 bg-dt-hover border-[0.5px] border-dt-border rounded font-dt-mono text-[11px] text-dt-text-2';
-
-function fileExtFor(lang: string) {
-  return ({ javascript: '.js', typescript: '.ts', python: '.py', go: '.go', java: '.java', kotlin: '.kt', 'c++': '.cpp', 'c#': '.cs', c: '.c', rust: '.rs' } as Record<string, string>)[lang] || '.txt';
-}
 
 function toLangKey(lang: SnippetLanguage): string {
   return lang.toLowerCase();
@@ -75,8 +72,6 @@ const SoloSetup = ({ lang, setLang, onStart }: SoloSetupProps) => {
       <SectionHead kicker="Solo practice" title="Pick a language. Start typing." />
 
       <div className="relative overflow-hidden rounded-dt-md py-10 px-10 pb-11 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--dt-card)_70%,transparent),color-mix(in_oklab,#2E6BFF_12%,transparent))] [backdrop-filter:blur(14px)_saturate(1.3)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_1px_var(--dt-border),0_20px_52px_-28px_rgba(46,107,255,0.5)]">
-        <img src="/assets/solo.png" alt="" className="absolute -right-2.5 top-1/2 -translate-y-1/2 h-[150%] w-auto max-w-[46%] object-contain opacity-90 pointer-events-none [filter:drop-shadow(0_12px_30px_rgba(46,107,255,0.5))]" />
-
         <div className="relative z-[2] max-w-[560px]">
           <div className="dt-label mb-3">{t('Language')}</div>
           <div className="flex flex-wrap gap-2 mb-7">
@@ -114,195 +109,149 @@ interface SoloTypingProps {
   onReset: () => void; onChangeSettings: () => void; realLang: string;
 }
 
-// ─── Word focus bar (typegg 스타일) ─────────────────────────────────────────────
-function getWordContext(snippet: string, typedIndex: number) {
-  const tokens: { text: string; start: number; end: number }[] = [];
-  let i = 0;
-  while (i < snippet.length) {
-    if (/\S/.test(snippet[i])) {
-      const start = i;
-      while (i < snippet.length && /\S/.test(snippet[i])) i++;
-      tokens.push({ text: snippet.slice(start, i), start, end: i });
-    } else { i++; }
-  }
-  let curIdx = tokens.findIndex((t) => typedIndex >= t.start && typedIndex < t.end);
-  if (curIdx === -1) {
-    curIdx = tokens.findIndex((t) => t.start > typedIndex);
-    if (curIdx === -1) curIdx = tokens.length - 1;
-  }
-  const curr = tokens[curIdx];
-  const prev = curIdx > 0 ? tokens[curIdx - 1] : null;
-  const next = tokens[curIdx + 1] ?? null;
-  const typedInCurr = curr ? Math.max(0, typedIndex - curr.start) : 0;
-  return { prev, curr, next, typedInCurr, curIdx };
-}
+const VISIBLE_LINES = 8;
 
-// input box 스타일 — 실제 입력 중인 글자만 표시 (remaining 없음)
-const WordFocusBar = ({ snippet, typedIndex }: { snippet: string; typedIndex: number }) => {
-  const { curr, typedInCurr, curIdx } = getWordContext(snippet, typedIndex);
-  const typedWord = curr?.text.slice(0, typedInCurr) ?? '';
-  return (
-    <>
-      <style>{`@keyframes wfb-pop{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}`}</style>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: 46, marginTop: 8, flexShrink: 0,
-        userSelect: 'none', width: '100%',
-      }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          minWidth: 160, padding: '0 22px', height: 46,
-          background: 'var(--dt-type-bg)', borderRadius: 24,
-          boxShadow: 'inset 0 0 0 1.5px rgba(120,150,255,0.22), 0 0 24px -6px color-mix(in oklab, var(--dt-primary) 25%, transparent)',
-        }}>
-          <span key={curIdx} style={{
-            fontFamily: 'var(--dt-font-mono)', fontSize: 18, fontWeight: 500,
-            color: 'var(--dt-primary)', letterSpacing: '0.06em',
-            animation: 'wfb-pop 120ms ease-out',
-          }}>
-            {typedWord || <span style={{ opacity: 0.2, color: 'var(--dt-text-3)' }}>{'|'}</span>}
-          </span>
-          <span className="animate-pulse" style={{
-            display: 'inline-block', width: 2, height: '1em',
-            background: 'var(--dt-primary)', verticalAlign: 'text-bottom', marginLeft: 2,
-          }} />
-        </div>
-      </div>
-    </>
-  );
-};
-
-// 솔로 레이스바 (단일 플레이어 DevRaceTrack 스타일)
-const SoloRaceBar = ({ progressFrac, wpm, username }: { progressFrac: number; wpm: number; username: string }) => {
-  const hue = (username.charCodeAt(0) * 7) % 360;
-  const pct = Math.round(progressFrac * 100);
-  return (
-    <div style={{
-      flexShrink: 0, marginTop: 8,
-      fontFamily: 'var(--dt-font-mono)', background: 'var(--dt-type-bg)',
-      borderRadius: 10, overflow: 'hidden',
-      boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.12)',
-    }}>
-      <div style={{ padding: '7px 14px', borderBottom: '1px solid rgba(120,150,255,0.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {['#FF5F57', '#FFBD2E', '#28C840'].map((c) => (
-            <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />
-          ))}
-        </div>
-        <span style={{ fontSize: 10, color: 'var(--dt-text-3)', marginLeft: 4 }}>race.sh — solo</span>
-        <span className="dt-live-dot" style={{ marginLeft: 'auto' }} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '148px 1fr 88px', alignItems: 'center', gap: 12, padding: '10px 16px', background: 'color-mix(in oklab, var(--dt-primary) 5%, transparent)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ color: 'var(--dt-primary)', fontSize: 12 }}>▶</span>
-          <Avatar handle={username} hue={hue} size={22} ring="var(--dt-primary)" />
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--dt-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {username}
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', width: `${pct}%`, background: 'var(--dt-primary)', borderRadius: 3,
-              transition: 'width 200ms ease-linear',
-              boxShadow: '0 0 10px color-mix(in oklab, var(--dt-primary) 55%, transparent)',
-            }} />
-          </div>
-          {pct < 100
-            ? <span className="animate-pulse" style={{ color: 'var(--dt-primary)', fontSize: 13, lineHeight: 1, flexShrink: 0 }}>▮</span>
-            : <span style={{ color: 'var(--dt-success)', fontSize: 13, flexShrink: 0 }}>✓</span>
-          }
-        </div>
-        <div style={{ textAlign: 'right', lineHeight: 1.4 }}>
-          {pct >= 100 ? (
-            <span style={{ fontSize: 12, color: 'var(--dt-success)', fontWeight: 600 }}>exit 0</span>
-          ) : (
-            <>
-              <div style={{ fontSize: 13, color: 'var(--dt-primary)', fontWeight: 600 }}>
-                {wpm} <span style={{ fontSize: 10, color: 'var(--dt-text-3)' }}>wpm</span>
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>{pct}%</div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
+const InlineStat = ({ label, value, unit }: { label: string; value: string | number; unit?: string }) => (
+  <div className="flex flex-col items-end leading-none">
+    <span className="dt-mono dt-tabular text-[22px] font-semibold text-dt-text">
+      {value}<span className="text-[12px] text-dt-text-3">{unit}</span>
+    </span>
+    <span className="text-[9.5px] tracking-[0.07em] uppercase text-dt-text-3 mt-[3px]">{label}</span>
+  </div>
+);
 
 const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, resetKey, onReset, onChangeSettings, realLang }: SoloTypingProps) => {
   const t = useT();
   const caret = useAppStore((s) => s.caret);
   const density = useAppStore((s) => s.density);
-  const username = useUserStore((s) => s.username) || 'me';
+  const { username, profileUrl } = useUserStore();
+  const [typed, setTyped] = useState('');
+
   const dispLang = realLang || lang;
-  const pct = (progress.index / Math.max(1, progress.total)) * 100;
+  const fontSize = density === 'compact' ? 16 : 19;
+  const lh = Math.round(fontSize * 1.95);
+  const lines = useMemo(() => snippet.split('\n'), [snippet]);
+  const totalLines = lines.length;
+  const wordCount = useMemo(() => snippet.trim().split(/\s+/).filter(Boolean).length, [snippet]);
+
+  const frag = useMemo(() => typed.match(/(\S*)$/)?.[0] ?? '', [typed]);
+  const activeLine = useMemo(() => snippet.slice(0, typed.length).split('\n').length - 1, [snippet, typed]);
+  const pct = snippet.length ? (typed.length / snippet.length) * 100 : 0;
+
+  const maxOffset = Math.max(0, totalLines - VISIBLE_LINES);
+  const offset = Math.min(maxOffset, Math.max(0, activeLine - 3));
+  const viewportH = VISIBLE_LINES * lh;
+  const translateY = -(offset * lh);
+
+  const gutterW = String(totalLines).length;
+  const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360, src: profileUrl ?? undefined };
 
   return (
-    <div style={{ height: 'calc(100vh - 90px)', display: 'flex', flexDirection: 'column' }}>
-      {/* 헤더 */}
-      <div className="flex items-center justify-between mb-3 shrink-0">
+    <div style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between shrink-0" style={{ paddingBottom: 18 }}>
         <div className="flex items-center gap-3">
           {LANG_ICON[dispLang] && (
-            <img src={LANG_ICON[dispLang]} alt="" className="w-[26px] h-[26px] object-contain" />
+            <img src={LANG_ICON[dispLang]} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
           )}
-          <span className="dt-h2 m-0">{LANGS.find((l) => l.id === dispLang)?.label || dispLang}</span>
-          <span className="dt-chip">{t(DIFFS.find((d) => d.id === diff.toLowerCase())?.label ?? '')}</span>
+          <span className="font-dt-mono font-bold text-[15px] uppercase tracking-[0.06em] text-dt-text">
+            {LANGS.find((l) => l.id === dispLang)?.label || dispLang}
+          </span>
+          <span className="dt-chip text-[11px]">{t(DIFFS.find((d) => d.id === diff.toLowerCase())?.label ?? '')}</span>
         </div>
-        <div className="flex items-center gap-[22px]">
-          <InlineStat label={t('WPM')} value={progress.wpm} accent />
+        <div className="flex items-center gap-5">
           <InlineStat label={t('Accuracy')} value={progress.acc.toFixed(0)} unit="%" />
           <InlineStat label={t('Time')} value={(progress.elapsed / 1000).toFixed(0)} unit="s" />
-          <div className="w-px h-7 bg-dt-border" />
-          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onReset}>
-            <IconRefresh size={14} /> {t('Restart')}
-          </button>
+          <div style={{ width: 1, height: 28, background: 'var(--dt-border)' }} />
           <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}>
-            <IconSettings size={14} /> {t('Settings')}
+            <IconSettings size={13} /> {t('설정')}
           </button>
         </div>
       </div>
 
-      {/* 진행바 */}
-      <div className="dt-progress mb-3 h-1.5 shrink-0">
-        <div style={{ width: `${pct}%` }} />
+      {/* ── Race progress bar ── */}
+      <div style={{ marginBottom: 18 }}>
+        <RaceProgress pct={pct} me={me} />
       </div>
 
-      {/* 에디터 (기존 스타일 유지, fill) */}
-      <PlayEditor
-        fill
-        code={snippet}
-        resetKey={resetKey}
-        caretStyle={caret}
-        fontSize={density === 'compact' ? 15 : 17}
-        onProgress={setProgress}
-        onFinish={onFinish}
-        fileName={`snippet${fileExtFor(dispLang)}`}
-        index={progress.index}
-        total={progress.total}
-      />
+      {/* ── WPM pill ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+        <div className="dt-race-wpm">
+          <span className="dt-race-checker" aria-hidden="true" />
+          <span className="dt-mono dt-tabular" style={{ fontSize: 15 }}>
+            {progress.wpm > 0 ? progress.wpm : '---'}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>wpm</span>
+        </div>
+      </div>
 
-      {/* 레이스바 (단일 플레이어) */}
-      <SoloRaceBar progressFrac={pct / 100} wpm={progress.wpm} username={username} />
+      {/* ── Scroll viewport ── */}
+      <div className="dt-snip-viewport" style={{ height: viewportH, fontSize, fontFamily: 'var(--dt-font-mono)' }}>
+        <div className="dt-snip-scroll" style={{ transform: `translateY(${translateY}px)` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `${gutterW + 1.5}ch 1fr` }}>
+            {/* Line numbers */}
+            <div>
+              {lines.map((_, i) => (
+                <div key={i} style={{
+                  height: lh, lineHeight: `${lh}px`,
+                  textAlign: 'right', paddingRight: 18,
+                  fontSize, fontFamily: 'var(--dt-font-mono)',
+                  color: 'var(--dt-text-3)', opacity: 0.55, userSelect: 'none',
+                  boxShadow: 'inset -1px 0 0 var(--dt-border)',
+                }}>
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+            {/* TypingEngine */}
+            <div style={{ paddingLeft: 18, overflow: 'hidden' }}>
+              <TypingEngine
+                code={snippet}
+                resetKey={resetKey}
+                caretStyle={caret}
+                fontSize={fontSize}
+                onProgress={setProgress}
+                onFinish={onFinish}
+                onTypedChange={setTyped}
+                embedded
+                noPadding
+                noStatusBar
+                noAutoScroll
+              />
+            </div>
+          </div>
+        </div>
+        {offset > 0 && <div className="dt-snip-fade dt-snip-fade-top" />}
+        {offset < maxOffset && <div className="dt-snip-fade dt-snip-fade-bot" />}
+      </div>
 
-      {/* Word focus bar — 실제 입력 중인 글자 표시 */}
-      <WordFocusBar snippet={snippet} typedIndex={progress.index} />
+      {/* ── Meta line ── */}
+      <div className="dt-mono" style={{ padding: '12px 4px 0', fontSize: 12.5, color: 'var(--dt-text-3)', display: 'flex', gap: 10 }}>
+        <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
+        <span>/</span>
+        <span>{wordCount} words</span>
+        <span>/</span>
+        <span>{snippet.length} chars</span>
+        {totalLines > VISIBLE_LINES && (
+          <span style={{ marginLeft: 'auto', color: 'var(--dt-text-2)' }}>
+            {Math.min(activeLine + 1, totalLines)} / {totalLines}
+          </span>
+        )}
+      </div>
 
-      <div className="dt-caption mt-2 text-dt-text-2 text-center shrink-0">
-        <kbd className={kbdClass}>Tab</kbd> + <kbd className={kbdClass}>Enter</kbd> {t('to restart')}
+      {/* ── Input row ── */}
+      <div className="dt-type-inputrow" style={{ justifyContent: 'flex-start', padding: '22px 0 4px', gap: 12 }}>
+        <div className="dt-type-input" style={{ width: 360 }}>
+          <span className="dt-mono" style={{ fontSize: 16, color: 'var(--dt-text)', whiteSpace: 'pre' }}>{frag}</span>
+          <span className="dt-type-caret" />
+        </div>
+        <button className="dt-type-iconbtn primary" title={t('다시')} onClick={(e) => { e.stopPropagation(); onReset(); }}>
+          <IconRefresh size={18} />
+        </button>
       </div>
     </div>
   );
 };
-const InlineStat = ({ label, value, unit, accent }: { label: string; value: string | number; unit?: string; accent?: boolean }) => (
-  <div className="flex flex-col items-end leading-none">
-    <span className={`dt-mono dt-tabular text-2xl font-semibold ${accent ? 'text-dt-primary' : 'text-dt-text'}`}>
-      {value}<span className="text-xs text-dt-text-3">{unit}</span>
-    </span>
-    <span className="text-[10px] tracking-[0.08em] uppercase text-dt-text-3 mt-[3px]">{label}</span>
-  </div>
-);
 
 // ─── Result helpers ───────────────────────────────────────────────────────────
 function soloDerived(result: TypingResult, snippet: string) {
@@ -322,56 +271,6 @@ function soloDerived(result: TypingResult, snippet: string) {
   }
   return { combo, samples };
 }
-
-const InfoTooltip = ({ text }: { text: string }) => {
-  const [visible, setVisible] = useState(false);
-  return (
-    <span style={{ position: 'relative', display: 'inline-flex', verticalAlign: 'middle' }}>
-      <span
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
-        style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 14, height: 14, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-          fontSize: 9, fontWeight: 700, color: 'var(--dt-text-3)',
-          cursor: 'help', lineHeight: 1, fontFamily: 'inherit',
-        }}
-      >i</span>
-      {visible && (
-        <div style={{
-          position: 'absolute', bottom: '130%', left: '50%', transform: 'translateX(-50%)',
-          background: 'var(--dt-card)', border: '1px solid var(--dt-border)',
-          borderRadius: 8, padding: '8px 12px', width: 220,
-          fontSize: 11.5, lineHeight: 1.55, color: 'var(--dt-text-2)',
-          zIndex: 100, boxShadow: '0 8px 24px -8px rgba(0,0,0,0.5)',
-          pointerEvents: 'none', whiteSpace: 'normal',
-        }}>
-          {text}
-          <div style={{
-            position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-            width: 0, height: 0,
-            borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
-            borderTop: '5px solid var(--dt-border)',
-          }} />
-        </div>
-      )}
-    </span>
-  );
-};
-
-const StatCard = ({ label, value, unit, sub, info }: { label: string; value: string | number; unit?: string; sub?: string; info?: string }) => (
-  <div className="dt-card p-5">
-    <div className="dt-label mb-1.5 flex items-center gap-1.5">
-      {label}
-      {info && <InfoTooltip text={info} />}
-    </div>
-    <div className="dt-mono dt-tabular text-[28px] font-medium">
-      {value}{unit && <span className="text-[15px] text-dt-text-2">{unit}</span>}
-    </div>
-    {sub && <div className="dt-caption mt-1.5">{sub}</div>}
-  </div>
-);
 
 const SoloWpmGraph = ({ result, snippet }: { result: TypingResult; snippet: string }) => {
   const t = useT();
@@ -593,7 +492,7 @@ const SnippetRankingSection = ({ snippetId, myCore }: { snippetId: number; myCor
                   #{item.rank}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                  <Avatar handle={item.username} hue={(item.username.charCodeAt(0) * 7) % 360} size={24} />
+                  <Avatar handle={item.username} hue={(item.username.charCodeAt(0) * 7) % 360} size={24} src={item.profileUrl ?? undefined} />
                   <span className="dt-mono" style={{ fontSize: 13, color: 'var(--dt-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.username}
                   </span>
@@ -973,12 +872,9 @@ const Solo = () => {
     );
   }
 
-  return (
-    <div className="dt-page-narrow">
-      {phase === 'setup' && (
-        <SoloSetup lang={lang} setLang={setLang} onStart={start} />
-      )}
-      {phase === 'typing' && track && (
+  if (phase === 'typing' && track) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '40px 72px' }}>
         <SoloTyping
           snippet={snippet} lang={lang} diff={diff} progress={progress} setProgress={setProgress}
           onFinish={onFinish} resetKey={resetKey}
@@ -986,6 +882,14 @@ const Solo = () => {
           onChangeSettings={() => { setApiSnippetId(undefined); setPhase('setup'); }}
           realLang={realLang}
         />
+      </div>
+    );
+  }
+
+  return (
+    <div className="dt-page-narrow">
+      {phase === 'setup' && (
+        <SoloSetup lang={lang} setLang={setLang} onStart={start} />
       )}
       {phase === 'result' && result && (
         <SoloResult

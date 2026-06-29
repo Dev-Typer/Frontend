@@ -5,6 +5,7 @@ interface Props {
   code: string;
   onProgress?: (p: TypingProgress) => void;
   onFinish?: (r: TypingResult) => void;
+  onTypedChange?: (typed: string) => void;
   active?: boolean;
   caretStyle?: 'line' | 'under' | 'block';
   fontSize?: number;
@@ -12,12 +13,16 @@ interface Props {
   showCounter?: boolean;
   resetKey?: number | string;
   embedded?: boolean;
+  noPadding?: boolean;
+  noStatusBar?: boolean;
+  noAutoScroll?: boolean;
 }
 
 const TypingEngine = ({
   code,
   onProgress,
   onFinish,
+  onTypedChange,
   active = true,
   caretStyle = 'line',
   fontSize = 18,
@@ -25,6 +30,9 @@ const TypingEngine = ({
   showCounter = false,
   resetKey,
   embedded = false,
+  noPadding = false,
+  noStatusBar = false,
+  noAutoScroll = false,
 }: Props) => {
   const [typed, setTyped] = useState('');
   const [errors, setErrors] = useState(0);
@@ -139,10 +147,10 @@ const TypingEngine = ({
 
   useEffect(() => { if (autoFocus && containerRef.current) containerRef.current.focus(); }, [autoFocus, resetKey]);
 
-  // 커서 위치를 부모 스크롤 컨테이너에 노출 (overflow-auto 인 PlayEditor inner div가 스크롤)
   useEffect(() => {
+    if (noAutoScroll) return;
     cursorSpanRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [typed.length]);
+  }, [typed.length, noAutoScroll]);
 
   useEffect(() => {
     onProgress?.({
@@ -178,14 +186,24 @@ const TypingEngine = ({
     }
   }, [typed, code, startedAt]);
 
+  useEffect(() => { onTypedChange?.(typed); }, [typed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const cells = useMemo(() => {
+    const cur = typed.length;
+    let w0 = -1, w1 = -1;
+    if (cur < code.length && !/\s/.test(code[cur])) {
+      w0 = cur; w1 = cur;
+      while (w0 > 0 && !/\s/.test(code[w0 - 1])) w0--;
+      while (w1 < code.length && !/\s/.test(code[w1])) w1++;
+    }
     const out = [];
     for (let i = 0; i < code.length; i++) {
       const ch = code[i];
       let state = 'pending';
       if (i < typed.length) state = typed[i] === ch ? 'correct' : 'error';
       const isCursor = i === typed.length;
-      out.push({ i, ch, state, isCursor });
+      const inWord = w0 >= 0 && i >= w0 && i < w1;
+      out.push({ i, ch, state, isCursor, inWord });
     }
     return out;
   }, [code, typed]);
@@ -213,7 +231,7 @@ const TypingEngine = ({
   }, [typed, code]);
 
   return (
-    <div ref={containerRef} tabIndex={0} className={`outline-none relative ${embedded ? 'h-full' : ''}`}>
+    <div ref={containerRef} tabIndex={0} style={{ outline: 'none' }} className={`relative ${embedded ? 'h-full' : ''}`}>
       {showCounter && (
         <div className="flex gap-6 mb-3.5 items-baseline font-dt-mono text-dt-text-2 text-[13px]">
           <span><span className="text-dt-primary text-2xl font-medium dt-tabular">{wpm}</span> <span className="opacity-70">wpm</span></span>
@@ -223,12 +241,12 @@ const TypingEngine = ({
         </div>
       )}
       <div
-        className={`dt-code-area leading-[1.85] ${embedded ? '!bg-transparent !border-0 !rounded-none px-7 py-3 !overflow-x-visible' : ''}`}
-        style={{ fontSize }}
+        className={`dt-code-area ${embedded ? `!bg-transparent !border-0 !rounded-none !overflow-x-visible${noPadding ? ' !p-0' : ' px-7 py-3'}` : ''}`}
+        style={{ fontSize, lineHeight: `${Math.round(fontSize * 1.95)}px` }}
       >
-        {cells.map(({ i, ch, state, isCursor }) => {
+        {cells.map(({ i, ch, state, isCursor, inWord }) => {
           const isNewline = ch === '\n';
-          const cls = ['ch', state !== 'pending' ? state : '', isCursor && active ? 'cursor' : '', caretStyle === 'block' ? 'caret-block' : '', caretStyle === 'under' ? 'caret-under' : ''].filter(Boolean).join(' ');
+          const cls = ['ch', state !== 'pending' ? state : '', isCursor && active ? 'cursor' : '', inWord ? 'cur-word' : '', caretStyle === 'block' ? 'caret-block' : '', caretStyle === 'under' ? 'caret-under' : ''].filter(Boolean).join(' ');
           if (isNewline) {
             return (
               <span key={i}>
@@ -245,7 +263,7 @@ const TypingEngine = ({
       </div>
 
       {/* 하단 상태바 — Ln/Col + 진행도 */}
-      {active && !finishedFlag && (
+      {active && !finishedFlag && !noStatusBar && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16,
           marginTop: 6, padding: '4px 4px 2px',

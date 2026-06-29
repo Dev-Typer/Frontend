@@ -492,7 +492,7 @@ const SnippetRankingSection = ({ snippetId, myCore }: { snippetId: number; myCor
                   #{item.rank}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                  <Avatar handle={item.username} hue={(item.username.charCodeAt(0) * 7) % 360} size={24} />
+                  <Avatar handle={item.username} hue={(item.username.charCodeAt(0) * 7) % 360} size={24} src={item.profileUrl ?? undefined} />
                   <span className="dt-mono" style={{ fontSize: 13, color: 'var(--dt-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.username}
                   </span>

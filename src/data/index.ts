@@ -35,3 +35,9 @@ export const LANG_ICON: Record<string, string> = {
   perl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/perl/perl-original.svg',
   bash: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
 };
+
+export const DIFF_COLOR: Record<string, string> = {
+  easy:   '#3DD68C',
+  medium: '#57E5FF',
+  hard:   '#B93CFF',
+};

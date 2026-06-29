@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
-import { LANG_ICON } from '@/data';
+import { LANG_ICON, DIFF_COLOR } from '@/data';
 import {
   IconCode, IconPlay, IconX, IconSearch, IconTrash,
   IconArrowsSort, IconChevronDown, IconCheck, IconHeart,
@@ -27,9 +27,6 @@ const LANG_COLOR: Record<string, string> = {
   javascript: '#F7DF1E', typescript: '#3178C6', python: '#3776AB',
   java: '#F89820', go: '#00ADD8', 'c++': '#00599C', 'c#': '#9B4F96',
   c: '#5C6BC0', rust: '#DEA584', kotlin: '#7F52FF',
-};
-const DIFF_COLOR: Record<string, string> = {
-  easy: '#3DD68C', medium: '#57E5FF', hard: '#B93CFF',
 };
 
 function diffLabel(d: string): string {

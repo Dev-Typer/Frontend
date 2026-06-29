@@ -4,8 +4,8 @@ import { useT } from '@/i18n';
 import Avatar from '@/components/Avatar';
 import { formatCore } from '@/utils/formatCore';
 import UserHover from '@/components/UserHover';
-import { IconPlay, IconUser, IconCode } from '@/components/icons/Icons';
-import { LANG_ICON } from '@/data';
+import { IconPlay, IconUser } from '@/components/icons/Icons';
+import { LANG_ICON, DIFF_COLOR } from '@/data';
 import { getSoloLeaderboard } from '@/apis/leaderboardApi';
 import type { SoloLeaderboardEntry } from '@/apis/leaderboardApi';
 import coreLogo from '@/assets/core-logo.png';
@@ -337,11 +337,6 @@ const ModeArena = ({ navigate }: { navigate: (r: string) => void }) => {
 
 // ─── Daily challenge section ──────────────────────────────────────────────────
 
-const DIFF_COLOR: Record<string, string> = {
-  easy: '#3DD68C',
-  medium: '#57E5FF',
-  hard: '#B93CFF',
-};
 
 const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) => {
   const t = useT();
@@ -371,13 +366,22 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
   }
 
   const ch = daily.snippet;
-  const diffColor = DIFF_COLOR[ch.difficulty] || '#57E5FF';
-  const diffLabel = ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
+  const VALID_DIFFS = ['easy', 'medium', 'hard'];
+  const validDiff = VALID_DIFFS.includes(ch.difficulty) ? ch.difficulty : null;
+  const diffColor = validDiff ? (DIFF_COLOR[validDiff] || '#57E5FF') : 'var(--dt-text-3)';
+  const diffLabel = validDiff
+    ? validDiff.charAt(0).toUpperCase() + validDiff.slice(1)
+    : ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
   const langKey = ch.language.toLowerCase();
   const langIcon = LANG_ICON[langKey];
 
+  const lines = ch.content.split('\n');
+  const ext = { javascript: '.js', typescript: '.ts', python: '.py', go: '.go', java: '.java', sql: '.sql', rust: '.rs', 'c++': '.cpp', 'c#': '.cs', c: '.c', kotlin: '.kt' }[langKey] || '.txt';
+  const previewLines = lines.slice(0, 12);
+
   return (
     <section style={{ marginTop: 28 }}>
+      {/* Section header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '0 4px' }}>
         <h2 style={{ margin: 0, fontFamily: 'var(--dt-font-display)', fontWeight: 600, fontSize: 20, color: 'var(--dt-text)' }}>
           {t("Today's challenge")}
@@ -385,53 +389,89 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
         <span className="dt-caption" style={{ marginLeft: 'auto' }}>{daily.date}</span>
       </div>
 
-      <div className="dt-card" style={{ padding: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: '300px 1fr' }}>
-        {/* Left: language art */}
-        <button
-          onClick={() => navigate('/daily')}
-          style={{
-            position: 'relative', border: 0, cursor: 'pointer', textAlign: 'left',
-            padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-            background: `linear-gradient(150deg, color-mix(in oklab, ${diffColor} 20%, transparent) 0%, transparent 70%)`,
-            boxShadow: 'inset -1px 0 0 var(--dt-border)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {langIcon
-              ? <img src={langIcon} alt={ch.language} style={{ width: 48, height: 48, objectFit: 'contain' }} />
-              : <IconCode size={48} style={{ color: diffColor }} />}
-            <div className="dt-stack" style={{ gap: 2 }}>
-              <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--dt-text)', lineHeight: 1 }}>
-                {ch.language}
-              </span>
-            </div>
+      {/* Editor-style card */}
+      <div style={{
+        borderRadius: 12, overflow: 'hidden',
+        background: 'var(--dt-type-bg)',
+        boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.18), 0 20px 48px -24px rgba(0,0,0,0.7)',
+      }}>
+        {/* Title bar */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px',
+          boxShadow: 'inset 0 -1px 0 rgba(120,150,255,0.14)',
+        }}>
+          {/* Traffic lights */}
+          <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FF5F57', flexShrink: 0 }} />
+          <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FFBD2E', flexShrink: 0 }} />
+          <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#28C840', flexShrink: 0 }} />
+
+          {/* Tab: icon + filename */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            marginLeft: 10, padding: '3px 14px', borderRadius: 6,
+            background: 'rgba(120,150,255,0.1)', boxShadow: 'inset 0 0 0 1px rgba(120,150,255,0.18)',
+            fontSize: 12.5, color: '#9AAABF', fontFamily: 'var(--dt-font-mono)',
+          }}>
+            {langIcon && <img src={langIcon} alt="" style={{ width: 14, height: 14, objectFit: 'contain' }} />}
+            <span style={{ color: 'var(--dt-text)', fontWeight: 500 }}>{ch.title}</span>
+            <span style={{ opacity: 0.5 }}>{ext}</span>
           </div>
 
-          <div>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '4px 12px', borderRadius: 999, marginBottom: 14,
-              fontSize: 12, fontWeight: 600,
-              color: diffColor, background: `color-mix(in oklab, ${diffColor} 16%, transparent)`,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: diffColor }} />
-              {t(diffLabel)}
-            </span>
-            <p className="dt-caption" style={{ margin: '0 0 16px' }}>
-              {t('One snippet, one attempt.')}
-            </p>
-            <span className="dt-btn dt-btn-primary" style={{ pointerEvents: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <IconPlay size={14} /> {t('Take the challenge')}
-            </span>
+          {/* Difficulty badge */}
+          <div style={{
+            marginLeft: 8,
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '2px 10px', borderRadius: 999,
+            fontSize: 11, fontWeight: 600,
+            color: validDiff ? diffColor : 'var(--dt-text-3)',
+            background: validDiff ? `color-mix(in oklab, ${diffColor} 14%, transparent)` : 'var(--dt-hover)',
+            boxShadow: validDiff ? `inset 0 0 0 1px color-mix(in oklab, ${diffColor} 35%, transparent)` : 'inset 0 0 0 1px var(--dt-border)',
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: validDiff ? diffColor : 'var(--dt-text-3)' }} />
+            {diffLabel}
           </div>
-        </button>
+        </div>
 
-        {/* Right: code preview */}
-        <div style={{ padding: '24px 28px', overflow: 'hidden' }}>
-          <pre style={{
-            margin: 0, fontFamily: 'var(--dt-font-mono)', fontSize: 14, lineHeight: 1.75,
-            color: 'var(--dt-text)', whiteSpace: 'pre', overflowX: 'auto',
-          }}>{ch.content}</pre>
+        {/* Code body with line numbers */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '48px 1fr',
+          fontFamily: 'var(--dt-font-mono)', fontSize: 13.5, lineHeight: '1.9',
+          minHeight: 200, maxHeight: 260, overflow: 'hidden',
+        }}>
+          {/* Line numbers */}
+          <div style={{
+            textAlign: 'right', padding: '14px 14px 14px 0',
+            color: '#3A4660', userSelect: 'none',
+            boxShadow: 'inset -1px 0 0 rgba(120,150,255,0.1)',
+          }}>
+            {previewLines.map((_, i) => <div key={i}>{i + 1}</div>)}
+          </div>
+          {/* Code content */}
+          <div style={{ padding: '14px 20px', whiteSpace: 'pre', overflowX: 'hidden', color: 'var(--dt-type-pending)' }}>
+            {previewLines.map((ln, i) => <div key={i}>{ln || ' '}</div>)}
+          </div>
+        </div>
+
+        {/* Status bar + CTA */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 16,
+          padding: '10px 16px',
+          boxShadow: 'inset 0 1px 0 rgba(120,150,255,0.14)',
+          fontFamily: 'var(--dt-font-mono)', fontSize: 12, color: '#7A8195',
+        }}>
+          {langIcon && <img src={langIcon} alt="" style={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.7 }} />}
+          <span>{ch.language}</span>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <span style={{ color: validDiff ? diffColor : 'inherit' }}>{diffLabel}</span>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <span>{ch.content.length} {t('chars')}</span>
+          <button
+            onClick={() => navigate('/daily')}
+            className="dt-btn dt-btn-primary dt-btn-sm"
+            style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <IconPlay size={13} /> {t('Take the challenge')}
+          </button>
         </div>
       </div>
     </section>

@@ -11,7 +11,7 @@ import TypoHeatmap from '@/components/TypoHeatmap';
 import { computeCore, CoreFactor, WpmGraph, MistypedLetters, WordChips } from '@/components/result';
 import { IconClock, IconPlay, IconCode, IconChevronRight, IconArrowUp, IconArrowDown } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
-import { LANG_ICON } from '@/data';
+import { LANG_ICON, DIFF_COLOR } from '@/data';
 import coreLogo from '@/assets/core-logo.png';
 import {
   getDailyChallenge,
@@ -27,9 +27,6 @@ type Phase = 'intro' | 'typing' | 'result';
 const EXT: Record<string, string> = {
   javascript: '.js', typescript: '.ts', python: '.py',
   go: '.go', java: '.java', sql: '.sql',
-};
-const DIFF_COLOR: Record<string, string> = {
-  easy: '#3DD68C', medium: '#57E5FF', hard: '#B93CFF',
 };
 
 

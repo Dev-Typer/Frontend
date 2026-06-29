@@ -400,26 +400,26 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
             {langIcon
               ? <img src={langIcon} alt={ch.language} style={{ width: 48, height: 48, objectFit: 'contain' }} />
               : <IconCode size={48} style={{ color: diffColor }} />}
-            <div className="dt-stack" style={{ gap: 2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--dt-text)', lineHeight: 1 }}>
                 {ch.language}
+              </span>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+                padding: '3px 10px', borderRadius: 999,
+                fontSize: 11.5, fontWeight: 600,
+                color: diffColor, background: `color-mix(in oklab, ${diffColor} 16%, transparent)`,
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: diffColor }} />
+                {t(diffLabel)}
+              </span>
+              <span style={{ fontSize: 12.5, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)' }}>
+                {ch.title}
               </span>
             </div>
           </div>
 
           <div>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '4px 12px', borderRadius: 999, marginBottom: 14,
-              fontSize: 12, fontWeight: 600,
-              color: diffColor, background: `color-mix(in oklab, ${diffColor} 16%, transparent)`,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: diffColor }} />
-              {t(diffLabel)}
-            </span>
-            <p className="dt-caption" style={{ margin: '0 0 16px' }}>
-              {t('One snippet, one attempt.')}
-            </p>
             <span className="dt-btn dt-btn-primary" style={{ pointerEvents: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <IconPlay size={14} /> {t('Take the challenge')}
             </span>

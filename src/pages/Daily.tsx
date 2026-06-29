@@ -694,9 +694,11 @@ const Daily = () => {
               <span className="dt-live-dot" style={{ background: 'var(--dt-warning)' }} />
               {t("Today's Challenge")}
             </div>
-            <h1 className="m-0 font-dt-display font-semibold text-[36px] tracking-[-0.03em] leading-none flex items-center gap-3">
+            <h1 className="m-0 font-dt-display font-semibold text-[36px] tracking-[-0.03em] leading-none">
               {challenge.snippet.language}
-              <span className="text-[13px] font-semibold px-3 py-1 rounded-full tracking-[0.02em]"
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+              <span className="text-[12px] font-semibold px-3 py-1 rounded-full tracking-[0.02em]"
                 style={{
                   color: diffColor,
                   background: `color-mix(in oklab, ${diffColor} 14%, transparent)`,
@@ -704,8 +706,9 @@ const Daily = () => {
                 }}>
                 {challenge.snippet.difficulty === 'easy' ? 'Easy' : challenge.snippet.difficulty === 'medium' ? 'Medium' : 'Hard'}
               </span>
-            </h1>
-            <p className="m-0 mt-[9px] text-dt-text-3 text-[13.5px] dt-mono">{challenge.date}</p>
+              <span className="dt-mono text-[13px] text-dt-text-2">{challenge.snippet.title}</span>
+              <span className="text-dt-text-3 text-[12px] dt-mono">{challenge.date}</span>
+            </div>
           </div>
         </div>
 

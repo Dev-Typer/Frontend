@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
-import { CODE_SNIPPETS, OPPONENTS, RECENT_BATTLES, ME } from '@/data';
+import { useUserStore } from '@/stores/userStore';
 import SectionHead from '@/components/SectionHead';
 import Avatar from '@/components/Avatar';
 import TierBadge from '@/components/TierBadge';
@@ -74,25 +74,8 @@ const BattleLobby = ({ onQuickMatch }: { onQuickMatch: () => void }) => {
       </div>
       <div className="mt-8">
         <SectionHead title="Your recent battles" />
-        <div className="dt-card p-0 overflow-hidden">
-          {RECENT_BATTLES.slice(0, 5).map((b, i, arr) => (
-            <div key={b.id} className={`grid grid-cols-[64px_1.6fr_1fr_100px_80px_80px] py-3.5 px-6 items-center gap-4 ${i < arr.length - 1 ? 'border-b-[0.5px] border-dt-border' : ''}`}>
-              <span className="dt-caption">{b.when}</span>
-              <div className="flex items-center gap-2">
-                {b.opponents.map((o, oi) => (
-                  <div key={o} className="flex items-center gap-1.5">
-                    <Avatar handle={o} hue={(o.charCodeAt(0) * 7) % 360} size={22} />
-                    <span className="dt-mono dt-body-sm">{o}</span>
-                    {oi < b.opponents.length - 1 && <span className="text-dt-text-3">·</span>}
-                  </div>
-                ))}
-              </div>
-              <span className="dt-chip">{b.lang}</span>
-              <span className="dt-mono dt-body-sm text-dt-text-2">{b.myWpm} wpm</span>
-              <span className={`dt-mono text-sm font-medium ${b.myRank === 1 ? 'text-dt-warning' : 'text-dt-text'}`}>#{b.myRank}</span>
-              <span className={`dt-mono dt-tabular text-sm ${b.delta >= 0 ? 'text-dt-success' : 'text-dt-error'}`}>{b.delta >= 0 ? '+' : ''}{b.delta}</span>
-            </div>
-          ))}
+        <div className="dt-card p-6 text-center text-dt-text-2 dt-body-sm">
+          No battles yet. Start a quick match to begin.
         </div>
       </div>
     </div>
@@ -117,7 +100,8 @@ const Matching = () => {
 
 const Countdown = ({ count, opponents }: { count: number; opponents: Opponent[] }) => {
   const t = useT();
-  const me = ME;
+  const { username } = useUserStore();
+  const me = { handle: username ?? 'me', tier: 'bronze' as const, avatarHue: 170, rating: 0 };
   const all = [{ ...me, you: true }, ...opponents];
   return (
     <div>
@@ -334,7 +318,8 @@ const BattleRace = ({ snippet, opponents, progress, setProgress, onFinish, reset
   const caret = useAppStore((s) => s.caret);
   const density = useAppStore((s) => s.density);
   const raceViz = useAppStore((s) => s.raceViz);
-  const me = ME;
+  const { username } = useUserStore();
+  const me = { handle: username ?? 'me', tier: 'bronze' as const, avatarHue: 170, rating: 0 };
   const total = snippet.length;
 
   const [bots, setBots] = useState<BotState[]>(() => opponents.map((o) => {
@@ -446,7 +431,8 @@ const BattleRace = ({ snippet, opponents, progress, setProgress, onFinish, reset
 };
 
 const BattleResult = ({ ranking, onRematch, onLobby }: { ranking: FinalRanking; onRematch: () => void; onLobby: () => void }) => {
-  const me = ME;
+  const { username } = useUserStore();
+  const me = { handle: username ?? 'me', tier: 'bronze' as const, avatarHue: 170, rating: 0 };
   if (!ranking) return null;
   const podium = ranking.players;
   const rankLabel = ['1st', '2nd', '3rd', '4th'][ranking.myRank - 1] ?? `${ranking.myRank}th`;
@@ -511,7 +497,7 @@ const BattleResult = ({ ranking, onRematch, onLobby }: { ranking: FinalRanking; 
 const Battle = () => {
   const [phase, setPhase] = useState<Phase>('lobby');
   const [opponents, setOpponents] = useState<Opponent[]>([]);
-  const [snippet] = useState(CODE_SNIPPETS.javascript.medium[0]);
+  const [snippet] = useState('');
   const [progress, setProgress] = useState<TypingProgress>({ index: 0, wpm: 0, acc: 100, elapsed: 0, total: 1, errors: 0, finished: false });
   const [finalRanking, setFinalRanking] = useState<FinalRanking | null>(null);
   const [resetKey, setResetKey] = useState(0);
@@ -520,7 +506,7 @@ const Battle = () => {
   const quickMatch = () => {
     setPhase('matching');
     setTimeout(() => {
-      const picks = [...OPPONENTS].sort(() => Math.random() - 0.5).slice(0, 3);
+      const picks: Opponent[] = [];
       setOpponents(picks);
       setPhase('countdown');
       setCountdown(3);

@@ -127,7 +127,7 @@ function DailyTyping({
   const langKey = ch.snippet.language.toLowerCase();
   const icon = LANG_ICON[langKey];
   const code = ch.snippet.content;
-  const fontSize = density === 'compact' ? 14 : 16;
+  const fontSize = density === 'compact' ? 16 : 19;
   const lh = Math.round(fontSize * 1.95);
   const lines = useMemo(() => code.split('\n'), [code]);
   const totalLines = lines.length;
@@ -146,7 +146,7 @@ function DailyTyping({
   const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360, src: profileUrl ?? undefined };
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0" style={{ paddingBottom: 18 }}>
         <div className="flex items-center gap-3">
@@ -245,9 +245,9 @@ function DailyTyping({
       </div>
 
       {/* ── Input row (daily: no restart button) ── */}
-      <div className="dt-type-inputrow">
-        <div className="dt-type-input">
-          <span className="dt-mono" style={{ fontSize: 15, color: 'var(--dt-text)', whiteSpace: 'pre' }}>{frag}</span>
+      <div className="dt-type-inputrow" style={{ justifyContent: 'flex-start', padding: '22px 0 4px', gap: 12 }}>
+        <div className="dt-type-input" style={{ width: 360 }}>
+          <span className="dt-mono" style={{ fontSize: 16, color: 'var(--dt-text)', whiteSpace: 'pre' }}>{frag}</span>
           <span className="dt-type-caret" />
         </div>
       </div>
@@ -472,6 +472,22 @@ const Daily = () => {
   const icon = LANG_ICON[langKey];
   const diffColor = DIFF_COLOR[challenge.snippet.difficulty] || 'var(--dt-primary)';
 
+  if (phase === 'typing') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '40px 72px' }}>
+        <DailyTyping
+          ch={challenge}
+          progress={progress}
+          resetKey={resetKey}
+          caret={caret}
+          density={density}
+          onProgress={setProgress}
+          onFinish={onFinish}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="dt-page">
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -521,17 +537,7 @@ const Daily = () => {
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
-      {phase === 'typing' ? (
-        <DailyTyping
-          ch={challenge}
-          progress={progress}
-          resetKey={resetKey}
-          caret={caret}
-          density={density}
-          onProgress={setProgress}
-          onFinish={onFinish}
-        />
-      ) : phase === 'result' && result ? (
+      {phase === 'result' && result ? (
         <DailyResultCard
           ch={challenge}
           result={result}

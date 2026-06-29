@@ -128,7 +128,7 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
   const [typed, setTyped] = useState('');
 
   const dispLang = realLang || lang;
-  const fontSize = density === 'compact' ? 14 : 16;
+  const fontSize = density === 'compact' ? 16 : 19;
   const lh = Math.round(fontSize * 1.95);
   const lines = useMemo(() => snippet.split('\n'), [snippet]);
   const totalLines = lines.length;
@@ -147,7 +147,7 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
   const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360, src: profileUrl ?? undefined };
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0" style={{ paddingBottom: 18 }}>
         <div className="flex items-center gap-3">
@@ -240,9 +240,9 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
       </div>
 
       {/* ── Input row ── */}
-      <div className="dt-type-inputrow">
-        <div className="dt-type-input">
-          <span className="dt-mono" style={{ fontSize: 15, color: 'var(--dt-text)', whiteSpace: 'pre' }}>{frag}</span>
+      <div className="dt-type-inputrow" style={{ justifyContent: 'flex-start', padding: '22px 0 4px', gap: 12 }}>
+        <div className="dt-type-input" style={{ width: 360 }}>
+          <span className="dt-mono" style={{ fontSize: 16, color: 'var(--dt-text)', whiteSpace: 'pre' }}>{frag}</span>
           <span className="dt-type-caret" />
         </div>
         <button className="dt-type-iconbtn primary" title={t('다시')} onClick={(e) => { e.stopPropagation(); onReset(); }}>
@@ -872,12 +872,9 @@ const Solo = () => {
     );
   }
 
-  return (
-    <div className="dt-page-narrow">
-      {phase === 'setup' && (
-        <SoloSetup lang={lang} setLang={setLang} onStart={start} />
-      )}
-      {phase === 'typing' && track && (
+  if (phase === 'typing' && track) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '40px 72px' }}>
         <SoloTyping
           snippet={snippet} lang={lang} diff={diff} progress={progress} setProgress={setProgress}
           onFinish={onFinish} resetKey={resetKey}
@@ -885,6 +882,14 @@ const Solo = () => {
           onChangeSettings={() => { setApiSnippetId(undefined); setPhase('setup'); }}
           realLang={realLang}
         />
+      </div>
+    );
+  }
+
+  return (
+    <div className="dt-page-narrow">
+      {phase === 'setup' && (
+        <SoloSetup lang={lang} setLang={setLang} onStart={start} />
       )}
       {phase === 'result' && result && (
         <SoloResult

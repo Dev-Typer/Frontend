@@ -38,9 +38,9 @@ const UserHover = ({ handle, profileUrl: profileUrlProp, bannerUrl: bannerUrlPro
   const profileUrl = hoverData?.profileUrl ?? profileUrlProp;
   const bannerUrl  = hoverData?.bannerUrl  ?? bannerUrlProp;
   const stats = hoverData
-    ? { totalCore: hoverData.totalCore, avgWpm: hoverData.avgWpm, currentStreak: hoverData.currentStreak, rank: hoverData.globalRank }
+    ? { totalCore: hoverData.totalCore, currentStreak: hoverData.currentStreak, rank: hoverData.globalRank }
     : statsProp;
-  const hasStats = stats && (stats.totalCore !== undefined || stats.avgWpm !== undefined || stats.currentStreak !== undefined);
+  const hasStats = stats && (stats.totalCore !== undefined || stats.currentStreak !== undefined);
 
   const fetchHover = useCallback(() => {
     if (fetchedRef.current === handle) return;
@@ -131,12 +131,6 @@ const UserHover = ({ handle, profileUrl: profileUrlProp, bannerUrl: bannerUrlPro
                 <span className="dt-mono" style={{ fontSize: 14, color: 'var(--dt-primary)', fontWeight: 700 }}>{formatCore(stats.totalCore)}</span>
               </div>
             )}
-            {stats?.avgWpm !== undefined && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--dt-text-3)' }}>WPM</span>
-                <span className="dt-mono" style={{ fontSize: 14, color: 'var(--dt-text)', fontWeight: 600 }}>{stats.avgWpm}</span>
-              </div>
-            )}
             {stats?.currentStreak !== undefined && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--dt-text-3)' }}>STREAK</span>
@@ -151,7 +145,8 @@ const UserHover = ({ handle, profileUrl: profileUrlProp, bannerUrl: bannerUrlPro
 
   return (
     <span
-      style={{ display: 'inline-flex' }}
+      style={{ display: 'inline-flex', cursor: 'pointer' }}
+      onClick={() => navigate(isSelf ? '/profile' : `/profile/${handle}`)}
       onMouseEnter={onTriggerEnter}
       onMouseMove={onTriggerMove}
       onMouseLeave={onTriggerLeave}

@@ -127,7 +127,6 @@ export interface UserHoverResponse {
   profileUrl:    string | null;
   bannerUrl:     string | null;
   totalCore:     number;
-  avgWpm:        number;
   currentStreak: number;
   globalRank:    number;
 }

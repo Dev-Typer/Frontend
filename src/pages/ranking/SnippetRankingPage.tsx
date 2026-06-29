@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSnippetRanking, type RankingItem } from '@/apis/snippetResultApi';
 import Avatar from '@/components/Avatar';
+import UserHover from '@/components/UserHover';
 import ReplayViewer from './ReplayViewer';
 
 const PAGE_SIZE = 20;
@@ -57,10 +58,12 @@ const SnippetRankingPage = () => {
                   #{item.rank}
                 </td>
                 <td style={{ padding: '12px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Avatar handle={item.username} hue={(item.username.charCodeAt(0) * 7) % 360} size={24} src={item.profileUrl ?? undefined} />
-                    <span className="dt-mono" style={{ fontSize: 13 }}>{item.username}</span>
-                  </div>
+                  <UserHover handle={item.username} stats={{ rank: item.rank }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                      <Avatar handle={item.username} hue={(item.username.charCodeAt(0) * 7) % 360} size={24} src={item.profileUrl ?? undefined} />
+                      <span className="dt-mono" style={{ fontSize: 13 }}>{item.username}</span>
+                    </div>
+                  </UserHover>
                 </td>
                 <td style={{ padding: '12px 16px', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-primary)', fontWeight: 700 }}>{Math.round(item.core)}</td>
                 <td style={{ padding: '12px 16px', fontFamily: 'var(--dt-font-mono)', color: 'var(--dt-text)' }}>{item.wpm.toFixed(1)}</td>

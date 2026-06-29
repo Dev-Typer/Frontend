@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import Avatar from './Avatar';
 import { formatCore } from '@/utils/formatCore';
 import { useUserStore } from '@/stores/userStore';
+import { getUserHoverCard, type UserHoverResponse } from '@/apis/userApi';
 
 interface Props {
   handle: string;
@@ -21,19 +22,41 @@ interface Props {
 function userHue(h: string) { return (h.charCodeAt(0) * 7) % 360; }
 
 const CARD_W = 240;
-const CARD_H = 165; // banner(56) + body padding + avatar row + stats
+const CARD_H = 165;
 const GAP    = 8;
 
-const UserHover = ({ handle, profileUrl, bannerUrl, children, stats }: Props) => {
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const ref             = useRef<HTMLSpanElement>(null);
-  const navigate        = useNavigate();
-  const myUsername      = useUserStore((s) => s.username);
-  const isSelf          = !!myUsername && myUsername === handle;
-  const hue             = userHue(handle);
-  const hasStats        = stats && (stats.totalCore !== undefined || stats.avgWpm !== undefined || stats.currentStreak !== undefined);
+const UserHover = ({ handle, profileUrl: profileUrlProp, bannerUrl: bannerUrlProp, children, stats: statsProp }: Props) => {
+  const [rect,     setRect]     = useState<DOMRect | null>(null);
+  const [hoverData, setHoverData] = useState<UserHoverResponse | null>(null);
+  const ref                     = useRef<HTMLSpanElement>(null);
+  const fetchedRef              = useRef<string | null>(null);
+  const navigate                = useNavigate();
+  const myUsername              = useUserStore((s) => s.username);
+  const isSelf                  = !!myUsername && myUsername === handle;
+  const hue                     = userHue(handle);
 
-  const open  = () => ref.current && setRect(ref.current.getBoundingClientRect());
+  // API 데이터 우선, 없으면 prop fallback
+  const profileUrl = hoverData?.profileUrl ?? profileUrlProp;
+  const bannerUrl  = hoverData?.bannerUrl  ?? bannerUrlProp;
+  const stats = hoverData
+    ? { totalCore: hoverData.totalCore, avgWpm: hoverData.avgWpm, currentStreak: hoverData.currentStreak, rank: hoverData.globalRank }
+    : statsProp;
+
+  const hasStats = stats && (stats.totalCore !== undefined || stats.avgWpm !== undefined || stats.currentStreak !== undefined);
+
+  const fetchHover = useCallback(() => {
+    if (fetchedRef.current === handle) return;
+    fetchedRef.current = handle;
+    getUserHoverCard(handle)
+      .then(setHoverData)
+      .catch(() => { fetchedRef.current = null; });
+  }, [handle]);
+
+  const open  = () => {
+    if (!ref.current) return;
+    setRect(ref.current.getBoundingClientRect());
+    fetchHover();
+  };
   const close = () => setRect(null);
 
   useEffect(() => {
@@ -44,7 +67,6 @@ const UserHover = ({ handle, profileUrl, bannerUrl, children, stats }: Props) =>
   }, [rect]);
 
   const card = rect && (() => {
-    // 항상 트리거 위에 표시, 공간 부족 시 아래로 fallback
     const showAbove = rect.top >= CARD_H + GAP;
     let left = rect.left;
     if (left + CARD_W > window.innerWidth - 8) left = window.innerWidth - CARD_W - 8;
@@ -77,7 +99,7 @@ const UserHover = ({ handle, profileUrl, bannerUrl, children, stats }: Props) =>
           animation: 'dt-rise 140ms ease-out',
         }}>
 
-        {/* ── Banner ── */}
+        {/* Banner */}
         <div style={{ height: 56, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
           {bannerUrl
             ? <img src={bannerUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -86,9 +108,8 @@ const UserHover = ({ handle, profileUrl, bannerUrl, children, stats }: Props) =>
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.25) 100%)' }} />
         </div>
 
-        {/* ── Body ── */}
+        {/* Body */}
         <div style={{ padding: '10px 14px 14px' }}>
-          {/* 프로필 행 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Avatar handle={handle} hue={hue} size={36} src={profileUrl ?? undefined} />
             <div style={{ minWidth: 0 }}>
@@ -100,7 +121,6 @@ const UserHover = ({ handle, profileUrl, bannerUrl, children, stats }: Props) =>
             </div>
           </div>
 
-          {/* 스탯 */}
           {hasStats && (
             <div style={{ display: 'flex', gap: 14, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--dt-border)' }}>
               {stats?.totalCore !== undefined && (

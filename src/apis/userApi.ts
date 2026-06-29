@@ -119,3 +119,20 @@ export const getPublicUserCoreHistory = async (username: string): Promise<UserCo
   const { data } = await api.get<ApiResponse<UserCoreHistoryResponse>>(`/api/user/${username}/core/history`);
   return data.data!;
 };
+
+// ─── 호버 카드 ────────────────────────────────────────────────────────────────
+
+export interface UserHoverResponse {
+  username:      string;
+  profileUrl:    string | null;
+  bannerUrl:     string | null;
+  totalCore:     number;
+  avgWpm:        number;
+  currentStreak: number;
+  globalRank:    number;
+}
+
+export const getUserHoverCard = async (username: string): Promise<UserHoverResponse> => {
+  const { data } = await api.get<ApiResponse<UserHoverResponse>>(`/api/user/${username}/hover`);
+  return data.data!;
+};

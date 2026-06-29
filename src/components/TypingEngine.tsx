@@ -5,6 +5,7 @@ interface Props {
   code: string;
   onProgress?: (p: TypingProgress) => void;
   onFinish?: (r: TypingResult) => void;
+  onTypedChange?: (typed: string) => void;
   active?: boolean;
   caretStyle?: 'line' | 'under' | 'block';
   fontSize?: number;
@@ -21,6 +22,7 @@ const TypingEngine = ({
   code,
   onProgress,
   onFinish,
+  onTypedChange,
   active = true,
   caretStyle = 'line',
   fontSize = 18,
@@ -184,14 +186,24 @@ const TypingEngine = ({
     }
   }, [typed, code, startedAt]);
 
+  useEffect(() => { onTypedChange?.(typed); }, [typed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const cells = useMemo(() => {
+    const cur = typed.length;
+    let w0 = -1, w1 = -1;
+    if (cur < code.length && !/\s/.test(code[cur])) {
+      w0 = cur; w1 = cur;
+      while (w0 > 0 && !/\s/.test(code[w0 - 1])) w0--;
+      while (w1 < code.length && !/\s/.test(code[w1])) w1++;
+    }
     const out = [];
     for (let i = 0; i < code.length; i++) {
       const ch = code[i];
       let state = 'pending';
       if (i < typed.length) state = typed[i] === ch ? 'correct' : 'error';
       const isCursor = i === typed.length;
-      out.push({ i, ch, state, isCursor });
+      const inWord = w0 >= 0 && i >= w0 && i < w1;
+      out.push({ i, ch, state, isCursor, inWord });
     }
     return out;
   }, [code, typed]);
@@ -229,12 +241,12 @@ const TypingEngine = ({
         </div>
       )}
       <div
-        className={`dt-code-area leading-[1.85] ${embedded ? `!bg-transparent !border-0 !rounded-none !overflow-x-visible${noPadding ? ' !p-0' : ' px-7 py-3'}` : ''}`}
-        style={{ fontSize }}
+        className={`dt-code-area ${embedded ? `!bg-transparent !border-0 !rounded-none !overflow-x-visible${noPadding ? ' !p-0' : ' px-7 py-3'}` : ''}`}
+        style={{ fontSize, lineHeight: `${Math.round(fontSize * 1.95)}px` }}
       >
-        {cells.map(({ i, ch, state, isCursor }) => {
+        {cells.map(({ i, ch, state, isCursor, inWord }) => {
           const isNewline = ch === '\n';
-          const cls = ['ch', state !== 'pending' ? state : '', isCursor && active ? 'cursor' : '', caretStyle === 'block' ? 'caret-block' : '', caretStyle === 'under' ? 'caret-under' : ''].filter(Boolean).join(' ');
+          const cls = ['ch', state !== 'pending' ? state : '', isCursor && active ? 'cursor' : '', inWord ? 'cur-word' : '', caretStyle === 'block' ? 'caret-block' : '', caretStyle === 'under' ? 'caret-under' : ''].filter(Boolean).join(' ');
           if (isNewline) {
             return (
               <span key={i}>

@@ -2,6 +2,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import TypoHeatmap from '@/components/TypoHeatmap';
 import TypingEngine from '@/components/TypingEngine';
+import RaceProgress from '@/components/RaceProgress';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
@@ -108,7 +109,7 @@ interface SoloTypingProps {
   onReset: () => void; onChangeSettings: () => void; realLang: string;
 }
 
-// ─── Sub-widgets ─────────────────────────────────────────────────────────────
+const VISIBLE_LINES = 8;
 
 const InlineStat = ({ label, value, unit }: { label: string; value: string | number; unit?: string }) => (
   <div className="flex flex-col items-end leading-none">
@@ -119,99 +120,36 @@ const InlineStat = ({ label, value, unit }: { label: string; value: string | num
   </div>
 );
 
-const CheckeredFlag = () => (
-  <svg width={14} height={14} viewBox="0 0 14 14" style={{ display: 'block' }}>
-    {[0,1,2,3].map(r => [0,1,2,3].map(c =>
-      (r + c) % 2 === 0
-        ? <rect key={`${r}-${c}`} x={c*3.5} y={r*3.5} width={3.5} height={3.5} fill="currentColor" opacity="0.55" />
-        : null
-    ))}
-  </svg>
-);
-
-const WpmWidget = ({ wpm }: { wpm: number }) => (
-  <div style={{
-    position: 'fixed', right: 0, top: '32%', zIndex: 30,
-    background: 'rgba(7,11,20,0.88)',
-    backdropFilter: 'blur(16px) saturate(1.3)',
-    border: '1px solid rgba(120,150,255,0.18)',
-    borderRight: 'none',
-    borderRadius: '10px 0 0 10px',
-    padding: '8px 16px 8px 13px',
-    display: 'flex', alignItems: 'center', gap: 8,
-    fontFamily: 'var(--dt-font-mono)',
-    userSelect: 'none',
-  }}>
-    <CheckeredFlag />
-    <span style={{ fontSize: 16, fontWeight: 700, color: wpm > 0 ? 'var(--dt-primary)' : 'var(--dt-text-3)', lineHeight: 1, minWidth: 28, textAlign: 'right' }}>
-      {wpm > 0 ? wpm : '—'}
-    </span>
-    <span style={{ fontSize: 10, color: 'var(--dt-text-3)' }}>wpm</span>
-  </div>
-);
-
-const TypingProgressBar = ({ pct }: { pct: number }) => (
-  <div className="shrink-0" style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.07)', marginBottom: 14, borderRadius: 999 }}>
-    <div style={{
-      position: 'absolute', left: 0, top: 0, bottom: 0,
-      width: `${pct}%`, borderRadius: 999,
-      background: 'linear-gradient(90deg, var(--dt-primary), color-mix(in oklab, var(--dt-primary) 75%, #57E5FF))',
-      transition: 'width 160ms ease-linear',
-    }} />
-    <div style={{
-      position: 'absolute', top: '50%', left: `${Math.min(pct, 99)}%`,
-      transform: 'translate(-50%, -50%)',
-      width: 20, height: 20, borderRadius: '50%',
-      background: 'var(--dt-bg)',
-      border: '3px solid var(--dt-primary)',
-      boxShadow: '0 0 12px color-mix(in oklab, var(--dt-primary) 70%, transparent)',
-      transition: 'left 160ms ease-linear',
-      zIndex: 1,
-    }} />
-  </div>
-);
-
-const CyanOrb = () => (
-  <div style={{
-    width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
-    background: 'radial-gradient(circle at 36% 34%, oklch(86% 0.23 193) 0%, oklch(63% 0.21 208) 40%, oklch(40% 0.15 224) 72%, oklch(22% 0.09 240) 100%)',
-    boxShadow: '0 0 32px oklch(70% 0.26 193 / 0.48), 0 8px 20px rgba(0,0,0,0.5)',
-  }} />
-);
-
-const MAX_VISIBLE_LINES = 10;
-
 const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, resetKey, onReset, onChangeSettings, realLang }: SoloTypingProps) => {
   const t = useT();
   const caret = useAppStore((s) => s.caret);
   const density = useAppStore((s) => s.density);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { username } = useUserStore();
+  const [typed, setTyped] = useState('');
 
   const dispLang = realLang || lang;
-  const pct = (progress.index / Math.max(1, progress.total)) * 100;
   const fontSize = density === 'compact' ? 14 : 16;
+  const lh = Math.round(fontSize * 1.95);
   const lines = useMemo(() => snippet.split('\n'), [snippet]);
   const totalLines = lines.length;
   const wordCount = useMemo(() => snippet.trim().split(/\s+/).filter(Boolean).length, [snippet]);
 
-  const currentLine = useMemo(
-    () => snippet.substring(0, progress.index).split('\n').length - 1,
-    [snippet, progress.index],
-  );
+  const frag = useMemo(() => typed.match(/(\S*)$/)?.[0] ?? '', [typed]);
+  const activeLine = useMemo(() => snippet.slice(0, typed.length).split('\n').length - 1, [snippet, typed]);
+  const pct = snippet.length ? (typed.length / snippet.length) * 100 : 0;
 
-  const lineHeightPx = fontSize * 1.85;
-  const visibleCount = Math.min(MAX_VISIBLE_LINES, totalLines);
-  const firstVisible = Math.max(0, currentLine - MAX_VISIBLE_LINES + 1);
-  const windowHeight = visibleCount * lineHeightPx;
-  const translateY = -(firstVisible * lineHeightPx);
+  const maxOffset = Math.max(0, totalLines - VISIBLE_LINES);
+  const offset = Math.min(maxOffset, Math.max(0, activeLine - 3));
+  const viewportH = VISIBLE_LINES * lh;
+  const translateY = -(offset * lh);
+
+  const gutterW = String(totalLines).length;
+  const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360 };
 
   return (
-    <div style={{ height: 'calc(100vh - 90px)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      {/* WPM floating widget */}
-      <WpmWidget wpm={progress.wpm} />
-
+    <div style={{ position: 'relative' }}>
       {/* ── Header ── */}
-      <div className="flex items-center justify-between shrink-0" style={{ paddingBottom: 8 }}>
+      <div className="flex items-center justify-between shrink-0" style={{ paddingBottom: 18 }}>
         <div className="flex items-center gap-3">
           {LANG_ICON[dispLang] && (
             <img src={LANG_ICON[dispLang]} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
@@ -225,40 +163,48 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
           <InlineStat label={t('Accuracy')} value={progress.acc.toFixed(0)} unit="%" />
           <InlineStat label={t('Time')} value={(progress.elapsed / 1000).toFixed(0)} unit="s" />
           <div style={{ width: 1, height: 28, background: 'var(--dt-border)' }} />
-          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onReset}>
-            <IconRefresh size={13} /> {t('다시')}
-          </button>
           <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onChangeSettings}>
             <IconSettings size={13} /> {t('설정')}
           </button>
         </div>
       </div>
 
-      {/* ── Progress bar ── */}
-      <TypingProgressBar pct={pct} />
+      {/* ── Race progress bar ── */}
+      <div style={{ marginBottom: 18 }}>
+        <RaceProgress pct={pct} me={me} />
+      </div>
 
-      {/* ── Code area: sliding window (max 10 lines, no scroll) ── */}
-      <div style={{ flex: 1, minHeight: 0, paddingBottom: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr', height: windowHeight, overflow: 'hidden' }}>
-          {/* Line numbers */}
-          <div style={{ overflow: 'hidden', boxShadow: 'inset -1px 0 0 rgba(120,150,255,0.1)' }}>
-            <div style={{ transform: `translateY(${translateY}px)`, transition: 'transform 200ms ease' }}>
+      {/* ── WPM pill ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+        <div className="dt-race-wpm">
+          <span className="dt-race-checker" aria-hidden="true" />
+          <span className="dt-mono dt-tabular" style={{ fontSize: 15 }}>
+            {progress.wpm > 0 ? progress.wpm : '---'}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--dt-text-3)' }}>wpm</span>
+        </div>
+      </div>
+
+      {/* ── Scroll viewport ── */}
+      <div className="dt-snip-viewport" style={{ height: viewportH, fontSize, fontFamily: 'var(--dt-font-mono)' }}>
+        <div className="dt-snip-scroll" style={{ transform: `translateY(${translateY}px)` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `${gutterW + 1.5}ch 1fr` }}>
+            {/* Line numbers */}
+            <div>
               {lines.map((_, i) => (
                 <div key={i} style={{
-                  fontFamily: 'var(--dt-font-mono)', fontSize,
-                  height: lineHeightPx, lineHeight: `${lineHeightPx}px`,
+                  height: lh, lineHeight: `${lh}px`,
                   textAlign: 'right', paddingRight: 18,
-                  color: i === currentLine ? 'rgba(120,150,255,0.5)' : '#3A4660',
-                  userSelect: 'none',
+                  fontSize, fontFamily: 'var(--dt-font-mono)',
+                  color: 'var(--dt-text-3)', opacity: 0.55, userSelect: 'none',
+                  boxShadow: 'inset -1px 0 0 var(--dt-border)',
                 }}>
                   {i + 1}
                 </div>
               ))}
             </div>
-          </div>
-          {/* Typing engine */}
-          <div style={{ paddingLeft: 20, minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ transform: `translateY(${translateY}px)`, transition: 'transform 200ms ease' }}>
+            {/* TypingEngine */}
+            <div style={{ paddingLeft: 18, overflow: 'hidden' }}>
               <TypingEngine
                 code={snippet}
                 resetKey={resetKey}
@@ -266,6 +212,7 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
                 fontSize={fontSize}
                 onProgress={setProgress}
                 onFinish={onFinish}
+                onTypedChange={setTyped}
                 embedded
                 noPadding
                 noStatusBar
@@ -274,55 +221,33 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
             </div>
           </div>
         </div>
+        {offset > 0 && <div className="dt-snip-fade dt-snip-fade-top" />}
+        {offset < maxOffset && <div className="dt-snip-fade dt-snip-fade-bot" />}
       </div>
 
-      {/* ── Status bar ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '4px 4px 10px',
-        fontFamily: 'var(--dt-font-mono)', fontSize: 11.5, color: 'var(--dt-text-3)',
-        borderTop: '0.5px solid rgba(120,150,255,0.08)',
-        flexShrink: 0, userSelect: 'none',
-      }}>
-        <span>{totalLines} {t('lines')} / {wordCount} {t('words')} / {snippet.length} {t('chars')}</span>
-        <span>{currentLine + 1} / {totalLines}</span>
+      {/* ── Meta line ── */}
+      <div className="dt-mono" style={{ padding: '12px 4px 0', fontSize: 12.5, color: 'var(--dt-text-3)', display: 'flex', gap: 10 }}>
+        <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
+        <span>/</span>
+        <span>{wordCount} words</span>
+        <span>/</span>
+        <span>{snippet.length} chars</span>
+        {totalLines > VISIBLE_LINES && (
+          <span style={{ marginLeft: 'auto', color: 'var(--dt-text-2)' }}>
+            {Math.min(activeLine + 1, totalLines)} / {totalLines}
+          </span>
+        )}
       </div>
 
-      {/* ── Orb + Input + Restart ── */}
-      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, paddingBottom: 14 }}>
-        <CyanOrb />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
-          <input
-            ref={inputRef}
-            type="text"
-            readOnly
-            placeholder=""
-            style={{
-              flex: 1, height: 44,
-              background: 'rgba(255,255,255,0.025)',
-              border: '1px solid rgba(120,150,255,0.13)',
-              borderRadius: 10,
-              outline: 'none',
-              cursor: 'default',
-              caretColor: 'transparent',
-            }}
-          />
-          <button
-            onClick={onReset}
-            style={{
-              width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-              background: 'rgba(160,30,30,0.85)',
-              border: '1px solid rgba(220,60,60,0.28)',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', transition: 'background 140ms',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,40,40,0.9)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(160,30,30,0.85)')}
-          >
-            <IconRefresh size={18} />
-          </button>
+      {/* ── Input row ── */}
+      <div className="dt-type-inputrow">
+        <div className="dt-type-input">
+          <span className="dt-mono" style={{ fontSize: 15, color: 'var(--dt-text)', whiteSpace: 'pre' }}>{frag}</span>
+          <span className="dt-type-caret" />
         </div>
+        <button className="dt-type-iconbtn primary" title={t('다시')} onClick={(e) => { e.stopPropagation(); onReset(); }}>
+          <IconRefresh size={18} />
+        </button>
       </div>
     </div>
   );

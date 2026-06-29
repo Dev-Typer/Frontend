@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/userStore';
 import TypingEngine from '@/components/TypingEngine';
 import RaceProgress from '@/components/RaceProgress';
 import Avatar from '@/components/Avatar';
+import UserHover from '@/components/UserHover';
 import StatCard from '@/components/StatCard';
 import TypoHeatmap from '@/components/TypoHeatmap';
 import { computeCore, CoreFactor, WpmGraph, MistypedLetters, WordChips } from '@/components/result';
@@ -294,12 +295,14 @@ function DailyLeaderboardFull({ items, total, myUserId }: { items: LeaderboardIt
               style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text-2)', fontWeight: r.rank <= 3 ? 700 : 500 }}>
               {r.rank}
             </span>
-            <div className="flex items-center gap-2 min-w-0">
-              <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
-              <span className="dt-mono text-[13px] truncate">
-                {r.username}{r.userId === myUserId && <span className="text-dt-primary"> (you)</span>}
-              </span>
-            </div>
+            <UserHover handle={r.username} profileUrl={r.profileUrl} stats={{ rank: r.rank, totalCore: Math.round(r.core), avgWpm: r.wpm }}>
+              <div className="flex items-center gap-2 min-w-0 cursor-pointer">
+                <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
+                <span className="dt-mono text-[13px] truncate">
+                  {r.username}{r.userId === myUserId && <span className="text-dt-primary"> (you)</span>}
+                </span>
+              </div>
+            </UserHover>
             <span className="dt-mono tabular-nums text-[14px] font-bold text-right text-dt-primary">{Math.round(r.core)}</span>
             <span className="dt-mono tabular-nums text-[13px] text-right text-dt-text-2">{r.wpm}</span>
             <span className="dt-mono tabular-nums text-[13px] text-right text-dt-text-2">{r.nWpm.toFixed(1)}</span>
@@ -537,12 +540,14 @@ function DailyLeaderboard({ items, total, myUserId }: { items: LeaderboardItem[]
               style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text-2)', fontWeight: r.rank <= 3 ? 700 : 500 }}>
               {r.rank}
             </span>
-            <div className="flex items-center gap-2 min-w-0">
-              <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
-              <span className="dt-mono text-[13px] truncate">
-                {r.username}{r.userId === myUserId && ' (you)'}
-              </span>
-            </div>
+            <UserHover handle={r.username} profileUrl={r.profileUrl} stats={{ rank: r.rank, totalCore: Math.round(r.core) }}>
+              <div className="flex items-center gap-2 min-w-0 cursor-pointer">
+                <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
+                <span className="dt-mono text-[13px] truncate">
+                  {r.username}{r.userId === myUserId && ' (you)'}
+                </span>
+              </div>
+            </UserHover>
             <span className="dt-mono tabular-nums text-[14px] font-bold text-right text-dt-primary flex items-center justify-end gap-[3px]">
               {Math.round(r.core)}
               <img src={coreLogo} style={{ width: 13, height: 13, objectFit: 'contain', opacity: 0.75 }} />

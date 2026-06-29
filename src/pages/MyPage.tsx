@@ -340,7 +340,7 @@ function streakStatus(n: number): { label: string; color: string } {
   return       { label: '불꽃 스트릭 🏆', color: '#FF4D00' };
 }
 
-const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
+export const StreakCard = ({ data, loading, onYearChange }: StreakCardProps) => {
   const t = useT();
   const CUR_YEAR = new Date().getUTCFullYear();
   const [view, setView] = useState<StreakView>('recent');
@@ -567,7 +567,7 @@ const CORE_OVERHEAD = 58; // label + padding (dt-label 24 + py-4/pb-18 34)
 const CORE_VISIBLE_ROWS = Math.floor((CONTENT_MAX_H - CORE_OVERHEAD) / CORE_ROW_H); // ≈ 5
 const CORE_CAP = CORE_VISIBLE_ROWS * CORE_ROW_ITEMS; // ≈ 50
 
-const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
+export const CoreDetailCard = ({ data, loading }: CoreDetailCardProps) => {
   const t = useT();
   const [expanded, setExpanded] = useState(false);
   const list = data?.snippetList ?? [];
@@ -647,7 +647,7 @@ interface LangCardProps {
 
 const LANG_CAP = 5; // 기본 표시 언어 수
 
-const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
+export const LanguageStatsCard = ({ data, loading }: LangCardProps) => {
   const t = useT();
   const [expanded, setExpanded] = useState(false);
   const langs = (data?.byLanguage ?? []).filter(l => l.totalCore > 0);
@@ -729,7 +729,7 @@ interface CoreGrowthCardProps {
   loading: boolean;
 }
 
-const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
+export const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
   const points = data?.points ?? [];
@@ -893,7 +893,7 @@ const CoreGrowthCard = ({ data, loading }: CoreGrowthCardProps) => {
 // ─── LanguageRadarCard ────────────────────────────────────────────────────────
 const ALL_RADAR_LANGS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'C++', 'C#', 'C', 'Rust', 'Kotlin'] as const;
 
-const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
+export const LanguageRadarCard = ({ data, loading }: LangCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
   const [metric, setMetric] = useState<'core' | 'count'>('core');
@@ -1064,7 +1064,7 @@ interface WpmTrendCardProps {
   loading: boolean;
 }
 
-const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
+export const WpmTrendCard = ({ data, loading }: WpmTrendCardProps) => {
   const t = useT();
   const [hi, setHi] = useState<number | null>(null);
   const results = data?.results ?? [];

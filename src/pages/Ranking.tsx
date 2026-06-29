@@ -44,12 +44,13 @@ const RankBadge = ({ rank }: { rank: number }) => (
 interface PlayerCellProps {
   username: string;
   profileUrl: string | null;
+  bannerUrl?: string | null;
   me?: boolean;
   stats?: { totalCore?: number; avgWpm?: number; currentStreak?: number; rank?: number };
 }
 
-const PlayerCell = ({ username, profileUrl, me, stats }: PlayerCellProps) => (
-  <UserHover handle={username} stats={stats}>
+const PlayerCell = ({ username, profileUrl, bannerUrl, me, stats }: PlayerCellProps) => (
+  <UserHover handle={username} bannerUrl={bannerUrl} stats={stats}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <Avatar handle={username} hue={(username.charCodeAt(0) * 7) % 360} size={28} src={profileUrl ?? undefined} />
       <span className="dt-mono" style={{ fontSize: 14, color: me ? 'var(--dt-primary)' : 'var(--dt-text)' }}>

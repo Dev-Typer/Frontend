@@ -85,3 +85,37 @@ export const uploadBannerImage = async (file: File): Promise<{ bannerUrl: string
 export const deleteBannerImage = async (): Promise<void> => {
   await api.delete('/api/user/me/banner');
 };
+
+// ─── 공개 프로필 (username 기준) ──────────────────────────────────────────────
+
+export const getPublicUserProfile = async (username: string): Promise<UserMeResponse> => {
+  const { data } = await api.get<ApiResponse<UserMeResponse>>(`/api/user/${username}`);
+  return data.data!;
+};
+
+export const getPublicUserStreak = async (username: string, year?: number, type?: string): Promise<UserStreakResponse> => {
+  const { data } = await api.get<ApiResponse<UserStreakResponse>>(`/api/user/${username}/streak`, {
+    params: { year, type },
+  });
+  return data.data!;
+};
+
+export const getPublicUserWpmHistory = async (username: string): Promise<UserWpmHistoryResponse> => {
+  const { data } = await api.get<ApiResponse<UserWpmHistoryResponse>>(`/api/user/${username}/wpm/history`);
+  return data.data!;
+};
+
+export const getPublicUserCore = async (username: string): Promise<UserCoreResponse> => {
+  const { data } = await api.get<ApiResponse<UserCoreResponse>>(`/api/user/${username}/core`);
+  return data.data!;
+};
+
+export const getPublicUserCoreByLanguage = async (username: string): Promise<UserCoreByLangResponse> => {
+  const { data } = await api.get<ApiResponse<UserCoreByLangResponse>>(`/api/user/${username}/core/by-language`);
+  return data.data!;
+};
+
+export const getPublicUserCoreHistory = async (username: string): Promise<UserCoreHistoryResponse> => {
+  const { data } = await api.get<ApiResponse<UserCoreHistoryResponse>>(`/api/user/${username}/core/history`);
+  return data.data!;
+};

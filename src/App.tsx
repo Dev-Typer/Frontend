@@ -12,6 +12,7 @@ import Battle from '@/pages/Battle';
 import Daily from '@/pages/Daily';
 import Ranking from '@/pages/Ranking';
 import MyPage from '@/pages/MyPage';
+import ProfilePage from '@/pages/ProfilePage';
 import Login from '@/pages/Login';
 import Snippets from '@/pages/Snippets';
 import SnippetRankingPage from '@/pages/ranking/SnippetRankingPage';
@@ -98,6 +99,7 @@ const AppRoutes = () => {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/snippets" element={<Snippets />} />
       <Route path="/mypage" element={<AuthGuard><MyPage /></AuthGuard>} />
+      <Route path="/profile/:username" element={<ProfilePage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin/snippets" element={
         role === 'ADMIN' ? <AdminSnippets /> : <Navigate to="/" replace />

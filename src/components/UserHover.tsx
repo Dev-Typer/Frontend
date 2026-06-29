@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Avatar from './Avatar';
 import { formatCore } from '@/utils/formatCore';
 
 interface Props {
   handle: string;
+  bannerUrl?: string | null;
   tier?: string;
   children: React.ReactNode;
   stats?: {
@@ -18,8 +20,9 @@ function userHue(handle: string): number {
   return (String(handle).charCodeAt(0) * 7) % 360;
 }
 
-const UserHover = ({ handle, children, stats }: Props) => {
+const UserHover = ({ handle, bannerUrl, children, stats }: Props) => {
   const [show, setShow] = useState(false);
+  const navigate = useNavigate();
   const hue = userHue(handle);
   const hasStats = stats && (stats.totalCore !== undefined || stats.avgWpm !== undefined);
 
@@ -29,22 +32,26 @@ const UserHover = ({ handle, children, stats }: Props) => {
       onMouseLeave={() => setShow(false)}>
       {children}
       {show && (
-        <div style={{
-          position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, zIndex: 200,
-          width: 220, borderRadius: 14, overflow: 'hidden',
-          background: 'var(--dt-card)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px var(--dt-border), 0 20px 50px -16px rgba(0,0,0,0.7)',
-          fontFamily: 'var(--dt-font-sans)', textAlign: 'left',
-          animation: 'dt-rise 140ms ease-out',
-        }}>
-          <div style={{
-            height: 52, position: 'relative',
-            background: `linear-gradient(120deg, oklch(55% 0.18 ${hue}deg) 0%, oklch(42% 0.16 ${(hue + 40) % 360}deg) 100%)`,
+        <div
+          onClick={() => navigate(`/profile/${handle}`)}
+          style={{
+            position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, zIndex: 200,
+            width: 240, borderRadius: 14, overflow: 'hidden',
+            background: 'var(--dt-card)', cursor: 'pointer',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px var(--dt-border), 0 20px 50px -16px rgba(0,0,0,0.7)',
+            fontFamily: 'var(--dt-font-sans)', textAlign: 'left',
+            animation: 'dt-rise 140ms ease-out',
           }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% -10%, rgba(255,255,255,0.25), transparent 60%)' }}/>
+          {/* Banner */}
+          <div style={{ height: 64, position: 'relative', overflow: 'hidden' }}>
+            {bannerUrl
+              ? <img src={bannerUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+              : <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(120deg, oklch(55% 0.18 ${hue}deg) 0%, oklch(42% 0.16 ${(hue + 40) % 360}deg) 100%)` }} />
+            }
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% -10%, rgba(255,255,255,0.18), transparent 60%)' }} />
           </div>
           <div style={{ padding: '0 16px 16px', marginTop: -22 }}>
-            <Avatar handle={handle} hue={hue} size={44} ring="var(--dt-card)"/>
+            <Avatar handle={handle} hue={hue} size={44} ring="var(--dt-card)" />
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="dt-mono" style={{ fontSize: 14, fontWeight: 600, color: 'var(--dt-text)' }}>{handle}</span>
               {stats?.rank && <span className="dt-mono" style={{ fontSize: 12, color: 'var(--dt-text-3)' }}>#{stats.rank}</span>}
@@ -71,6 +78,7 @@ const UserHover = ({ handle, children, stats }: Props) => {
                 )}
               </div>
             )}
+            <div style={{ marginTop: 10, fontSize: 11, color: 'var(--dt-text-3)', opacity: 0.7 }}>프로필 보기 →</div>
           </div>
         </div>
       )}

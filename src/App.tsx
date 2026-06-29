@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { useUserStore } from '@/stores/userStore';
-import { getMe, logout, refreshToken } from '@/apis/authApi';
+import { getMe, logout, refreshToken, exchangeCode } from '@/apis/authApi';
 import { getUserMe } from '@/apis/userApi';
 import { LangContext } from '@/i18n';
 import ContemporaryShell from '@/pages/ContemporaryShell';
@@ -39,32 +39,49 @@ const AppRoutes = () => {
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const navigate = useNavigate();
-  const { isLoggedIn, setUser, setUserMe, clearUser, role } = useUserStore();
+  const { isLoggedIn, setUser, setUserMe, clearUser, role, setAccessToken, setInitializing } = useUserStore();
 
   useEffect(() => {
     const init = async () => {
-      let meData;
-      try {
-        meData = await getMe();
-      } catch {
-        // 액세스 토큰 만료 시 refresh 후 재시도
+      let accessToken: string | null = null;
+
+      const params = new URLSearchParams(window.location.search);
+      const oauthCode = params.get('code');
+
+      if (oauthCode) {
+        window.history.replaceState(null, '', window.location.pathname);
         try {
-          await refreshToken();
-          meData = await getMe();
+          const res = await exchangeCode(oauthCode);
+          accessToken = res.accessToken;
         } catch {
+          // code 교환 실패 (만료 30초 초과 or 이미 사용) → refresh fallback
+        }
+      }
+
+      if (!accessToken) {
+        try {
+          const res = await refreshToken();
+          accessToken = res.accessToken;
+        } catch {
+          setInitializing(false);
           return;
         }
       }
-      setUser(meData);
+
+      setAccessToken(accessToken);
+
       try {
-        const userMe = await getUserMe();
+        const [me, userMe] = await Promise.all([getMe(), getUserMe()]);
+        setUser(me);
         setUserMe(userMe);
       } catch (err) {
-        console.error('[App] getUserMe failed:', err);
+        console.error('[App] init failed:', err);
+      } finally {
+        setInitializing(false);
       }
     };
     init();
-  }, [setUser, setUserMe]);
+  }, []);
 
   const handleLogout = async () => {
     await logout().catch(() => {});

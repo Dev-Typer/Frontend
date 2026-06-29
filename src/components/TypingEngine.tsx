@@ -12,6 +12,8 @@ interface Props {
   showCounter?: boolean;
   resetKey?: number | string;
   embedded?: boolean;
+  noPadding?: boolean;
+  noStatusBar?: boolean;
 }
 
 const TypingEngine = ({
@@ -25,6 +27,8 @@ const TypingEngine = ({
   showCounter = false,
   resetKey,
   embedded = false,
+  noPadding = false,
+  noStatusBar = false,
 }: Props) => {
   const [typed, setTyped] = useState('');
   const [errors, setErrors] = useState(0);
@@ -223,7 +227,7 @@ const TypingEngine = ({
         </div>
       )}
       <div
-        className={`dt-code-area leading-[1.85] ${embedded ? '!bg-transparent !border-0 !rounded-none px-7 py-3 !overflow-x-visible' : ''}`}
+        className={`dt-code-area leading-[1.85] ${embedded ? `!bg-transparent !border-0 !rounded-none !overflow-x-visible${noPadding ? ' !p-0' : ' px-7 py-3'}` : ''}`}
         style={{ fontSize }}
       >
         {cells.map(({ i, ch, state, isCursor }) => {
@@ -245,7 +249,7 @@ const TypingEngine = ({
       </div>
 
       {/* 하단 상태바 — Ln/Col + 진행도 */}
-      {active && !finishedFlag && (
+      {active && !finishedFlag && !noStatusBar && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16,
           marginTop: 6, padding: '4px 4px 2px',

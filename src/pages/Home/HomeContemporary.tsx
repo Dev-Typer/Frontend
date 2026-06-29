@@ -151,7 +151,7 @@ const ArenaLeaderboard = ({ focus, navigate }: { focus: string; navigate: (r: st
               fontSize: 13, fontWeight: 600, textAlign: 'center',
               color: i < 3 ? accent : 'var(--dt-text-3)',
             }}>{i + 1}</span>
-            <UserHover handle={r.username}>
+            <UserHover handle={r.username} profileUrl={r.profileUrl}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
                 <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
                 <span className="dt-mono" style={{

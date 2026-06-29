@@ -295,7 +295,7 @@ function DailyLeaderboardFull({ items, total, myUserId }: { items: LeaderboardIt
               style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text-2)', fontWeight: r.rank <= 3 ? 700 : 500 }}>
               {r.rank}
             </span>
-            <UserHover handle={r.username} stats={{ rank: r.rank, totalCore: Math.round(r.core), avgWpm: r.wpm }}>
+            <UserHover handle={r.username} profileUrl={r.profileUrl} stats={{ rank: r.rank, totalCore: Math.round(r.core), avgWpm: r.wpm }}>
               <div className="flex items-center gap-2 min-w-0 cursor-pointer">
                 <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
                 <span className="dt-mono text-[13px] truncate">
@@ -540,7 +540,7 @@ function DailyLeaderboard({ items, total, myUserId }: { items: LeaderboardItem[]
               style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text-2)', fontWeight: r.rank <= 3 ? 700 : 500 }}>
               {r.rank}
             </span>
-            <UserHover handle={r.username} stats={{ rank: r.rank, totalCore: Math.round(r.core) }}>
+            <UserHover handle={r.username} profileUrl={r.profileUrl} stats={{ rank: r.rank, totalCore: Math.round(r.core) }}>
               <div className="flex items-center gap-2 min-w-0 cursor-pointer">
                 <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
                 <span className="dt-mono text-[13px] truncate">

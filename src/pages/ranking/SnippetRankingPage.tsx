@@ -58,7 +58,7 @@ const SnippetRankingPage = () => {
                   #{item.rank}
                 </td>
                 <td style={{ padding: '12px 16px' }}>
-                  <UserHover handle={item.username} stats={{ rank: item.rank }}>
+                  <UserHover handle={item.username} profileUrl={item.profileUrl} stats={{ rank: item.rank }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                       <Avatar handle={item.username} hue={(item.username.charCodeAt(0) * 7) % 360} size={24} src={item.profileUrl ?? undefined} />
                       <span className="dt-mono" style={{ fontSize: 13 }}>{item.username}</span>

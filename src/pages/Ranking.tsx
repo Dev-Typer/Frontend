@@ -50,7 +50,7 @@ interface PlayerCellProps {
 }
 
 const PlayerCell = ({ username, profileUrl, bannerUrl, me, stats }: PlayerCellProps) => (
-  <UserHover handle={username} bannerUrl={bannerUrl} stats={stats}>
+  <UserHover handle={username} profileUrl={profileUrl} bannerUrl={bannerUrl} stats={stats}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <Avatar handle={username} hue={(username.charCodeAt(0) * 7) % 360} size={28} src={profileUrl ?? undefined} />
       <span className="dt-mono" style={{ fontSize: 14, color: me ? 'var(--dt-primary)' : 'var(--dt-text)' }}>

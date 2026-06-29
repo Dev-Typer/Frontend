@@ -127,6 +127,7 @@ const App = () => {
       <BrowserRouter>
         <div className={`dt-design-${design} dt-theme-${theme} dt-skin-revised`} style={{ minHeight: '100vh' }}>
           <AppRoutes />
+          <div id="dt-portal-root" />
         </div>
       </BrowserRouter>
     </LangContext.Provider>

@@ -187,7 +187,7 @@ const ArenaLeaderboard = ({ focus, navigate }: { focus: string; navigate: (r: st
 interface ArenaBoxProps {
   navigate: (r: string) => void;
   to: string;
-  bg: string;
+  bg?: string;
   glow: string;
   accent: string;
   title: string;
@@ -231,14 +231,14 @@ const ArenaBox = ({ navigate, to, bg, glow, accent, title, desc, tags, onHover, 
         opacity: comingSoon ? 0.6 : 1,
         transition: 'filter 220ms ease',
       }}>
-        <img src={bg} alt="" style={{
+        {bg && <img src={bg} alt="" style={{
           position: 'absolute', right: 0, top: '50%',
           height: '116%', width: 'auto', maxWidth: '44%', objectFit: 'contain',
           transform: hover ? 'translateY(-50%) scale(1.05)' : 'translateY(-50%) scale(1)',
           transition: 'transform 600ms cubic-bezier(.2,.6,.2,1)',
           filter: `drop-shadow(0 12px 30px ${glow})`,
           pointerEvents: 'none',
-        }} />
+        }} />}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
           background: `radial-gradient(90% 120% at 0% 50%, ${glowSheen}, transparent 60%)`,
@@ -311,7 +311,6 @@ const ModeArena = ({ navigate }: { navigate: (r: string) => void }) => {
         <ArenaBox
           navigate={navigate}
           to="/battle"
-          bg="/assets/vs.png"
           glow="rgba(185,60,255,0.55)"
           accent="#B93CFF"
           title="BATTLE"
@@ -322,7 +321,6 @@ const ModeArena = ({ navigate }: { navigate: (r: string) => void }) => {
         <ArenaBox
           navigate={navigate}
           to="/solo"
-          bg="/assets/solo.png"
           glow="rgba(46,107,255,0.55)"
           accent="#57E5FF"
           title="SOLO"
@@ -498,9 +496,16 @@ const GuestBanner = ({ navigate }: { navigate: (r: string) => void }) => {
 
 // ─── HomeContemporary ─────────────────────────────────────────────────────────
 
+const ProfileStripSkeleton = () => (
+  <div className="dt-card animate-pulse" style={{ padding: 0, overflow: 'hidden', flex: 1, minWidth: 0, height: 76 }}>
+    <div style={{ height: '100%', background: 'rgba(120,150,255,0.06)' }} />
+  </div>
+);
+
 const HomeContemporary = () => {
   const navigate = useNavigate();
   const isLoggedIn = useUserStore((s) => s.isLoggedIn);
+  const isInitializing = useUserStore((s) => s.isInitializing);
   const setCurrentStreak = useUserStore((s) => s.setCurrentStreak);
 
   useEffect(() => {
@@ -510,24 +515,31 @@ const HomeContemporary = () => {
       .catch(() => {});
   }, [isLoggedIn, setCurrentStreak]);
 
+  const profileSection = isInitializing ? (
+    <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
+      <ProfileStripSkeleton />
+      <div style={{ width: 240, flexShrink: 0 }} />
+    </div>
+  ) : isLoggedIn ? (
+    <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <HomeProfileStrip />
+      </div>
+      <div style={{ width: 240, flexShrink: 0 }}>
+        <CurrentStreakCard />
+      </div>
+    </div>
+  ) : (
+    <GuestBanner navigate={navigate} />
+  );
+
   return (
     <div style={{
       maxWidth: 1100, margin: '0 auto', padding: '20px 44px 40px',
       minHeight: 'calc(100vh - 24px)',
       display: 'flex', flexDirection: 'column', justifyContent: 'center',
     }}>
-      {isLoggedIn ? (
-        <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <HomeProfileStrip />
-          </div>
-          <div style={{ width: 240, flexShrink: 0 }}>
-            <CurrentStreakCard />
-          </div>
-        </div>
-      ) : (
-        <GuestBanner navigate={navigate} />
-      )}
+      {profileSection}
       <ModeArena navigate={navigate} />
       <DailyChallengeSection navigate={navigate} />
     </div>

@@ -14,11 +14,15 @@ interface UserState {
   totalCore: number;
   currentStreak: number;
   isLoggedIn: boolean;
+  accessToken: string | null;
+  isInitializing: boolean;
   setUser: (data: MeResponse) => void;
   setUserMe: (data: UserMeResponse) => void;
   setCurrentStreak: (n: number) => void;
   setProfileUrl: (url: string | null) => void;
   setBannerUrl: (url: string | null) => void;
+  setAccessToken: (token: string) => void;
+  setInitializing: (v: boolean) => void;
   clearUser: () => void;
 }
 
@@ -32,6 +36,10 @@ export const useUserStore = create<UserState>((set) => ({
   totalCore: 0,
   currentStreak: 0,
   isLoggedIn: false,
+  accessToken: null,
+  isInitializing: true,
+  setAccessToken: (token) => set({ accessToken: token }),
+  setInitializing: (v) => set({ isInitializing: v }),
   setUser: (data) => set({
     userId: data.userId,
     username: data.username,
@@ -53,6 +61,6 @@ export const useUserStore = create<UserState>((set) => ({
     userId: null, username: null, role: null,
     profileUrl: null, bannerUrl: null, createdAt: null,
     totalCore: 0, currentStreak: 0,
-    isLoggedIn: false,
+    isLoggedIn: false, accessToken: null, isInitializing: false,
   }),
 }));

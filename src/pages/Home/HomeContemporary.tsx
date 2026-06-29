@@ -371,8 +371,10 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
   }
 
   const ch = daily.snippet;
-  const diffColor = DIFF_COLOR[ch.difficulty] || '#57E5FF';
-  const diffLabel = ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
+  const VALID_DIFFS = ['easy', 'medium', 'hard'];
+  const validDiff = VALID_DIFFS.includes(ch.difficulty) ? ch.difficulty : null;
+  const diffColor = validDiff ? (DIFF_COLOR[validDiff] || '#57E5FF') : 'var(--dt-text-3)';
+  const diffLabel = validDiff ? validDiff.charAt(0).toUpperCase() + validDiff.slice(1) : null;
   const langKey = ch.language.toLowerCase();
   const langIcon = LANG_ICON[langKey];
 
@@ -391,35 +393,44 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
           onClick={() => navigate('/daily')}
           style={{
             position: 'relative', border: 0, cursor: 'pointer', textAlign: 'left',
-            padding: 28, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-            background: `linear-gradient(150deg, color-mix(in oklab, ${diffColor} 20%, transparent) 0%, transparent 70%)`,
+            padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 0,
+            background: validDiff
+              ? `linear-gradient(150deg, color-mix(in oklab, ${diffColor} 20%, transparent) 0%, transparent 70%)`
+              : 'transparent',
             boxShadow: 'inset -1px 0 0 var(--dt-border)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Icon */}
+          <div style={{ marginBottom: 16 }}>
             {langIcon
-              ? <img src={langIcon} alt={ch.language} style={{ width: 48, height: 48, objectFit: 'contain' }} />
-              : <IconCode size={48} style={{ color: diffColor }} />}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--dt-text)', lineHeight: 1 }}>
-                {ch.language}
-              </span>
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
-                padding: '3px 10px', borderRadius: 999,
+              ? <img src={langIcon} alt={ch.language} style={{ width: 52, height: 52, objectFit: 'contain' }} />
+              : <IconCode size={52} style={{ color: diffColor }} />}
+          </div>
+
+          {/* Language + meta */}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'var(--dt-font-display)', fontWeight: 700, fontSize: 26, color: 'var(--dt-text)', lineHeight: 1.1, marginBottom: 10 }}>
+              {ch.language}
+            </div>
+            {diffLabel && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8,
+                padding: '3px 11px', borderRadius: 999,
                 fontSize: 11.5, fontWeight: 600,
                 color: diffColor, background: `color-mix(in oklab, ${diffColor} 16%, transparent)`,
+                boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${diffColor} 35%, transparent)`,
               }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: diffColor }} />
                 {t(diffLabel)}
-              </span>
-              <span style={{ fontSize: 12.5, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)' }}>
-                {ch.title}
-              </span>
+              </div>
+            )}
+            <div style={{ fontSize: 12.5, color: 'var(--dt-text-2)', fontFamily: 'var(--dt-font-mono)', lineHeight: 1.4 }}>
+              {ch.title}
             </div>
           </div>
 
-          <div>
+          {/* CTA */}
+          <div style={{ marginTop: 20 }}>
             <span className="dt-btn dt-btn-primary" style={{ pointerEvents: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <IconPlay size={14} /> {t('Take the challenge')}
             </span>

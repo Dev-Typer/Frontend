@@ -99,6 +99,7 @@ const AppRoutes = () => {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/snippets" element={<Snippets />} />
       <Route path="/mypage" element={<AuthGuard><MyPage /></AuthGuard>} />
+      <Route path="/profile" element={<AuthGuard><MyPage /></AuthGuard>} />
       <Route path="/profile/:username" element={<ProfilePage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin/snippets" element={

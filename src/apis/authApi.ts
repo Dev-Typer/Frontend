@@ -29,69 +29,58 @@ export interface MeResponse {
   createdAt: string;
 }
 
-let isRefreshing = false;
-let failedQueue: Array<{ resolve: () => void; reject: (err: unknown) => void }> = [];
+api.interceptors.request.use((config) => {
+  const token = useUserStore.getState().accessToken;
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
 
-const processQueue = (error: unknown) => {
-  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve()));
-  failedQueue = [];
-};
+let refreshPromise: Promise<string> | null = null;
+
+function doRefresh(): Promise<string> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = api
+    .post<ApiResponse<{ accessToken: string }>>('/api/auth/refresh')
+    .then((res) => {
+      const token = res.data.data!.accessToken;
+      useUserStore.getState().setAccessToken(token);
+      return token;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+}
 
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config as AxiosRequestConfigWithRetry;
 
-    if (error.response?.status !== 401) {
-      return Promise.reject(error);
-    }
+    if (error.response?.status !== 401) return Promise.reject(error);
 
-    // A: _skipAuthRetry flag set — reject immediately without retry
-    if (original._skipAuthRetry) {
-      return Promise.reject(error);
-    }
+    if (original._skipAuthRetry) return Promise.reject(error);
 
-    // B: not logged in — skip retry
-    if (!useUserStore.getState().isLoggedIn) {
-      return Promise.reject(error);
-    }
+    if (!useUserStore.getState().isLoggedIn) return Promise.reject(error);
 
-    // refresh endpoint returned 401 — session is gone, clear and redirect
     if (original.url?.includes('/api/auth/refresh')) {
       useUserStore.getState().clearUser();
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      if (window.location.pathname !== '/login') window.location.href = '/login';
       return Promise.reject(error);
     }
 
-    if (original._retry) {
-      return Promise.reject(error);
-    }
-
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve: () => resolve(api(original)), reject });
-      });
-    }
-
+    if (original._retry) return Promise.reject(error);
     original._retry = true;
-    isRefreshing = true;
 
     try {
-      await api.post('/api/auth/refresh');
-      processQueue(null);
+      await doRefresh();
       return api(original);
     } catch (err) {
-      processQueue(err);
       useUserStore.getState().clearUser();
-      // C: skip redirect if already on /login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      if (window.location.pathname !== '/login') window.location.href = '/login';
       return Promise.reject(err);
-    } finally {
-      isRefreshing = false;
     }
   },
 );
@@ -107,8 +96,17 @@ export const logout = async (): Promise<void> => {
   await api.post('/api/auth/logout');
 };
 
-export const refreshToken = async (): Promise<void> => {
-  await api.post('/api/auth/refresh');
+export const exchangeCode = async (code: string): Promise<{ accessToken: string }> => {
+  const { data } = await api.post<ApiResponse<{ accessToken: string }>>(
+    '/api/auth/token-exchange',
+    { code },
+  );
+  return data.data!;
+};
+
+export const refreshToken = async (): Promise<{ accessToken: string }> => {
+  const { data } = await api.post<ApiResponse<{ accessToken: string }>>('/api/auth/refresh');
+  return data.data!;
 };
 
 export default api;

@@ -14,6 +14,7 @@ interface Props {
   embedded?: boolean;
   noPadding?: boolean;
   noStatusBar?: boolean;
+  noAutoScroll?: boolean;
 }
 
 const TypingEngine = ({
@@ -29,6 +30,7 @@ const TypingEngine = ({
   embedded = false,
   noPadding = false,
   noStatusBar = false,
+  noAutoScroll = false,
 }: Props) => {
   const [typed, setTyped] = useState('');
   const [errors, setErrors] = useState(0);
@@ -143,10 +145,10 @@ const TypingEngine = ({
 
   useEffect(() => { if (autoFocus && containerRef.current) containerRef.current.focus(); }, [autoFocus, resetKey]);
 
-  // 커서 위치를 부모 스크롤 컨테이너에 노출 (overflow-auto 인 PlayEditor inner div가 스크롤)
   useEffect(() => {
+    if (noAutoScroll) return;
     cursorSpanRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [typed.length]);
+  }, [typed.length, noAutoScroll]);
 
   useEffect(() => {
     onProgress?.({
@@ -217,7 +219,7 @@ const TypingEngine = ({
   }, [typed, code]);
 
   return (
-    <div ref={containerRef} tabIndex={0} className={`outline-none relative ${embedded ? 'h-full' : ''}`}>
+    <div ref={containerRef} tabIndex={0} style={{ outline: 'none' }} className={`relative ${embedded ? 'h-full' : ''}`}>
       {showCounter && (
         <div className="flex gap-6 mb-3.5 items-baseline font-dt-mono text-dt-text-2 text-[13px]">
           <span><span className="text-dt-primary text-2xl font-medium dt-tabular">{wpm}</span> <span className="opacity-70">wpm</span></span>

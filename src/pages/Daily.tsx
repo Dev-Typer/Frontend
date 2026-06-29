@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/appStore';
@@ -7,7 +7,9 @@ import TypingEngine from '@/components/TypingEngine';
 import RaceProgress from '@/components/RaceProgress';
 import Avatar from '@/components/Avatar';
 import StatCard from '@/components/StatCard';
-import { IconClock, IconPlay, IconCode, IconChevronRight } from '@/components/icons/Icons';
+import TypoHeatmap from '@/components/TypoHeatmap';
+import { computeCore, CoreFactor, WpmGraph, MistypedLetters, WordChips } from '@/components/result';
+import { IconClock, IconPlay, IconCode, IconChevronRight, IconArrowUp, IconArrowDown } from '@/components/icons/Icons';
 import type { TypingProgress, TypingResult } from '@/types';
 import { LANG_ICON } from '@/data';
 import coreLogo from '@/assets/core-logo.png';
@@ -255,9 +257,74 @@ function DailyTyping({
   );
 }
 
-// ─── Result card ──────────────────────────────────────────────────────────────
+// ─── Result leaderboard (full, result page) ───────────────────────────────────
+function DailyLeaderboardFull({ items, total, myUserId }: { items: LeaderboardItem[]; total: number; myUserId?: number }) {
+  const t = useT();
+  const navigate = useNavigate();
+  return (
+    <div className="dt-card p-0 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-dt-border/50">
+        <div className="flex flex-col gap-[2px]">
+          <span className="dt-h3 m-0">{t('Live leaderboard')}</span>
+          <span className="dt-caption">by CORE</span>
+        </div>
+        <span className="flex items-center gap-[6px]">
+          <span className="dt-live-dot" />
+          <span className="dt-caption">{total} {t('today')}</span>
+        </span>
+      </div>
+      <div className="p-2">
+        {/* header */}
+        <div className="grid px-3 py-1.5 text-[10.5px] tracking-wide uppercase text-dt-text-3 font-medium"
+          style={{ gridTemplateColumns: '34px 1fr 72px 72px 72px 72px' }}>
+          <span>#</span><span>{t('Player')}</span>
+          <span className="text-right">CORE</span>
+          <span className="text-right">WPM</span>
+          <span className="text-right">nWPM</span>
+          <span className="text-right">{t('Acc')}</span>
+        </div>
+        {items.slice(0, 20).map((r, i) => (
+          <div key={r.userId}
+            className="grid items-center gap-[8px] px-3 py-[8px] rounded-lg"
+            style={{
+              gridTemplateColumns: '34px 1fr 72px 72px 72px 72px',
+              background: r.userId === myUserId
+                ? 'color-mix(in oklab, var(--dt-primary) 8%, transparent)'
+                : 'transparent',
+              boxShadow: i > 0 ? 'inset 0 1px 0 var(--dt-border)' : 'none',
+            }}>
+            <span className="dt-mono tabular-nums text-[13px]"
+              style={{ color: r.rank <= 3 ? 'var(--dt-primary)' : 'var(--dt-text-2)', fontWeight: r.rank <= 3 ? 700 : 500 }}>
+              {r.rank}
+            </span>
+            <div className="flex items-center gap-2 min-w-0">
+              <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
+              <span className="dt-mono text-[13px] truncate">
+                {r.username}{r.userId === myUserId && <span className="text-dt-primary"> (you)</span>}
+              </span>
+            </div>
+            <span className="dt-mono tabular-nums text-[14px] font-bold text-right text-dt-primary">{Math.round(r.core)}</span>
+            <span className="dt-mono tabular-nums text-[13px] text-right text-dt-text-2">{r.wpm}</span>
+            <span className="dt-mono tabular-nums text-[13px] text-right text-dt-text-2">{r.nWpm.toFixed(1)}</span>
+            <span className="dt-mono tabular-nums text-[13px] text-right text-dt-text-3">{r.accuracy.toFixed(1)}%</span>
+          </div>
+        ))}
+        {items.length === 0 && (
+          <p className="dt-caption text-center py-6">{t('Submit today to appear on the board.')}</p>
+        )}
+        <div className="text-center p-3">
+          <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={() => navigate('/ranking?tab=daily')}>
+            {t('View full ranking')} <IconChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Result card (3-section scroll snap, identical to SoloResult) ─────────────
 function DailyResultCard({
-  ch, result, submitResult, leaderboard, leaderTotal, myUserId, onRetry,
+  ch, result, submitResult, leaderboard, leaderTotal, myUserId, isLoggedIn, onRetry,
 }: {
   ch: DailyChallengeDto;
   result: TypingResult;
@@ -265,79 +332,185 @@ function DailyResultCard({
   leaderboard: LeaderboardItem[];
   leaderTotal: number;
   myUserId?: number;
+  isLoggedIn?: boolean;
   onRetry: () => void;
 }) {
   const t = useT();
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const section0Ref = useRef<HTMLDivElement>(null);
+  const section1Ref = useRef<HTMLDivElement>(null);
+  const section2Ref = useRef<HTMLDivElement>(null);
+  const sectionIdxRef = useRef(0);
+  const wheelLockRef = useRef(false);
+
+  const snippet = ch.snippet.content;
+  const diff = ch.snippet.difficulty;
+  const { core: localCore, nWpm, diffW, lenW } = computeCore(result.wpm, result.acc, diff, snippet.length);
+  const core = submitResult ? Math.round(submitResult.core) : localCore;
+
+  const rankChange = submitResult?.rankChange;
+
+  const sectionRefs = [section0Ref, section1Ref, section2Ref];
+
+  const goToSection = (idx: number) => {
+    const el = sectionRefs[idx]?.current;
+    if (!el || !containerRef.current) return;
+    sectionIdxRef.current = idx;
+    containerRef.current.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const handler = (e: WheelEvent) => {
+      if (wheelLockRef.current) return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      let el = e.target as HTMLElement | null;
+      while (el && el !== container) {
+        const oy = window.getComputedStyle(el).overflowY;
+        if (oy === 'auto' || oy === 'scroll') {
+          if (dir === -1 && el.scrollTop > 0) return;
+          if (dir === 1 && el.scrollTop < el.scrollHeight - el.clientHeight - 1) return;
+        }
+        el = el.parentElement;
+      }
+      const next = Math.max(0, Math.min(sectionRefs.length - 1, sectionIdxRef.current + dir));
+      if (next === sectionIdxRef.current) return;
+      e.preventDefault();
+      wheelLockRef.current = true;
+      goToSection(next);
+      setTimeout(() => { wheelLockRef.current = false; }, 750);
+    };
+    container.addEventListener('wheel', handler, { passive: false });
+    return () => container.removeEventListener('wheel', handler);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sectionStyle: React.CSSProperties = {
+    height: '100vh', flexShrink: 0, display: 'flex', flexDirection: 'column',
+    padding: '0 max(24px, calc((100vw - 900px) / 2))',
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* ─ CORE hero ─ */}
-      <div className="dt-card p-0 overflow-hidden">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr' }}>
-          <div style={{ padding: '22px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div className="dt-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <img src={coreLogo} style={{ width: 19, height: 19, objectFit: 'contain' }} />
-              {submitResult ? t('CORE this run') : t('Challenge complete.')}
-            </div>
-            {submitResult ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-                  <span className="dt-mono dt-tabular" style={{ fontSize: 52, fontWeight: 700, lineHeight: 1, color: 'var(--dt-primary)' }}>
-                    {Math.round(submitResult.core)}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <p className="dt-body-sm text-dt-text-2 mt-1">{t('Log in to save your result.')}</p>
-            )}
+    <div ref={containerRef} style={{
+      position: 'fixed', inset: 0, zIndex: 50,
+      background: 'var(--dt-bg)',
+      overflowY: 'scroll',
+      scrollSnapType: 'y mandatory',
+    }}>
+      {/* ── Section 0: Stats ── */}
+      <div ref={section0Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 16, overflowY: 'hidden' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <div className="dt-label" style={{ marginBottom: 2 }}>{t('Daily Challenge')} · {ch.date}</div>
+            <div className="dt-h2 m-0" style={{ fontSize: 24 }}>{t('Challenge complete.')}</div>
           </div>
-          <div style={{ background: 'var(--dt-border)' }} />
-          <div style={{ padding: '22px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
-            {submitResult ? (
-              <>
-                <div className="dt-label">{t('Live rank')}</div>
-                <div className="dt-mono dt-tabular" style={{ fontSize: 28, fontWeight: 700 }}>
-                  #{submitResult.afterRank}
-                </div>
-                <div className="dt-caption" style={{ marginTop: 2 }}>
-                  {t("You'll see your final position when the day closes.")}
-                </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-                <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={() => navigate('/login')} style={{ alignSelf: 'flex-start' }}>
-                  {t('Sign in with GitHub')}
-                </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="dt-btn dt-btn-secondary" onClick={onRetry}>{t('Try again')}</button>
+            <button className="dt-btn dt-btn-secondary" onClick={() => goToSection(2)}>{t('Leaderboard')}</button>
+          </div>
+        </div>
+
+        {/* CORE hero */}
+        <div className="dt-card p-0 overflow-hidden" style={{ marginBottom: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr' }}>
+            <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="dt-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <img src={coreLogo} style={{ width: 19, height: 19, objectFit: 'contain' }} />
+                {t('CORE this run')}
               </div>
-            )}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                <span className="dt-mono dt-tabular" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: 'var(--dt-primary)' }}>{core}</span>
+              </div>
+              <div className="dt-mono" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, color: 'var(--dt-text-2)' }}>
+                <CoreFactor label="nWPM" value={nWpm} />
+                <span style={{ color: 'var(--dt-text-3)' }}>×</span>
+                <CoreFactor label={t(diff === 'easy' ? 'Easy' : diff === 'hard' ? 'Hard' : 'Medium')} value={diffW.toFixed(1)} />
+                <span style={{ color: 'var(--dt-text-3)' }}>×</span>
+                <CoreFactor label={t('Length')} value={lenW.toFixed(2)} />
+              </div>
+            </div>
+            <div style={{ background: 'var(--dt-border)' }} />
+            <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
+              {submitResult ? (
+                <>
+                  <div className="dt-label">{t('Live rank')}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                    <span className="dt-mono dt-tabular" style={{ fontSize: 40, fontWeight: 700, color: 'var(--dt-text)' }}>
+                      #{submitResult.afterRank}
+                    </span>
+                    {rankChange === 'UP' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--dt-success)' }}><IconArrowUp size={13} />{t('Improved')}</span>}
+                    {rankChange === 'DOWN' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--dt-error)' }}><IconArrowDown size={13} />{t('Dropped')}</span>}
+                    {rankChange === 'FIRST_ATTEMPT' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, color: 'var(--dt-primary)', background: 'color-mix(in oklab, var(--dt-primary) 16%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--dt-primary) 45%, transparent)' }}>🎉 {t('First entry!')}</span>}
+                  </div>
+                  <div className="dt-caption" style={{ marginTop: 2 }}>
+                    {t("You'll see your final position when the day closes.")}
+                  </div>
+                </>
+              ) : isLoggedIn ? (
+                <div className="dt-caption">{t('Could not save your result. Please try again.')}</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div className="dt-caption">{t('Log in to save your result and appear on the leaderboard.')}</div>
+                  <button className="dt-btn dt-btn-primary dt-btn-sm" onClick={() => navigate('/login')} style={{ alignSelf: 'flex-start' }}>
+                    {t('Sign in with GitHub')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* Stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 10 }}>
+          <StatCard label={t('WPM')} value={result.wpm} />
+          <StatCard label={t('nWPM')} value={nWpm.toFixed(1)} />
+          <StatCard label={t('Accuracy')} value={result.acc.toFixed(1)} unit="%" sub={`${result.errors} ${t('mistakes corrected')}`} />
+          <StatCard label={t('Time')} value={(result.elapsed / 1000).toFixed(1)} unit="s" />
+          <StatCard label={t('Longest combo')} value={result.longestCombo} />
+        </div>
+
+        {/* WPM Graph */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <WpmGraph result={result} snippet={snippet} />
+        </div>
+
+        {/* Next section hint */}
+        <div style={{ textAlign: 'center', paddingTop: 10, color: 'var(--dt-text-3)', fontSize: 12 }}>
+          ↓ {t('Scroll for analysis')}
         </div>
       </div>
 
-      {/* ─ Stat cards ─ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
-        <StatCard label={t('WPM')} value={result.wpm} />
-        <StatCard label={t('Accuracy')} value={result.acc.toFixed(1)} unit="%" sub={`${result.errors} ${t('mistakes corrected')}`} />
-        <StatCard label={t('Time')} value={(result.elapsed / 1000).toFixed(1)} unit="s" />
-        <StatCard label={t('Live rank')} value={submitResult ? `#${submitResult.afterRank}` : '—'} />
-        <StatCard label={t('Challenge date')} value={ch.date} />
+      {/* ── Section 1: Replay & Analysis ── */}
+      <div ref={section1Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 16, overflowY: 'auto' }}>
+        <div style={{ marginBottom: 18 }}>
+          <div className="dt-label" style={{ marginBottom: 2 }}>{t('Section 2 / 3')}</div>
+          <div className="dt-h2 m-0" style={{ fontSize: 22 }}>{t('Replay & Analysis')}</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          <MistypedLetters result={result} snippet={snippet} />
+          <WordChips result={result} snippet={snippet} />
+        </div>
+        <TypoHeatmap content={snippet} typos={result.typos ?? []} replayData={result.replayData ?? []} />
+        <div style={{ textAlign: 'center', paddingTop: 12, color: 'var(--dt-text-3)', fontSize: 12 }}>
+          ↓ {t('Scroll for leaderboard')}
+        </div>
       </div>
 
-      {/* ─ Try again ─ */}
-      <div>
-        <button className="dt-btn dt-btn-secondary dt-btn-sm" onClick={onRetry}>
-          {t('Try again')}
-        </button>
+      {/* ── Section 2: Daily Leaderboard ── */}
+      <div ref={section2Ref} style={{ ...sectionStyle, scrollSnapAlign: 'start', paddingTop: 28, paddingBottom: 32, overflowY: 'auto' }}>
+        <div style={{ marginBottom: 18 }}>
+          <div className="dt-label" style={{ marginBottom: 2 }}>{t('Section 3 / 3')}</div>
+          <div className="dt-h2 m-0" style={{ fontSize: 22 }}>{t('Live leaderboard')}</div>
+        </div>
+        <DailyLeaderboardFull items={leaderboard} total={leaderTotal} myUserId={myUserId} />
       </div>
-
-      {/* ─ Daily Leaderboard ─ */}
-      <DailyLeaderboard items={leaderboard} total={leaderTotal} myUserId={myUserId} />
     </div>
   );
 }
 
-// ─── Leaderboard ──────────────────────────────────────────────────────────────
+// ─── Leaderboard (intro — CORE only) ─────────────────────────────────────────
 function DailyLeaderboard({ items, total, myUserId }: { items: LeaderboardItem[]; total: number; myUserId?: number }) {
   const t = useT();
   const navigate = useNavigate();
@@ -358,7 +531,7 @@ function DailyLeaderboard({ items, total, myUserId }: { items: LeaderboardItem[]
           <div key={r.userId}
             className="grid items-center gap-[10px] px-3 py-[9px] rounded-lg"
             style={{
-              gridTemplateColumns: '34px 1fr auto auto',
+              gridTemplateColumns: '34px 1fr auto',
               background: r.userId === myUserId
                 ? 'color-mix(in oklab, var(--dt-primary) 8%, transparent)'
                 : 'transparent',
@@ -373,8 +546,7 @@ function DailyLeaderboard({ items, total, myUserId }: { items: LeaderboardItem[]
                 {r.username}{r.userId === myUserId && ' (you)'}
               </span>
             </div>
-            <span className="dt-mono tabular-nums dt-caption min-w-[52px] text-right">{r.wpm} <span className="opacity-70">wpm</span></span>
-            <span className="dt-mono tabular-nums text-[14px] font-bold min-w-[56px] text-right text-dt-primary flex items-center justify-end gap-[3px]">
+            <span className="dt-mono tabular-nums text-[14px] font-bold text-right text-dt-primary flex items-center justify-end gap-[3px]">
               {Math.round(r.core)}
               <img src={coreLogo} style={{ width: 13, height: 13, objectFit: 'contain', opacity: 0.75 }} />
             </span>
@@ -488,6 +660,21 @@ const Daily = () => {
     );
   }
 
+  if (phase === 'result' && result) {
+    return (
+      <DailyResultCard
+        ch={challenge}
+        result={result}
+        submitResult={submitResult}
+        leaderboard={leaderboard}
+        leaderTotal={leaderTotal}
+        myUserId={myUserId ?? undefined}
+        isLoggedIn={isLoggedIn}
+        onRetry={retry}
+      />
+    );
+  }
+
   return (
     <div className="dt-page">
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -537,22 +724,10 @@ const Daily = () => {
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
-      {phase === 'result' && result ? (
-        <DailyResultCard
-          ch={challenge}
-          result={result}
-          submitResult={submitResult}
-          leaderboard={leaderboard}
-          leaderTotal={leaderTotal}
-          myUserId={myUserId ?? undefined}
-          onRetry={retry}
-        />
-      ) : (
-        <div className="grid gap-5 items-start" style={{ gridTemplateColumns: '1.55fr 1fr' }}>
-          <DailyIntro ch={challenge} isLoggedIn={isLoggedIn} onStart={start} />
-          <DailyLeaderboard items={leaderboard} total={leaderTotal} myUserId={myUserId ?? undefined} />
-        </div>
-      )}
+      <div className="grid gap-5 items-start" style={{ gridTemplateColumns: '1.55fr 1fr' }}>
+        <DailyIntro ch={challenge} isLoggedIn={isLoggedIn} onStart={start} />
+        <DailyLeaderboard items={leaderboard} total={leaderTotal} myUserId={myUserId ?? undefined} />
+      </div>
     </div>
   );
 };

@@ -124,7 +124,7 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
   const t = useT();
   const caret = useAppStore((s) => s.caret);
   const density = useAppStore((s) => s.density);
-  const { username } = useUserStore();
+  const { username, profileUrl } = useUserStore();
   const [typed, setTyped] = useState('');
 
   const dispLang = realLang || lang;
@@ -144,10 +144,10 @@ const SoloTyping = ({ snippet, lang, diff, progress, setProgress, onFinish, rese
   const translateY = -(offset * lh);
 
   const gutterW = String(totalLines).length;
-  const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360 };
+  const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360, src: profileUrl ?? undefined };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ maxWidth: 760, margin: '0 auto' }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0" style={{ paddingBottom: 18 }}>
         <div className="flex items-center gap-3">

@@ -121,7 +121,7 @@ function DailyTyping({
 }) {
   const t = useT();
   const navigate = useNavigate();
-  const { username } = useUserStore();
+  const { username, profileUrl } = useUserStore();
   const [typed, setTyped] = useState('');
 
   const langKey = ch.snippet.language.toLowerCase();
@@ -143,10 +143,10 @@ function DailyTyping({
   const translateY = -(offset * lh);
 
   const gutterW = String(totalLines).length;
-  const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360 };
+  const me = { handle: username ?? 'you', avatarHue: ((username ?? 'you').charCodeAt(0) * 7) % 360, src: profileUrl ?? undefined };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ maxWidth: 760, margin: '0 auto' }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0" style={{ paddingBottom: 18 }}>
         <div className="flex items-center gap-3">
@@ -368,7 +368,7 @@ function DailyLeaderboard({ items, total, myUserId }: { items: LeaderboardItem[]
               {r.rank}
             </span>
             <div className="flex items-center gap-2 min-w-0">
-              <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} />
+              <Avatar handle={r.username} hue={(r.username.charCodeAt(0) * 7) % 360} size={24} src={r.profileUrl ?? undefined} />
               <span className="dt-mono text-[13px] truncate">
                 {r.username}{r.userId === myUserId && ' (you)'}
               </span>

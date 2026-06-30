@@ -12,19 +12,18 @@ interface TreeFile {
   name: string;
   route?: string;
   action?: 'stargaze';
-  emoji: string;
 }
 
 const CONTEM_TREE: TreeFile[] = [
-  { name: 'README.md',   route: '',                emoji: '📖' },
-  { name: 'snippets.ts', route: 'snippets',         emoji: '📚' },
-  { name: 'challenge.ts', route: 'daily',           emoji: '📅' },
-  { name: 'leaderboard.sql', route: 'ranking',       emoji: '🏆' },
-  { name: 'profile.tsx', route: 'mypage',           emoji: '👤' },
-  { name: 'stargaze.gl', action: 'stargaze',        emoji: '🪐' },
+  { name: 'README.md',   route: '' },
+  { name: 'snippets.ts', route: 'snippets' },
+  { name: 'challenge.ts', route: 'daily' },
+  { name: 'leaderboard.sql', route: 'ranking' },
+  { name: 'profile.tsx', route: 'mypage' },
+  { name: 'stargaze.gl', action: 'stargaze' },
 ];
 
-const ADMIN_NODE: TreeFile = { name: 'admin-snippets.ts', route: 'admin/snippets', emoji: '⚙️' };
+const ADMIN_NODE: TreeFile = { name: 'admin-snippets.ts', route: 'admin/snippets' };
 
 const contemRowClass = (active: boolean) =>
   `flex items-center gap-2 w-full py-[9px] px-3.5 border-0 text-left cursor-default font-dt-sans text-[14.5px] tracking-[-0.01em] transition-colors duration-100 ${
@@ -45,9 +44,6 @@ const ContemNode = ({ node, route, navigate, onStargaze }: {
       }}
     >
       <span className="w-3" />
-      <span className="text-base leading-none w-5 text-center" style={{ filter: active ? 'none' : 'saturate(0.85)' }}>
-        {node.emoji}
-      </span>
       <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{node.name}</span>
     </button>
   );

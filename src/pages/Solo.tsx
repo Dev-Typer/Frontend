@@ -79,7 +79,7 @@ const SoloSetup = ({ lang, setLang, onStart }: SoloSetupProps) => {
             ))}
           </div>
 
-          <button className="dt-btn dt-btn-primary dt-btn-lg text-base px-7 min-h-[54px]" onClick={onStart}>
+          <button className="dt-btn dt-btn-primary dt-btn-lg text-base px-7 min-h-[54px] min-w-[300px]" onClick={onStart}>
             <IconPlay size={18} /> {langLabel} {t('random start')}
           </button>
           <p className="dt-caption mt-3.5 max-w-[380px]">

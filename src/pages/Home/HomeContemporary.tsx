@@ -129,7 +129,6 @@ const ArenaLeaderboard = ({ focus, navigate }: { focus: string; navigate: (r: st
         padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: 'inset 0 -1px 0 var(--dt-border)',
       }}>
-        <span style={{ fontSize: 16 }}>{isBattle ? '⚔️' : '🎯'}</span>
         <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--dt-text)' }}>
           {isBattle ? t('Battle ranking') : t('Solo ranking')}
         </span>
@@ -367,11 +366,12 @@ const DailyChallengeSection = ({ navigate }: { navigate: (r: string) => void }) 
 
   const ch = daily.snippet;
   const VALID_DIFFS = ['easy', 'medium', 'hard'];
-  const validDiff = VALID_DIFFS.includes(ch.difficulty) ? ch.difficulty : null;
+  const normalizedDiff = ch.difficulty.toLowerCase();
+  const validDiff = VALID_DIFFS.includes(normalizedDiff) ? normalizedDiff : null;
   const diffColor = validDiff ? (DIFF_COLOR[validDiff] || '#57E5FF') : 'var(--dt-text-3)';
   const diffLabel = validDiff
     ? validDiff.charAt(0).toUpperCase() + validDiff.slice(1)
-    : ch.difficulty.charAt(0).toUpperCase() + ch.difficulty.slice(1);
+    : ch.difficulty;
   const langKey = ch.language.toLowerCase();
   const langIcon = LANG_ICON[langKey];
 

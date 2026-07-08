@@ -644,7 +644,8 @@ const Daily = () => {
 
   const langKey = challenge.snippet.language.toLowerCase();
   const icon = LANG_ICON[langKey];
-  const diffColor = DIFF_COLOR[challenge.snippet.difficulty] || 'var(--dt-primary)';
+  const diffKey = challenge.snippet.difficulty.toLowerCase();
+  const diffColor = DIFF_COLOR[diffKey] || 'var(--dt-primary)';
 
   if (phase === 'typing') {
     return (
@@ -706,7 +707,7 @@ const Daily = () => {
                   background: `color-mix(in oklab, ${diffColor} 14%, transparent)`,
                   boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${diffColor} 40%, transparent)`,
                 }}>
-                {challenge.snippet.difficulty === 'easy' ? 'Easy' : challenge.snippet.difficulty === 'medium' ? 'Medium' : 'Hard'}
+                {diffKey === 'easy' ? 'Easy' : diffKey === 'medium' ? 'Medium' : diffKey === 'hard' ? 'Hard' : challenge.snippet.difficulty}
               </span>
               <span className="dt-mono text-[13px] text-dt-text-2">{challenge.snippet.title}</span>
               <span className="text-dt-text-3 text-[12px] dt-mono">{challenge.date}</span>
